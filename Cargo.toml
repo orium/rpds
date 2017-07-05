@@ -1,0 +1,20 @@
+[package]
+name = "rpds"
+description = "Persistent data structures for rust"
+version = "0.0.0"
+authors = ["Diogo Sousa <diogogsousa@gmail.com>"]
+
+
+# TODO add more properties (see http://doc.crates.io/manifest.html)
+# homepage = "..."
+# repository = "..."
+# documentation = "..."
+# readme = "..."
+#
+# keywords = ["...", "..."]
+# categories = ["...", "..."]
+#
+# license = "..."
+# license-file = "..."
+
+[dependencies]
