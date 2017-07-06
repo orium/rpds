@@ -1,6 +1,6 @@
 /* This file is part of rpds.
  *
- * rpds is free software: you can redistribute it and/or modify
+ * Foobar is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -18,35 +18,53 @@
 
 #[macro_use]
 extern crate bencher;
+extern crate rpds;
 
 mod utils;
 
+use rpds::vector::Vector;
 use utils::BencherNoDrop;
 use bencher::{Bencher, black_box};
 
-fn rust_vec_push(bench: &mut Bencher) -> () {
+fn vector_push(bench: &mut Bencher) -> () {
     let limit = 100_000;
 
     bench.iter_no_drop(|| {
-        let mut vector: Vec<isize> = Vec::new();
+        let mut vector: Vector<isize> = Vector::new();
 
         for i in 0..limit {
-            vector.push(i);
+            vector = vector.push(i);
         }
 
         vector
     });
 }
 
-// TODO implement rust_vec_pop in the same style as the test of `Vector::drop_last()` once we can
-// do per-iteration initialization.
-
-fn rust_vec_get(bench: &mut Bencher) -> () {
+fn vector_drop_last(bench: &mut Bencher) -> () {
     let limit = 100_000;
-    let mut vector: Vec<isize> = Vec::new();
+    let mut full_vector: Vector<isize> = Vector::new();
 
     for i in 0..limit {
-        vector.push(i);
+        full_vector = full_vector.push(i);
+    }
+
+    bench.iter_no_drop(|| {
+        let mut vector: Vector<isize> = full_vector.clone();
+
+        for _ in 0..limit {
+            vector = vector.drop_last().unwrap();
+        }
+
+        vector
+    });
+}
+
+fn vector_get(bench: &mut Bencher) -> () {
+    let limit = 100_000;
+    let mut vector: Vector<isize> = Vector::new();
+
+    for i in 0..limit {
+        vector = vector.push(i);
     }
 
     bench.iter(|| {
@@ -56,12 +74,12 @@ fn rust_vec_get(bench: &mut Bencher) -> () {
     });
 }
 
-fn rust_vec_iterate(bench: &mut Bencher) -> () {
+fn vector_iterate(bench: &mut Bencher) -> () {
     let limit = 100_000;
-    let mut vector: Vec<isize> = Vec::new();
+    let mut vector: Vector<isize> = Vector::new();
 
     for i in 0..limit {
-        vector.push(i);
+        vector = vector.push(i);
     }
 
     bench.iter(|| {
@@ -71,5 +89,5 @@ fn rust_vec_iterate(bench: &mut Bencher) -> () {
     });
 }
 
-benchmark_group!(benches, rust_vec_push, rust_vec_get, rust_vec_iterate);
+benchmark_group!(benches, vector_push, vector_drop_last, vector_get, vector_iterate);
 benchmark_main!(benches);

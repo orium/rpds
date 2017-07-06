@@ -1,6 +1,6 @@
 /* This file is part of rpds.
  *
- * rpds is free software: you can redistribute it and/or modify
+ * Foobar is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -21,55 +21,55 @@ extern crate bencher;
 
 mod utils;
 
+use std::collections::LinkedList;
 use utils::BencherNoDrop;
 use bencher::{Bencher, black_box};
 
-fn rust_vec_push(bench: &mut Bencher) -> () {
+fn rust_linked_list_push_front(bench: &mut Bencher) -> () {
     let limit = 100_000;
 
     bench.iter_no_drop(|| {
-        let mut vector: Vec<isize> = Vec::new();
+        let mut linked_list: LinkedList<isize> = LinkedList::new();
 
         for i in 0..limit {
-            vector.push(i);
+            linked_list.push_front(i);
         }
 
-        vector
+        linked_list
     });
 }
 
-// TODO implement rust_vec_pop in the same style as the test of `Vector::drop_last()` once we can
-// do per-iteration initialization.
-
-fn rust_vec_get(bench: &mut Bencher) -> () {
+fn rust_linked_list_push_back(bench: &mut Bencher) -> () {
     let limit = 100_000;
-    let mut vector: Vec<isize> = Vec::new();
 
-    for i in 0..limit {
-        vector.push(i);
-    }
+    bench.iter_no_drop(|| {
+        let mut linked_list: LinkedList<isize> = LinkedList::new();
 
-    bench.iter(|| {
         for i in 0..limit {
-            black_box(vector.get(i as usize));
+            linked_list.push_back(i);
         }
+
+        linked_list
     });
 }
 
-fn rust_vec_iterate(bench: &mut Bencher) -> () {
+fn rust_linked_list_iterate(bench: &mut Bencher) -> () {
     let limit = 100_000;
-    let mut vector: Vec<isize> = Vec::new();
+    let mut linked_list: LinkedList<isize> = LinkedList::new();
 
     for i in 0..limit {
-        vector.push(i);
+        linked_list.push_back(i);
     }
 
     bench.iter(|| {
-        for i in vector.iter() {
+        for i in linked_list.iter() {
             black_box(i);
         }
     });
 }
 
-benchmark_group!(benches, rust_vec_push, rust_vec_get, rust_vec_iterate);
+benchmark_group!(
+    benches,
+    rust_linked_list_push_front, rust_linked_list_push_back, rust_linked_list_iterate
+);
 benchmark_main!(benches);

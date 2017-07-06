@@ -373,14 +373,27 @@ mod test {
 
         assert!(clone.iter().eq(list.iter()));
     }
+
+
+    #[test]
+    fn compile_time_test_is_send() -> () {
+        let vector: Box<Send> = Box::new(List::<i32>::new());
+
+        ::std::mem::drop(vector);
+    }
+
+    #[test]
+    fn compile_time_test_is_sync() -> () {
+        let vector: Box<Sync> = Box::new(List::<i32>::new());
+
+        ::std::mem::drop(vector);
+    }
 }
 
 /* TODO
  *
  * Implement traits:
  *
- *  - impl<T> Sync for List<T> where T: Sync
- *  - impl<T> Send for List<T> where T: Send
  *  - impl<T> IntoIterator for List<T>
  *  - impl<T> FromIterator<T>
  *  - impl<'a, T> From<&'a [T]> for List<T>

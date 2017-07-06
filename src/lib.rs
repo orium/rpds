@@ -22,3 +22,4 @@
 //! with structural sharing.
 
 pub mod list;
+pub mod vector;
