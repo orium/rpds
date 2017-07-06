@@ -1,0 +1,8 @@
+language: rust
+rust:
+   - stable
+   - beta
+   - nightly
+script:
+  - cargo build --features fatal-warnings
+  - cargo test  --features fatal-warnings

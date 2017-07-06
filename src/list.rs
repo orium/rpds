@@ -105,22 +105,25 @@ mod test {
     use super::*;
 
     #[test]
-    fn foo() -> () {
-        let list: List<i32> = List::new()
+    fn test_display() -> () {
+        let empty_list: List<i32> = List::new();
+        let singleton_list = List::new()
+            .cons("hello");
+        let list = List::new()
             .cons(3)
             .cons(2)
             .cons(1)
             .cons(0);
-        let tail = list.tail().unwrap();
 
-        println!("{}", list);
-        println!("{}", tail);
+        assert_eq!(format!("{}", empty_list), "[]");
+        assert_eq!(format!("{}", singleton_list), "[hello]");
+        assert_eq!(format!("{}", list), "[0, 1, 2, 3]");
     }
+
+    // TODO more tests.
 }
 
 /* TODO
- *
- * Use property based tests with https://github.com/BurntSushi/quickcheck
  *
  * Implement traits:
  *  - impl<T> Sync for List<T> where T: Sync
@@ -137,6 +140,6 @@ mod test {
  *  - impl<T> Default for List<T>
  *
  *  for the Vector we also want extend (see https://doc.rust-lang.org/std/collections/struct.LinkedList.html)
- *  + impl<T> Debug for List<T> where T: Debug
- *  + impl<T> Display for List<T> where T: Display
+ *  - impl<T> Debug for List<T> where T: Debug
+ *  - impl<T> Display for List<T> where T: Display
  */

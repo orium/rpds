@@ -1,7 +1,6 @@
 * Write README.md
   * Table with asymptotic complexity
-* Setup travis CI
-  * use strict feature: `cargo check --features fatal-warnings`
+* Publish crate to cargo.io
 * Try to create a trait for all collections/iterators factoring everything common there.
 * Unit tests
   * Use property based tests with [quickcheck](https://github.com/BurntSushi/quickcheck)?
