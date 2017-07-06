@@ -20,39 +20,39 @@ use std::borrow::Borrow;
 
 #[derive(Debug)]
 pub struct List<T> {
-    node: Rc<ListNode<T>>,
+    node: Rc<Node<T>>,
 }
 
 #[derive(Debug)]
-enum ListNode<T> {
-    Cons(T, Rc<ListNode<T>>),
+enum Node<T> {
+    Cons(T, Rc<Node<T>>),
     Nil,
 }
 
 impl<T> List<T> {
     pub fn new() -> List<T> {
         List {
-            node: Rc::new(ListNode::Nil)
+            node: Rc::new(Node::Nil)
         }
     }
 
     pub fn head(&self) -> Option<&T> {
         match *self.node {
-            ListNode::Cons(ref h, _) => Some(h),
-            ListNode::Nil            => None,
+            Node::Cons(ref h, _) => Some(h),
+            Node::Nil            => None,
         }
     }
 
     pub fn tail(&self) -> Option<List<T>> {
         match *self.node {
-            ListNode::Cons(_, ref t) => Some(List { node: t.clone() }),
-            ListNode::Nil            => None,
+            Node::Cons(_, ref t) => Some(List { node: t.clone() }),
+            Node::Nil            => None,
         }
     }
 
     pub fn cons(&self, v: T) -> List<T> {
         List {
-            node: Rc::new(ListNode::Cons(v, self.node.clone()))
+            node: Rc::new(Node::Cons(v, self.node.clone()))
         }
     }
 
@@ -60,6 +60,15 @@ impl<T> List<T> {
         Iter {
             next: self.node.borrow()
         }
+    }
+}
+
+impl<'a, T> IntoIterator for &'a List<T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Iter<'a, T> {
+        self.iter()
     }
 }
 
@@ -83,7 +92,7 @@ impl<T> Display for List<T>
 }
 
 pub struct Iter<'a, T: 'a> {
-    next: &'a ListNode<T>
+    next: &'a Node<T>
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
@@ -91,11 +100,11 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
     fn next(&mut self) -> Option<&'a T> {
         match *self.next {
-            ListNode::Cons(ref v, ref t) => {
+            Node::Cons(ref v, ref t) => {
                 self.next = t;
                 Some(v)
             },
-            ListNode::Nil => None
+            Node::Nil => None
         }
     }
 }
@@ -103,6 +112,48 @@ impl<'a, T> Iterator for Iter<'a, T> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn test_new() -> () {
+        let empty_list: List<i32> = List::new();
+
+        match *empty_list.node {
+            Node::Nil => (),
+            _         => panic!("should be nil"),
+        }
+    }
+
+    #[test]
+    fn test_head() -> () {
+        let empty_list: List<i32> = List::new();
+        let singleton_list = List::new()
+            .cons("hello");
+        let list = List::new()
+            .cons(3)
+            .cons(2)
+            .cons(1)
+            .cons(0);
+
+        assert_eq!(empty_list.head(), None);
+        assert_eq!(singleton_list.head(), Some(&"hello"));
+        assert_eq!(list.head(), Some(&0));
+    }
+
+    #[test]
+    fn test_tail() -> () {
+        let empty_list: List<i32> = List::new();
+        let singleton_list = List::new()
+            .cons("hello");
+        let list = List::new()
+            .cons(3)
+            .cons(2)
+            .cons(1)
+            .cons(0);
+
+        assert!(empty_list.tail().is_none());
+        assert_eq!(singleton_list.tail().unwrap().head(), None);
+        assert_eq!(list.tail().unwrap().head(), Some(&1));
+    }
 
     #[test]
     fn test_display() -> () {
@@ -120,7 +171,25 @@ mod test {
         assert_eq!(format!("{}", list), "[0, 1, 2, 3]");
     }
 
-    // TODO more tests.
+    #[test]
+    fn test_into_iterator() -> () {
+        let list = List::new()
+            .cons(3)
+            .cons(2)
+            .cons(1)
+            .cons(0);
+        let mut expected = 0;
+        let mut left = 4;
+
+        for n in &list {
+            left -= 1;
+
+            assert!(left >= 0);
+            assert_eq!(*n, expected);
+
+            expected += 1;
+        }
+    }
 }
 
 /* TODO
