@@ -1,5 +1,4 @@
 language: rust
-cache: cargo
 
 os:
   - linux
@@ -10,6 +9,36 @@ rust:
   - beta
   - nightly
 
+addons:
+  apt:
+    packages:
+      # dependencies needed to build kcov.
+      # TODO Remove when kcov v34 is available.
+      - libelf-dev
+      - libdw-dev
+      - binutils-dev
+      - libiberty-dev
+
+      # dependencies of the code coverage tool.
+      - jq
+
 script:
   - cargo build --features fatal-warnings
   - cargo test  --features fatal-warnings
+
+# TODO Do not build kcov when v34 is available, just install it directly.
+after_success:
+  test $TRAVIS_OS_NAME = linux
+  && test $TRAVIS_RUST_VERSION = stable
+  && wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz
+  && tar xzf master.tar.gz
+  && cd kcov-master
+  && mkdir build
+  && cd build
+  && cmake ..
+  && make
+  && sudo make install
+  && cd ../../
+  && rm -rf kcov-master master.tar.gz
+  && ./tools/codecov.sh
+  && bash <(curl -s https://codecov.io/bash)

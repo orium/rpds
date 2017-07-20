@@ -1,4 +1,4 @@
-* Write README.md
+* README.md
   * Table with asymptotic complexity
 * Publish crate to cargo.io
 * Try to create a trait for all collections/iterators factoring everything common there.

@@ -6,16 +6,15 @@ authors = ["Diogo Sousa <diogogsousa@gmail.com>"]
 
 
 # TODO add more properties (see http://doc.crates.io/manifest.html)
-# homepage = "..."
-# repository = "..."
+homepage = "https://github.com/orium/rpds"
+repository = "https://github.com/orium/rpds"
 # documentation = "..."
-# readme = "..."
-#
-# keywords = ["...", "..."]
-# categories = ["...", "..."]
-#
-# license = "..."
-# license-file = "..."
+readme = "README.md"
+
+keywords = ["data-structures", "persistent-data-structures", "immutable-data-structures"]
+categories = ["data-structures"]
+
+license = "LGPL-3.0"
 
 [dependencies]
 
