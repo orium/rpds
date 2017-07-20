@@ -12,3 +12,4 @@
 * Add more properties to `Cargo.toml`
 * Docs
   * list / list iter
+* Benchmarks (with cargo bench)
