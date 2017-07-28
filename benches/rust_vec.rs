@@ -1,6 +1,6 @@
 /* This file is part of rpds.
  *
- * Foobar is free software: you can redistribute it and/or modify
+ * rpds is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -19,17 +19,22 @@
 #[macro_use]
 extern crate bencher;
 
+mod utils;
+
+use utils::BencherNoDrop;
 use bencher::{Bencher, black_box};
 
 fn rust_vec_push(bench: &mut Bencher) -> () {
     let limit = 100_000;
 
-    bench.iter(|| {
+    bench.iter_no_drop(|| {
         let mut vector: Vec<isize> = Vec::new();
 
         for i in 0..limit {
             vector.push(i);
         }
+
+        vector
     });
 }
 

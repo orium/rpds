@@ -2,7 +2,7 @@
 #
 # This file is part of rpds.
 #
-# Foobar is free software: you can redistribute it and/or modify
+# rpds is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -22,9 +22,10 @@ build=$(cargo test --no-run --message-format=json 2>/dev/null | \
     jq -r "select(.profile.test == true) | .filenames[]" | \
     rev | cut -d'/' -f 1 | rev)
 
-kcov --exclude-pattern=/.cargo,/usr/lib --verify target/cov \
+kcov --verify target/cov \
+    --exclude-pattern=/.cargo,/usr/lib \
     --exclude-region='#[cfg(test)]' \
     --exclude-line='unreachable!' \
     target/debug/$build 2>&1 >/dev/null
 
-echo You can find the test coverage results at file://$(pwd)/target/cov/$build/index.html
+echo "You can find the test coverage results at file://$(pwd)/target/cov/$build/index.html"

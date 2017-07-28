@@ -1,6 +1,6 @@
 /* This file is part of rpds.
  *
- * Foobar is free software: you can redistribute it and/or modify
+ * rpds is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,18 +20,23 @@
 extern crate bencher;
 extern crate rpds;
 
+mod utils;
+
 use rpds::list::List;
+use utils::BencherNoDrop;
 use bencher::{Bencher, black_box};
 
 fn list_cons(bench: &mut Bencher) -> () {
     let limit = 100_000;
 
-    bench.iter(|| {
+    bench.iter_no_drop(|| {
         let mut list: List<isize> = List::new();
 
         for i in 0..limit {
             list = list.cons(i);
         }
+
+        list
     });
 }
 

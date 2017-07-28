@@ -1,6 +1,6 @@
 /* This file is part of rpds.
  *
- * Foobar is free software: you can redistribute it and/or modify
+ * rpds is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -15,5 +15,10 @@
  */
 
 #![cfg_attr(not(feature = "no-fatal-warnings"), deny(warnings))]
+
+//! # Rust Persistent Data Structures
+//!
+//! Rust Persistent Data Structures provides [fully persistent data structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
+//! with structural sharing.
 
 pub mod list;

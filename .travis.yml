@@ -26,6 +26,8 @@ script:
   - cargo build
   - cargo test
   - cargo bench
+  - cargo doc
+  - cargo package
 
 # TODO Do not build kcov when v34 is available, just install it directly.
 after_success:

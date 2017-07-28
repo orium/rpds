@@ -1,6 +1,6 @@
 [package]
 name = "rpds"
-description = "Persistent data structures for rust"
+description = "Persistent data structures with structural sharing"
 version = "0.0.0"
 authors = ["Diogo Sousa <diogogsousa@gmail.com>"]
 

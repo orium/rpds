@@ -3,4 +3,5 @@
 
 # Rust Persistent Data Structures
 
-WIP
+Rust Persistent Data Structures provides [fully persistent data structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
+with structural sharing.
