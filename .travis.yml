@@ -23,9 +23,9 @@ addons:
       - jq
 
 script:
-  - cargo build --features fatal-warnings
-  - cargo test  --features fatal-warnings
-  - cargo bench --features fatal-warnings
+  - cargo build
+  - cargo test
+  - cargo bench
 
 # TODO Do not build kcov when v34 is available, just install it directly.
 after_success:

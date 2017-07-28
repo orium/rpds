@@ -14,6 +14,6 @@
  * along with rpds.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#![cfg_attr(feature = "fatal-warnings", deny(warnings))]
+#![cfg_attr(not(feature = "no-fatal-warnings"), deny(warnings))]
 
 pub mod list;
