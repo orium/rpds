@@ -17,6 +17,16 @@ categories = ["data-structures"]
 license = "LGPL-3.0"
 
 [dependencies]
+# TODO This will probably be part of rust in the future (see https://github.com/rust-lang/rust/issues/29553)
+bencher = "0.1"
 
 [features]
 fatal-warnings = []
+
+[[bench]]
+name = "rust_vec"
+harness = false
+
+[[bench]]
+name = "list"
+harness = false

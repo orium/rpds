@@ -57,9 +57,7 @@ impl<T> List<T> {
     }
 
     pub fn iter(&self) -> Iter<T> {
-        Iter {
-            next: self.node.borrow()
-        }
+        Iter::new(self)
     }
 }
 
@@ -93,6 +91,14 @@ impl<T> Display for List<T>
 
 pub struct Iter<'a, T: 'a> {
     next: &'a Node<T>
+}
+
+impl<'a, T> Iter<'a, T> {
+    fn new(list: &List<T>) -> Iter<T> {
+        Iter {
+            next: list.node.borrow()
+        }
+    }
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
