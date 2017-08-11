@@ -14,25 +14,46 @@
  * along with rpds.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-use std::rc::Rc;
+use std::sync::Arc;
 use std::fmt::Display;
 use std::borrow::Borrow;
 
+/// A persistent list with structural sharing.  This data structure supports fast get head,
+/// get tail, and append.
+///
+/// # Complexity
+///
+/// Let *n* be the number of elements in the list.
+///
+/// ## Temporal complexity
+///
+/// | Operation         | Best case | Average | Worst case  |
+/// |:----------------- | ---------:| -------:| -----------:|
+/// | new               |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | cons              |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | tail              |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | iterator creation |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | iterator step     |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | iterator full     |      Θ(n) |    Θ(n) |        Θ(n) |
+///
+/// ## Space complexity
+///
+/// The space complexity is *Θ(n)*.
 #[derive(Debug)]
 pub struct List<T> {
-    node: Rc<Node<T>>,
+    node: Arc<Node<T>>,
 }
 
 #[derive(Debug)]
 enum Node<T> {
-    Cons(T, Rc<Node<T>>),
+    Cons(T, Arc<Node<T>>),
     Nil,
 }
 
 impl<T> List<T> {
     pub fn new() -> List<T> {
         List {
-            node: Rc::new(Node::Nil)
+            node: Arc::new(Node::Nil)
         }
     }
 
@@ -52,7 +73,7 @@ impl<T> List<T> {
 
     pub fn cons(&self, v: T) -> List<T> {
         List {
-            node: Rc::new(Node::Cons(v, self.node.clone()))
+            node: Arc::new(Node::Cons(v, self.node.clone()))
         }
     }
 
@@ -89,6 +110,7 @@ impl<T> Display for List<T>
     }
 }
 
+#[derive(Debug)]
 pub struct Iter<'a, T: 'a> {
     next: &'a Node<T>
 }
@@ -178,6 +200,24 @@ mod test {
     }
 
     #[test]
+    fn test_iter() -> () {
+        let limit = 1024;
+        let mut list = List::new();
+        let mut left = limit;
+
+        for i in 0..limit {
+            list = list.cons(i);
+        }
+
+        for v in list.iter() {
+            left -= 1;
+            assert_eq!(*v, left);
+        }
+
+        assert!(left == 0);
+    }
+
+    #[test]
     fn test_into_iterator() -> () {
         let list = List::new()
             .cons(3)
@@ -195,17 +235,19 @@ mod test {
 
             expected += 1;
         }
+
+        assert!(left == 0);
     }
 }
 
 /* TODO
  *
  * Implement traits:
+ *
  *  - impl<T> Sync for List<T> where T: Sync
  *  - impl<T> Send for List<T> where T: Send
  *  - impl<T> IntoIterator for List<T>
- *  - impl<'a, T> IntoIterator for &'a List<T>
- *  - impl<T> FromIterator<T> for LinkedList<T>
+ *  - impl<T> FromIterator<T>
  *  - impl<T> Ord for List<T> where T: Ord
  *  - impl<T> Eq for List<T> where T: Eq
  *  - impl<T> PartialEq<List<T>> for List<T> where T: PartialEq<T>
@@ -214,7 +256,7 @@ mod test {
  *  - impl<T> Hash for List<T> where T: Hash
  *  - impl<T> Default for List<T>
  *
- *  for the Vector we also want extend (see https://doc.rust-lang.org/std/collections/struct.LinkedList.html)
+ * Done:
  *  - impl<T> Debug for List<T> where T: Debug
  *  - impl<T> Display for List<T> where T: Display
  */
