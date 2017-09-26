@@ -28,5 +28,5 @@ name = "rust_vec"
 harness = false
 
 [[bench]]
-name = "list"
+name = "rpds_list"
 harness = false
