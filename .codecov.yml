@@ -1,0 +1,16 @@
+codecov:
+  notify:
+    require_ci_to_pass: yes
+
+coverage:
+  precision: 2
+  round: down
+  range: "85...100"
+
+  status:
+    project: yes
+    patch: yes
+    changes: no
+
+ignore:
+  - "benches/"
