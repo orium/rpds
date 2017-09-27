@@ -16,10 +16,12 @@
 
 use std::sync::Arc;
 use std::fmt::Display;
+use std::cmp::Ordering;
+use std::hash::{Hasher, Hash};
 use std::borrow::Borrow;
 
 /// A persistent list with structural sharing.  This data structure supports fast get head,
-/// get tail, and append.
+/// get tail, and cons.
 ///
 /// # Complexity
 ///
@@ -83,6 +85,40 @@ impl<T> List<T> {
     }
 }
 
+impl<T> Default for List<T> {
+    fn default() -> List<T> {
+        List::new()
+    }
+}
+
+impl<T: PartialEq<T>> PartialEq<List<T>> for List<T> {
+    fn eq(&self, other: &List<T>) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl<T: Eq> Eq for List<T> {}
+
+impl<T: PartialOrd<T>> PartialOrd<List<T>> for List<T>  {
+    fn partial_cmp(&self, other: &List<T>) -> Option<Ordering> {
+        self.iter().partial_cmp(other.iter())
+    }
+}
+
+impl<T: Ord> Ord for List<T> {
+    fn cmp(&self, other: &List<T>) -> Ordering {
+        self.iter().cmp(other.iter())
+    }
+}
+
+impl<T: Hash> Hash for List<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) -> () {
+        for e in self {
+            e.hash(state);
+        }
+    }
+}
+
 impl<T> Clone for List<T> {
     fn clone(&self) -> List<T> {
         List {
@@ -91,12 +127,11 @@ impl<T> Clone for List<T> {
     }
 }
 
-impl<T> Display for List<T>
-    where T: Display {
+impl<T: Display> Display for List<T> {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        fmt.write_str("[")?;
-
         let mut first = true;
+
+        fmt.write_str("[")?;
 
         for v in self.iter() {
             if !first {
@@ -193,6 +228,13 @@ mod test {
     }
 
     #[test]
+    fn test_default() -> () {
+        let list: List<i32> = List::default();
+
+        assert_eq!(list.head(), None);
+    }
+
+    #[test]
     fn test_display() -> () {
         let empty_list: List<i32> = List::new();
         let singleton_list = List::new()
@@ -249,6 +291,80 @@ mod test {
     }
 
     #[test]
+    fn test_eq() -> () {
+        let list_1 = List::new()
+            .cons("a")
+            .cons("a");
+        let list_1_prime = List::new()
+            .cons("a")
+            .cons("a");
+        let list_2 = List::new()
+            .cons("b")
+            .cons("a");
+
+        assert_ne!(list_1, list_2);
+        assert_eq!(list_1, list_1);
+        assert_eq!(list_1, list_1_prime);
+        assert_eq!(list_2, list_2);
+    }
+
+    #[test]
+    fn test_partial_ord() -> () {
+        let list_1 = List::new()
+            .cons("a");
+        let list_1_prime = List::new()
+            .cons("a");
+        let list_2 = List::new()
+            .cons("b");
+        let list_3 = List::new()
+            .cons(0.0);
+        let list_4 = List::new()
+            .cons(::std::f32::NAN);
+
+        assert!(list_1.partial_cmp(&list_1_prime) == Some(Ordering::Equal));
+        assert!(list_1.partial_cmp(&list_2) == Some(Ordering::Less));
+        assert!(list_2.partial_cmp(&list_1) == Some(Ordering::Greater));
+        assert!(list_3.partial_cmp(&list_4) == None);
+    }
+
+    #[test]
+    fn test_ord() -> () {
+        let list_1 = List::new()
+            .cons("a");
+        let list_1_prime = List::new()
+            .cons("a");
+        let list_2 = List::new()
+            .cons("b");
+
+        assert!(list_1.cmp(&list_1_prime) == Ordering::Equal);
+        assert!(list_1.cmp(&list_2) == Ordering::Less);
+        assert!(list_2.cmp(&list_1) == Ordering::Greater);
+    }
+
+    fn hash<T: Hash>(list: &List<T>) -> u64 {
+        let mut hasher = ::std::collections::hash_map::DefaultHasher::new();
+
+        list.hash(&mut hasher);
+
+        hasher.finish()
+    }
+
+    #[test]
+    fn test_hash() -> () {
+        let list_1 = List::new()
+            .cons("a");
+        let list_1_prime = List::new()
+            .cons("a");
+        let list_2 = List::new()
+            .cons("b")
+            .cons("a");
+
+        assert_eq!(hash(&list_1), hash(&list_1));
+        assert_eq!(hash(&list_1), hash(&list_1_prime));
+        assert_ne!(hash(&list_1), hash(&list_2));
+    }
+
+    #[test]
     fn test_clone() -> () {
         let list = List::new()
             .cons("there")
@@ -267,15 +383,19 @@ mod test {
  *  - impl<T> Send for List<T> where T: Send
  *  - impl<T> IntoIterator for List<T>
  *  - impl<T> FromIterator<T>
- *  - impl<T> Ord for List<T> where T: Ord
- *  - impl<T> Eq for List<T> where T: Eq
- *  - impl<T> PartialEq<List<T>> for List<T> where T: PartialEq<T>
- *  - impl<T> PartialOrd<List<T>> for List<T> where T: PartialOrd<T>
- *  - impl<T> Hash for List<T> where T: Hash
- *  - impl<T> Default for List<T>
+ *  - impl<'a, T> From<&'a [T]> for List<T>
+ *  - impl<'a, T> From<&'a Vec<T>> for List<T>
+ *  - impl<'a, T> From<&'a Vector<T>> for List<T>
  *
  * Done:
+ *
  *  - impl<T> Clone for List<T> where T: Clone
  *  - impl<T> Debug for List<T> where T: Debug
  *  - impl<T> Display for List<T> where T: Display
+ *  - impl<T> Hash for List<T> where T: Hash
+ *  - impl<T> Default for List<T>
+ *  - impl<T> Ord for List<T> where T: Ord
+ *  - impl<T> PartialOrd<List<T>> for List<T> where T: PartialOrd<T>
+ *  - impl<T> Eq for List<T> where T: Eq
+ *  - impl<T> PartialEq<List<T>> for List<T> where T: PartialEq<T>
  */
