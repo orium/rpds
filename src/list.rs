@@ -32,6 +32,7 @@ use std::borrow::Borrow;
 /// | new               |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | cons              |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | tail              |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | clone             |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator creation |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator step     |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator full     |      Θ(n) |    Θ(n) |        Θ(n) |
@@ -82,12 +83,11 @@ impl<T> List<T> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a List<T> {
-    type Item = &'a T;
-    type IntoIter = Iter<'a, T>;
-
-    fn into_iter(self) -> Iter<'a, T> {
-        self.iter()
+impl<T> Clone for List<T> {
+    fn clone(&self) -> List<T> {
+        List {
+            node: self.node.clone()
+        }
     }
 }
 
@@ -107,6 +107,15 @@ impl<T> Display for List<T>
         }
 
         fmt.write_str("]")
+    }
+}
+
+impl<'a, T> IntoIterator for &'a List<T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Iter<'a, T> {
+        self.iter()
     }
 }
 
@@ -238,6 +247,16 @@ mod test {
 
         assert!(left == 0);
     }
+
+    #[test]
+    fn test_clone() -> () {
+        let list = List::new()
+            .cons("there")
+            .cons("hello");
+        let clone = list.clone();
+
+        assert!(clone.iter().eq(list.iter()));
+    }
 }
 
 /* TODO
@@ -251,12 +270,12 @@ mod test {
  *  - impl<T> Ord for List<T> where T: Ord
  *  - impl<T> Eq for List<T> where T: Eq
  *  - impl<T> PartialEq<List<T>> for List<T> where T: PartialEq<T>
- *  - impl<T> Clone for List<T> where T: Clone
  *  - impl<T> PartialOrd<List<T>> for List<T> where T: PartialOrd<T>
  *  - impl<T> Hash for List<T> where T: Hash
  *  - impl<T> Default for List<T>
  *
  * Done:
+ *  - impl<T> Clone for List<T> where T: Clone
  *  - impl<T> Debug for List<T> where T: Debug
  *  - impl<T> Display for List<T> where T: Display
  */
