@@ -1,6 +1,6 @@
 /* This file is part of rpds.
  *
- * Foobar is free software: you can redistribute it and/or modify
+ * rpds is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,6 +20,7 @@ use std::fmt::Display;
 use std::cmp::Ordering;
 use std::hash::{Hasher, Hash};
 use std::ops::Index;
+use std::iter::Peekable;
 
 const DEFAULT_BITS: u8 = 5;
 
@@ -40,7 +41,7 @@ const DEFAULT_BITS: u8 = 5;
 /// | push              | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
 /// | drop_last         | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
 /// | clone             |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | iterator creation | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
+/// | iterator creation |      Θ(1) |      Θ(1) |        Θ(1) |
 /// | iterator step     |      Θ(1) |      Θ(1) |   Θ(log(n)) |
 /// | iterator full     |      Θ(n) |      Θ(n) |        Θ(n) |
 ///
@@ -82,52 +83,50 @@ pub struct Vector<T> {
 
 #[derive(Debug, PartialEq, Eq)]
 enum Node<T> {
-    Branch(Vec<Option<Arc<Node<T>>>>),
-    Leaf(Vec<Option<Arc<T>>>),
+    Branch(Vec<Arc<Node<T>>>),
+    Leaf(Vec<Arc<T>>),
 }
 
 impl<T> Node<T> {
-    fn new_empty_branch(degree: usize) -> Node<T> {
-        let mut values = Vec::with_capacity(degree);
-
-        for _ in 0..degree {
-            values.push(None)
-        }
-
-        Node::Branch(values)
+    fn new_empty_branch() -> Node<T> {
+        Node::Branch(Vec::new())
     }
 
-    fn new_empty_leaf(degree: usize) -> Node<T> {
-        let mut values = Vec::with_capacity(degree);
-
-        for _ in 0..degree {
-            values.push(None)
-        }
-
-        Node::Leaf(values)
+    fn new_empty_leaf() -> Node<T> {
+        Node::Leaf(Vec::new())
     }
 
-    fn degree(&self) -> usize {
-        match self {
-            &Node::Branch(ref a) => a.len(),
-            &Node::Leaf(ref a)   => a.len(),
-        }
-    }
-
-    fn get<F: Fn(usize, usize) -> usize>(&self, index: usize, height: usize, bucket: F) -> Option<&T> {
+    fn get<F: Fn(usize, usize) -> usize>(&self, index: usize, height: usize, bucket: F) -> &T {
         let b = bucket(index, height);
 
         match self {
             &Node::Branch(ref a) =>
-                a[b].as_ref().unwrap().get(index, height - 1, bucket),
+                a[b].get(index, height - 1, bucket),
             &Node::Leaf(ref a) => {
                 debug_assert!(height == 0);
-                a[b].as_ref().map(|v| v.as_ref())
+                a[b].as_ref()
             },
         }
     }
 
-    fn assoc<F: Fn(usize, usize) -> usize>(&self, index: usize, v: T, height: usize, bucket: F) -> Node<T> {
+    fn assoc<F: Fn(usize, usize) -> usize>(
+        &self,
+        index: usize,
+        value: T,
+        height: usize,
+        bucket: F,
+        degree: usize
+    ) -> Node<T> {
+        fn set_array<V>(array: &mut Vec<V>, index: usize, value: V) -> () {
+            if index < array.len() {
+                array[index] = value;
+            } else if index == array.len() {
+                array.push(value);
+            } else {
+                unreachable!();
+            }
+        }
+
         let b = bucket(index, height);
 
         match self {
@@ -136,7 +135,7 @@ impl<T> Node<T> {
 
                 let mut a = a.clone();
 
-                a[b] = Some(Arc::new(v));
+                set_array(&mut a, b, Arc::new(value));
 
                 Node::Leaf(a)
             },
@@ -146,17 +145,17 @@ impl<T> Node<T> {
 
                 let mut a = a.clone();
 
-                let subtree: Node<T> = match a[b] {
-                    Some(ref s) => (**s).clone(),
+                let subtree: Node<T> = match a.get(b) {
+                    Some(s) => (**s).clone(),
                     None =>
                         if height > 1 {
-                            Node::new_empty_branch(self.degree())
+                            Node::new_empty_branch()
                         } else {
-                            Node::new_empty_leaf(self.degree())
+                            Node::new_empty_leaf()
                         },
                 };
 
-                a[b] = Some(Arc::new(subtree.assoc(index, v, height - 1, bucket)));
+                set_array(&mut a, b, Arc::new(subtree.assoc(index, value, height - 1, bucket, degree)));
 
                 Node::Branch(a)
             },
@@ -164,33 +163,17 @@ impl<T> Node<T> {
     }
 
     fn is_empty(&self) -> bool {
-        match self {
-            &Node::Leaf(ref a)   => a[0].is_none(),
-            &Node::Branch(ref a) => a[0].is_none(),
-        }
+        self.used() == 0
     }
 
     fn is_singleton(&self) -> bool {
-        match self {
-            &Node::Leaf(ref a)   => a[0].is_some() && a[1].is_none(),
-            &Node::Branch(ref a) => a[0].is_some() && a[1].is_none(),
-        }
+        self.used() == 1
     }
 
-    fn used_count(&self) -> usize {
-        fn used<G>(a: &Vec<Option<G>>) -> usize {
-            for i in 0..a.len() {
-                if a[i].is_none() {
-                    return i;
-                }
-            }
-
-            a.len()
-        }
-
+    fn used(&self) -> usize {
         match self {
-            &Node::Leaf(ref a)   => used(a),
-            &Node::Branch(ref a) => used(a),
+            &Node::Leaf(ref a)   => a.len(),
+            &Node::Branch(ref a) => a.len(),
         }
     }
 
@@ -204,24 +187,23 @@ impl<T> Node<T> {
             return None;
         }
 
-        let children_count = self.used_count();
-
         let new_node: Node<T> = match self {
             &Node::Leaf(ref a) => {
                 let mut new_a = a.clone();
 
-                new_a[children_count - 1] = None;
+                new_a.pop();
 
                 Node::Leaf(new_a)
             },
 
             &Node::Branch(ref a) => {
                 let mut new_a = a.clone();
-                let new_children: Option<Node<T>> =
-                    new_a[children_count - 1].as_ref()
-                        .and_then(|n| n.drop_last());
+                let new_child: Option<Node<T>> =
+                    new_a.pop().unwrap().drop_last();
 
-                new_a[children_count - 1] = new_children.map(|n| Arc::new(n));
+                if let Some(child_node) = new_child {
+                    new_a.push(Arc::new(child_node));
+                }
 
                 Node::Branch(new_a)
             },
@@ -249,7 +231,7 @@ impl<T> Vector<T> {
         assert!(bits > 0, "Number of bits for the vector must be positive");
 
         Vector {
-            root: Arc::new(Node::new_empty_leaf(1 << bits)),
+            root: Arc::new(Node::new_empty_leaf()),
             bits: bits,
             size: 0
         }
@@ -297,7 +279,7 @@ impl<T> Vector<T> {
         if index >= self.size {
             None
         } else {
-            self.root.get(index, self.height(), |index, height| self.bucket(index, height))
+            Some(self.root.get(index, self.height(), |index, height| self.bucket(index, height)))
         }
     }
 
@@ -320,8 +302,11 @@ impl<T> Vector<T> {
             "This trie's root cannot support this index"
         );
 
-        let new_root: Node<T> = self.root.assoc(index, v, self.height(),
-                                                |index, height| self.bucket(index, height));
+        let new_root: Node<T> = self.root.assoc(
+            index, v, self.height(),
+            |index, height| self.bucket(index, height),
+            self.degree()
+        );
         let adds_item: bool = index >= self.size;
 
         Vector {
@@ -350,10 +335,10 @@ impl<T> Vector<T> {
 
     pub fn push(&self, v: T) -> Vector<T> {
         if self.is_root_full() {
-            let mut new_root: Node<T> = Node::new_empty_branch(self.degree());
+            let mut new_root: Node<T> = Node::new_empty_branch();
 
             match new_root {
-                Node::Branch(ref mut values) => values[0] = Some(self.root.clone()),
+                Node::Branch(ref mut values) => values.push(self.root.clone()),
                 _ => unreachable!("expected a branch")
             }
 
@@ -379,7 +364,7 @@ impl<T> Vector<T> {
             branch@Node::Branch(_) =>
                 if branch.is_singleton() {
                     if let Node::Branch(a) = branch {
-                        a[0].as_ref().unwrap().as_ref().clone()
+                        a[0].as_ref().clone()
                     } else {
                         unreachable!()
                     }
@@ -497,120 +482,175 @@ impl<T> Display for Vector<T>
     }
 }
 
-#[derive(Debug)]
 pub struct Iter<'a, T: 'a> {
-    stack: Vec<IterStackElement<'a, T>>,
+    vector: &'a Vector<T>,
+
+    stack_forward: Option<Vec<IterStackElement<'a, T>>>,
+    stack_backward: Option<Vec<IterStackElement<'a, T>>>,
+
+    left_index: usize,  // inclusive
+    right_index: usize, // exclusive
 }
 
-#[derive(Debug)]
 struct IterStackElement<'a, T: 'a> {
     node: &'a Node<T>,
-    pos: usize,
+    index_iter: Peekable<Box<Iterator<Item=usize>>>,
+}
+
+impl<'a, T> IterStackElement<'a, T> {
+    fn new(node: &Node<T>, backwards: bool) -> IterStackElement<T> {
+        let ranges: Peekable<Box<Iterator<Item=usize>>> = {
+            let r = 0..node.used();
+            let range_iter: Box<Iterator<Item=usize>> =
+                if backwards { Box::new(r.rev()) } else { Box::new(r) };
+
+            range_iter.peekable()
+        };
+
+        IterStackElement {
+            node: node,
+            index_iter: ranges,
+        }
+    }
+
+    #[inline(always)]
+    fn current_node(&mut self) -> &'a Node<T> {
+        match self.node {
+            &Node::Branch(ref a) => a[*self.index_iter.peek().unwrap()].as_ref(),
+            &Node::Leaf(_) => panic!("called current child of a branch"),
+        }
+    }
+
+    #[inline(always)]
+    fn current_elem(&mut self) -> &'a T {
+        match self.node {
+            &Node::Leaf(ref a) => a[*self.index_iter.peek().unwrap()].as_ref(),
+            &Node::Branch(_) => panic!("called current element of a branch"),
+        }
+    }
+
+    #[inline(always)]
+    fn advance(&mut self) -> () {
+        self.index_iter.next();
+    }
+
+    #[inline(always)]
+    fn finished(&mut self) -> bool {
+        self.index_iter.peek().is_none()
+    }
 }
 
 impl<'a, T> Iter<'a, T> {
-    fn dig(&mut self) -> () {
-        let (node, pos) = {
-            let e = self.stack.last().unwrap();
-
-            (e.node, e.pos)
-        };
-
-        if let &Node::Branch(ref a) = node {
-            let next_node: &Node<T> = &a[pos].as_ref().unwrap();
-
-            let root_stack_element = IterStackElement {
-                node: next_node,
-                pos:  0,
-            };
-
-            self.stack.push(root_stack_element);
-
-            self.dig();
-        }
-    }
-
     fn new(vector: &Vector<T>) -> Iter<T> {
-        let mut stack: Vec<IterStackElement<T>> = Vec::with_capacity(vector.height() + 1);
-        let root_stack_element = IterStackElement {
-            node: &*vector.root,
-            pos:  0,
-        };
+        Iter {
+            vector,
 
-        stack.push(root_stack_element);
+            stack_forward:  None,
+            stack_backward: None,
 
-        let mut iterator = Iter {
-            stack
-        };
-
-        iterator.dig();
-
-        iterator
+            left_index: 0,
+            right_index: vector.len(),
+        }
     }
 
-    fn current(&self) -> Option<&'a T> {
-        self.stack.last().and_then(|e| {
-            match e.node {
-                &Node::Leaf(ref a) => a[e.pos].as_ref().map(|v| v.as_ref()),
-                &Node::Branch(_) => unreachable!("top of the iterator stack should be a leaf"),
+    fn dig(stack: &mut Vec<IterStackElement<T>>, backwards: bool) -> () {
+        let next_node: &Node<T> = {
+            let stack_top = stack.last_mut().unwrap();
+
+            if let &Node::Leaf(_) = stack_top.node {
+                return;
             }
-        })
+
+            stack_top.current_node()
+        };
+
+        stack.push(IterStackElement::new(next_node, backwards));
+
+        Iter::dig(stack, backwards);
     }
 
-    fn advance_in_branch(&mut self) -> () {
-        match self.stack.pop() {
-            Some(e) => {
-                match e.node {
-                    &Node::Branch(ref a) => {
-                        let next_pos = e.pos + 1;
+    #[inline(always)]
+    fn init_if_needed(&mut self, backwards: bool) -> () {
+        let stack_field = if backwards {
+            &mut self.stack_backward
+        } else {
+            &mut self.stack_forward
+        };
 
-                        if next_pos >= e.node.degree() || a[next_pos].is_none() {
-                            self.advance_in_branch()
-                        } else {
-                            let stack_element = IterStackElement {
-                                node: e.node,
-                                pos:  next_pos,
-                            };
+        if stack_field.is_none() {
+            let mut stack: Vec<IterStackElement<T>> = Vec::with_capacity(self.vector.height() + 1);
 
-                            self.stack.push(stack_element);
+            stack.push(IterStackElement::new(&*self.vector.root, backwards));
 
-                            self.dig();
-                        }
-                    },
-                    &Node::Leaf(_) => unreachable!("middle of the iterator stack should be a branch"),
+            Iter::dig(&mut stack, backwards);
+
+            *stack_field = Some(stack);
+        }
+    }
+
+    #[inline(always)]
+    fn current(stack: &mut Vec<IterStackElement<'a, T>>) -> Option<&'a T> {
+        stack.last_mut().map(|e| e.current_elem())
+    }
+
+    fn advance(stack: &mut Vec<IterStackElement<T>>, backwards: bool) -> () {
+        match stack.pop() {
+            Some(mut stack_element) => {
+                stack_element.advance();
+
+                if stack_element.finished() {
+                    Iter::advance(stack, backwards);
+                } else {
+                    stack.push(stack_element);
+
+                    Iter::dig(stack, backwards);
                 }
             },
             None => (), // Reached the end.  Nothing to do.
         }
     }
 
-    fn advance_in_leaf(&mut self) -> () {
-        match self.stack.pop() {
-            Some(e) => {
-                match e.node {
-                    &Node::Leaf(ref a) => {
-                        let next_pos = e.pos + 1;
+    #[inline(always)]
+    fn non_empty(&self) -> bool {
+        self.left_index < self.right_index
+    }
 
-                        if next_pos >= e.node.degree() || a[next_pos].is_none() {
-                            self.advance_in_branch()
-                        } else {
-                            let stack_element = IterStackElement {
-                                node: e.node,
-                                pos:  next_pos,
-                            };
+    #[inline(always)]
+    fn advance_forward(&mut self) -> () {
+        if self.non_empty() {
+            Iter::advance(self.stack_forward.as_mut().unwrap(), false);
 
-                            self.stack.push(stack_element);
-                        }
-                    },
-                    &Node::Branch(_) => unreachable!("top of the iterator stack should be a leaf"),
-                }
-            },
-            None => (), // Reached the end.  Nothing to do.
+            self.left_index += 1;
         }
     }
 
-    fn advance(&mut self) -> () {
-        self.advance_in_leaf();
+    #[inline(always)]
+    fn current_forward(&mut self) -> Option<&'a T> {
+        if self.non_empty() {
+            Iter::current(self.stack_forward.as_mut().unwrap())
+        } else {
+            None
+        }
+    }
+
+    #[inline(always)]
+    fn advance_backward(&mut self) -> () {
+        if self.non_empty() {
+            Iter::advance(self.stack_backward.as_mut().unwrap(), false);
+
+            self.right_index -= 1;
+        }
+    }
+
+    #[inline(always)]
+    fn current_backward(&mut self) -> Option<&'a T> {
+        if self.non_empty() {
+            println!("ok");
+            Iter::current(self.stack_backward.as_mut().unwrap())
+        } else {
+            println!("cant be");
+            None
+        }
     }
 }
 
@@ -618,13 +658,35 @@ impl<'a, T> Iterator for Iter<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<&'a T> {
-        let current = self.current();
+        self.init_if_needed(false);
 
-        self.advance();
+        let current = self.current_forward();
+
+        self.advance_forward();
+
+        current
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.right_index - self.left_index;
+
+        (len, Some(len))
+    }
+}
+
+impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
+    fn next_back(&mut self) -> Option<&'a T> {
+        self.init_if_needed(true);
+
+        let current = self.current_backward();
+
+        self.advance_backward();
 
         current
     }
 }
+
+impl<'a, T> ExactSizeIterator for Iter<'a, T> {}
 
 impl<'a, T> IntoIterator for &'a Vector<T> {
     type Item = &'a T;
@@ -644,42 +706,36 @@ mod test {
 
         #[test]
         fn test_new_empty_branch() -> () {
-            for degree in vec![2, 3, 4, 8, 16] {
-                let node: Node<u32> = Node::new_empty_branch(degree);
+            let node: Node<u32> = Node::new_empty_branch();
 
-                match node {
-                    Node::Branch(a) => {
-                        assert_eq!(a.len(), degree as usize,
-                            "Length of the branch's array is invalid");
-                        assert_eq!(a.capacity(), degree as usize,
-                            "Capacity of the branch array is wasteful");
-                    },
-                    _ => panic!("Invalid node type"),
-                }
+            match node {
+                Node::Branch(a) => {
+                    assert_eq!(a.len(), 0);
+                    assert_eq!(a.capacity(), 0,
+                        "Capacity of the branch array is wasteful");
+                },
+                _ => panic!("Invalid node type"),
             }
         }
 
         #[test]
         fn test_new_empty_leaf() -> () {
-            for degree in vec![2, 3, 4, 8, 16] {
-                let node: Node<u32> = Node::new_empty_leaf(degree);
+            let node: Node<u32> = Node::new_empty_leaf();
 
-                match node {
-                    Node::Leaf(a) => {
-                        assert_eq!(a.len(), degree as usize,
-                        "Length of the branch's array is invalid");
-                        assert_eq!(a.capacity(), degree as usize,
-                        "Capacity of the branch array is wasteful");
-                    },
-                    _ => panic!("Invalid node type"),
-                }
+            match node {
+                Node::Leaf(a) => {
+                    assert_eq!(a.len(), 0);
+                    assert_eq!(a.capacity(), 0,
+                    "Capacity of the leaf array is wasteful");
+                },
+                _ => panic!("Invalid node type"),
             }
         }
 
         #[test]
         fn test_drop_last_single_level() -> () {
-            let empty_leaf: Node<u32> = Node::new_empty_leaf(2);
-            let empty_branch: Node<u32> = Node::new_empty_branch(2);
+            let empty_leaf: Node<u32> = Node::new_empty_leaf();
+            let empty_branch: Node<u32> = Node::new_empty_branch();
             let singleton_node: Node<u32> = Vector::new().push(0).root.as_ref().clone();
             let one_level_node: Node<u32> = Vector::new()
                 .push(0).push(1).root.as_ref().clone();
@@ -687,7 +743,7 @@ mod test {
             assert!(empty_leaf.drop_last().is_none());
             assert!(empty_branch.drop_last().is_none());
             assert!(singleton_node.drop_last().is_none());
-            assert_eq!(one_level_node.drop_last().map(|n| n.used_count()), Some(1));
+            assert_eq!(one_level_node.drop_last().map(|n| n.used()), Some(1));
         }
 
         #[test]
@@ -700,8 +756,8 @@ mod test {
             let node_three_after_drop = {
                 let a_leaf = {
                     let mut a = Vec::with_capacity(2);
-                    a.push(Some(Arc::new(0)));
-                    a.push(Some(Arc::new(1)));
+                    a.push(Arc::new(0));
+                    a.push(Arc::new(1));
                     a
                 };
 
@@ -709,8 +765,7 @@ mod test {
 
                 let a_branch = {
                     let mut a = Vec::with_capacity(2);
-                    a.push(Some(Arc::new(leaf)));
-                    a.push(None);
+                    a.push(Arc::new(leaf));
                     a
                 };
 
@@ -720,8 +775,8 @@ mod test {
             let node_four_after_drop = {
                 let a_leaf_0 = {
                     let mut a = Vec::with_capacity(2);
-                    a.push(Some(Arc::new(0)));
-                    a.push(Some(Arc::new(1)));
+                    a.push(Arc::new(0));
+                    a.push(Arc::new(1));
                     a
                 };
 
@@ -729,8 +784,7 @@ mod test {
 
                 let a_leaf_1 = {
                     let mut a = Vec::with_capacity(2);
-                    a.push(Some(Arc::new(2)));
-                    a.push(None);
+                    a.push(Arc::new(2));
                     a
                 };
 
@@ -738,8 +792,8 @@ mod test {
 
                 let a_branch = {
                     let mut a = Vec::with_capacity(2);
-                    a.push(Some(Arc::new(leaf_0)));
-                    a.push(Some(Arc::new(leaf_1)));
+                    a.push(Arc::new(leaf_0));
+                    a.push(Arc::new(leaf_1));
                     a
                 };
 
@@ -749,6 +803,8 @@ mod test {
             assert_eq!(node_three.drop_last(), Some(node_three_after_drop));
             assert_eq!(node_four.drop_last(), Some(node_four_after_drop));
         }
+
+        // test clone keeps capazity
     }
 
     fn dummy_vector_with_size(size: usize) -> Vector<u8> {
@@ -827,8 +883,8 @@ mod test {
 
     #[test]
     fn test_compress_root() -> () {
-        let empty_leaf: Node<u32> = Node::new_empty_leaf(2);
-        let empty_branch: Node<u32> = Node::new_empty_branch(2);
+        let empty_leaf: Node<u32> = Node::new_empty_leaf();
+        let empty_branch: Node<u32> = Node::new_empty_branch();
         let singleton_leaf: Node<u32> = Vector::new().push(0).root.as_ref().clone();
         let compressed_branch: Node<u32> = Vector::new_with_bits(1)
             .push(0).push(1).push(3).root.as_ref().clone();
@@ -838,8 +894,7 @@ mod test {
 
             let a_branch = {
                 let mut a = Vec::with_capacity(2);
-                a.push(Some(Arc::new(leaf.clone())));
-                a.push(None);
+                a.push(Arc::new(leaf.clone()));
                 a
             };
 
@@ -1061,7 +1116,74 @@ mod test {
             expected += 1;
         }
 
-        assert!(left == 0);
+        assert_eq!(left, 0);
+    }
+
+
+    #[test]
+    fn test_iter_backwards() -> () {
+        let vector = Vector::new()
+            .push(0)
+            .push(1)
+            .push(2)
+            .push(3);
+        let mut expected = 3;
+        let mut left = 4;
+
+        for n in vector.iter().rev() {
+            left -= 1;
+
+            assert!(left >= 0);
+            assert_eq!(*n, expected);
+
+            expected -= 1;
+        }
+
+        assert_eq!(left, 0);
+    }
+
+    #[test]
+    fn test_iter_both_directions() -> () {
+        let vector = Vector::new()
+            .push(0)
+            .push(1)
+            .push(2)
+            .push(3)
+            .push(4)
+            .push(5);
+        let mut iterator = vector.iter();
+
+        assert_eq!(iterator.next(),      Some(&0));
+        assert_eq!(iterator.next_back(), Some(&5));
+        assert_eq!(iterator.next_back(), Some(&4));
+        assert_eq!(iterator.next(),      Some(&1));
+        assert_eq!(iterator.next(),      Some(&2));
+        assert_eq!(iterator.next_back(), Some(&3));
+        assert_eq!(iterator.next_back(), None);
+        assert_eq!(iterator.next(),      None);
+    }
+
+    #[test]
+    fn test_iter_size_hint() -> () {
+        let vector = Vector::new()
+            .push(0)
+            .push(1)
+            .push(2);
+        let mut iterator = vector.iter();
+
+        assert_eq!(iterator.size_hint(), (3, Some(3)));
+
+        iterator.next();
+
+        assert_eq!(iterator.size_hint(), (2, Some(2)));
+
+        iterator.next_back();
+
+        assert_eq!(iterator.size_hint(), (1, Some(1)));
+
+        iterator.next_back();
+
+        assert_eq!(iterator.size_hint(), (0, Some(0)));
     }
 
     #[test]
@@ -1083,7 +1205,7 @@ mod test {
             expected += 1;
         }
 
-        assert!(left == 0);
+        assert_eq!(left, 0);
     }
 
     #[test]
@@ -1120,11 +1242,20 @@ mod test {
         let vector_2 = Vector::new()
             .push("a")
             .push("b");
+        let vector_3 = Vector::new()
+            .push("a")
+            .push("b")
+            .push("c");
 
         assert_ne!(vector_1, vector_2);
+        assert_ne!(vector_2, vector_3);
         assert_eq!(vector_1, vector_1);
         assert_eq!(vector_1, vector_1_prime);
         assert_eq!(vector_2, vector_2);
+
+        // We also use check this since `assert_ne!()` does not call `ne`.
+        assert!(vector_1.ne(&vector_2));
+        assert!(vector_2.ne(&vector_3));
     }
 
     #[test]
@@ -1140,10 +1271,10 @@ mod test {
         let vector_4 = Vector::new()
             .push(::std::f32::NAN);
 
-        assert!(vector_1.partial_cmp(&vector_1_prime) == Some(Ordering::Equal));
-        assert!(vector_1.partial_cmp(&vector_2) == Some(Ordering::Less));
-        assert!(vector_2.partial_cmp(&vector_1) == Some(Ordering::Greater));
-        assert!(vector_3.partial_cmp(&vector_4) == None);
+        assert_eq!(vector_1.partial_cmp(&vector_1_prime), Some(Ordering::Equal));
+        assert_eq!(vector_1.partial_cmp(&vector_2), Some(Ordering::Less));
+        assert_eq!(vector_2.partial_cmp(&vector_1), Some(Ordering::Greater));
+        assert_eq!(vector_3.partial_cmp(&vector_4), None);
     }
 
     #[test]
@@ -1155,9 +1286,9 @@ mod test {
         let vector_2 = Vector::new()
             .push("b");
 
-        assert!(vector_1.cmp(&vector_1_prime) == Ordering::Equal);
-        assert!(vector_1.cmp(&vector_2) == Ordering::Less);
-        assert!(vector_2.cmp(&vector_1) == Ordering::Greater);
+        assert_eq!(vector_1.cmp(&vector_1_prime), Ordering::Equal);
+        assert_eq!(vector_1.cmp(&vector_2), Ordering::Less);
+        assert_eq!(vector_2.cmp(&vector_1), Ordering::Greater);
     }
 
     fn hash<T: Hash>(vector: &Vector<T>) -> u64 {
@@ -1208,27 +1339,3 @@ mod test {
         ::std::mem::drop(vector);
     }
 }
-
-/* TODO
- *
- * Implement traits:
- *
- *  - impl<T> IntoIterator for Vector<T>
- *  - impl<T> FromIterator<T>
- *  - impl<'a, T> From<&'a [T]> for Vector<T>
- *  - impl<'a, T> From<&'a Vec<T>> for Vector<T>
- *  - impl<'a, T> From<&'a Vector<T>> for Vector<T>
- *
- * Done:
- *
- *  - impl<T> Clone for Vector<T> where T: Clone
- *  - impl<T> Debug for Vector<T> where T: Debug
- *  - impl<T> Index<usize> for Vector<T>
- *  - impl<T> Display for Vector<T> where T: Display
- *  - impl<T> Hash for Vector<T> where T: Hash
- *  - impl<T> Default for Vector<T>
- *  - impl<T> Ord for Vector<T> where T: Ord
- *  - impl<T> PartialOrd<Vector<T>> for Vector<T> where T: PartialOrd<T>
- *  - impl<T> Eq for Vector<T> where T: Eq
- *  - impl<T> PartialEq<Vector<T>> for Vector<T> where T: PartialEq<T>
- */

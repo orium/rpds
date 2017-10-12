@@ -389,26 +389,3 @@ mod test {
         ::std::mem::drop(vector);
     }
 }
-
-/* TODO
- *
- * Implement traits:
- *
- *  - impl<T> IntoIterator for List<T>
- *  - impl<T> FromIterator<T>
- *  - impl<'a, T> From<&'a [T]> for List<T>
- *  - impl<'a, T> From<&'a Vec<T>> for List<T>
- *  - impl<'a, T> From<&'a Vector<T>> for List<T>
- *
- * Done:
- *
- *  - impl<T> Clone for List<T> where T: Clone
- *  - impl<T> Debug for List<T> where T: Debug
- *  - impl<T> Display for List<T> where T: Display
- *  - impl<T> Hash for List<T> where T: Hash
- *  - impl<T> Default for List<T>
- *  - impl<T> Ord for List<T> where T: Ord
- *  - impl<T> PartialOrd<List<T>> for List<T> where T: PartialOrd<T>
- *  - impl<T> Eq for List<T> where T: Eq
- *  - impl<T> PartialEq<List<T>> for List<T> where T: PartialEq<T>
- */
