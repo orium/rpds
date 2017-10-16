@@ -28,6 +28,4 @@ kcov --verify target/cov \
     --exclude-line='unreachable!' \
     target/debug/$build 2>&1 >/dev/null
 
-mv "target/cov/$build/" "target/coverage/"
-
-echo "You can find the test coverage results at file://$(pwd)/target/coverage/index.html"
+echo "You can find the test coverage results at file://$(pwd)/target/cov/$build/index.html"
