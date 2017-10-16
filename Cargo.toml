@@ -20,7 +20,7 @@ license = "LGPL-3.0"
 bencher = "0.1"
 
 [features]
-no-fatal-warnings = []
+fatal-warnings = []
 
 [[bench]]
 name = "rust_linked_list"
