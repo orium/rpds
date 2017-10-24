@@ -31,10 +31,10 @@ use std::borrow::Borrow;
 ///
 /// | Operation         | Best case | Average | Worst case  |
 /// |:----------------- | ---------:| -------:| -----------:|
-/// | new               |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | cons              |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | tail              |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | clone             |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `new()`           |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `cons()`          |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `tail()`          |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `clone()`         |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator creation |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator step     |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator full     |      Θ(n) |    Θ(n) |        Θ(n) |
@@ -69,14 +69,14 @@ impl<T> List<T> {
 
     pub fn tail(&self) -> Option<List<T>> {
         match *self.node {
-            Node::Cons(_, ref t) => Some(List { node: t.clone() }),
+            Node::Cons(_, ref t) => Some(List { node: Arc::clone(t) }),
             Node::Nil            => None,
         }
     }
 
     pub fn cons(&self, v: T) -> List<T> {
         List {
-            node: Arc::new(Node::Cons(v, self.node.clone()))
+            node: Arc::new(Node::Cons(v, Arc::clone(&self.node)))
         }
     }
 
@@ -122,7 +122,7 @@ impl<T: Hash> Hash for List<T> {
 impl<T> Clone for List<T> {
     fn clone(&self) -> List<T> {
         List {
-            node: self.node.clone()
+            node: Arc::clone(&self.node)
         }
     }
 }
@@ -373,7 +373,6 @@ mod test {
 
         assert!(clone.iter().eq(list.iter()));
     }
-
 
     #[test]
     fn compile_time_test_is_send() -> () {

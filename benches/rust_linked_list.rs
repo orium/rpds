@@ -62,7 +62,7 @@ fn rust_linked_list_iterate(bench: &mut Bencher) -> () {
     }
 
     bench.iter(|| {
-        for i in linked_list.iter() {
+        for i in &linked_list {
             black_box(i);
         }
     });

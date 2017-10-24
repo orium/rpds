@@ -65,7 +65,7 @@ fn rust_vec_iterate(bench: &mut Bencher) -> () {
     }
 
     bench.iter(|| {
-        for i in vector.iter() {
+        for i in &vector {
             black_box(i);
         }
     });
