@@ -1,0 +1,860 @@
+/* This file is part of rpds.
+ *
+ * rpds is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * rpds is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with rpds.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+mod sparse_array_usize;
+
+use std::vec::Vec;
+use std::slice;
+use std::sync::Arc;
+use std::borrow::Borrow;
+use std::hash::Hash;
+use std::hash::BuildHasher;
+use std::collections::hash_map::RandomState;
+use std::mem::size_of;
+use std::ops::Index;
+use std::iter::Peekable;
+use std::iter::FromIterator;
+use std::fmt::Display;
+use sequence::list;
+use List;
+use self::sparse_array_usize::SparseArrayUsize;
+
+type HashValue = u64;
+
+// TODO when const_fn is stabilized this can be a const.
+fn default_degree() -> u8 {
+    debug_assert!(8 * size_of::<usize>() <= u8::max_value() as usize);
+    8 * size_of::<usize>() as u8
+}
+
+/// A persistent map with structural sharing.  This implementation uses a hash array mapped trie
+/// and supports fast `insert()`, `remove()`, and `get()`.
+///
+/// # Complexity
+///
+/// Let *n* be the number of elements in the vector.
+///
+/// ## Temporal complexity
+///
+/// | Operation                  | Best case | Average   | Worst case  |
+/// |:-------------------------- | ---------:| ---------:| -----------:|
+/// | `new()`                    |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | `insert()`                 |      Θ(1) |      Θ(1) |        Θ(n) |
+/// | `remove()`                 |      Θ(1) |      Θ(1) |        Θ(n) |
+/// | `get()`                    |      Θ(1) |      Θ(1) |        Θ(n) |
+/// | `size()`                   |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | `clone()`                  |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | iterator creation          |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | iterator step              |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | iterator full              |      Θ(n) |      Θ(n) |        Θ(n) |
+///
+/// ## Space complexity
+///
+/// The space complexity is *Θ(n)*.
+///
+/// # Implementation details
+///
+/// This implementation is based on
+/// [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf).
+///
+/// See the `Node` documentation for details.
+#[derive(Debug)]
+pub struct HashTrieMap<K, V, H: BuildHasher = RandomState>
+    where K: Eq + Hash,
+          H: Clone {
+    root: Arc<Node<K, V>>,
+    size: usize,
+    degree: u8,
+    hasher_builder: H,
+}
+
+/// This map works like a trie that breaks the hash of the key in segments, and the segments are
+/// used as the index in the trie branches.
+///
+/// Consider the following example, where we have a tree with degree 16 (e.g. each level uses 4
+/// bits of the hash) and the following mapping between keys and their hashes:
+///
+/// | *key*   | *hash(key)*                       |
+/// | ------- | ---------------------------------:|
+/// |   *A*   | `0b_0000_0000_···_0000_0010_0110` |
+/// |   *B*   | `0b_0000_0000_···_0000_0001_0110` |
+/// |   *C*   | `0b_0000_0000_···_0000_0100_0010` |
+/// |   *D*   | `0b_0111_0000_···_0000_0000_1000` |
+/// |   *E*   | `0b_0111_0000_···_0000_0000_1000` |
+///
+/// Then the tree will look like this:
+///
+/// ```text
+///        0  ···  2  ···  6  ···  8  ···
+///      ├───┼───┼───┼───┼───┼───┼───┼───┤
+///      │ ∅ │ ∅ │ C │ ∅ │ • │ ∅ │ • │ ∅ │                depth 0
+///      └───┴───┴───┴───┴─│─┴───┴─│─┴───┘
+///                       ╱         ╲
+///                      ╱           ╲
+///                     ╱             ╲
+///         0   1   2  ···            0   1   2  ···
+///       ├───┼───┼───┼───┤         ├───┼───┼───┼───┤
+///       │ ∅ │ B │ A │ ∅ │         │ • │ ∅ │ ∅ │ ∅ │     depth 1
+///       └───┴───┴───┴───┘         └─│─┴───┴───┴───┘
+///                                   │
+///                                   ·
+///                                   ·
+///                                   ·
+///                                   │
+///                            0  ···   7   ···
+///                          ├───┼───┼─────┼───┤
+///                          │ ∅ │ ∅ │ D E │ ∅ │          depth 16 (maximum depth)
+///                          └───┴───┴─────┴───┘
+/// ```
+///
+/// Note that we stop the insertion process early when possible.  In the example above we did not
+/// had to expand the tree any further to accommodate *C*, since there is no other entry with a
+/// hash that starts with `0b0010`.  The entries *A* and *B* exemplifies the case where a single
+/// level is not enough because their hash both start with `0b0110`.  In case of a full hash
+/// collision we dig through all the levels of the tree so we get to the final leaf where a
+/// collision exists, like we can see in the case of *D* and *E*.
+///
+/// # Invariants
+///
+/// The tree has the following invariants (among others):
+///
+///   1. The root is the only node that can have zero children.
+///   2. A node with a collision can only exist at the maximum depth of the tree.
+///   3. A non-root branch always have two or more entries under it (because it could be
+///      compressed).
+#[derive(Debug, PartialEq, Eq)]
+enum Node<K, V>
+    where K: Eq + Hash {
+    Branch(SparseArrayUsize<Arc<Node<K, V>>>),
+    Leaf(Bucket<K, V>),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum Bucket<K, V>
+    where K: Eq + Hash {
+    Single(Arc<Entry<K, V>>),
+    Collision(List<Arc<Entry<K, V>>>),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct Entry<K, V>
+    where K: Eq + Hash {
+    key: K,
+    value: V,
+    key_hash: HashValue,
+}
+
+mod node_utils {
+    use super::HashValue;
+    use std::hash::BuildHasher;
+    use std::hash::Hasher;
+    use std::hash::Hash;
+    use std::mem::size_of_val;
+
+    // Returns the index of the array for the given hash on depth `depth`.
+    //
+    // When the hash is exhausted, meaning that we are at the maximum depth, this returns `None`.
+    #[inline]
+    pub fn index_from_hash(hash: HashValue, depth: usize, degree: u8) -> Option<usize> {
+        debug_assert!(degree.is_power_of_two());
+
+        let mask = degree as HashValue - 1;
+        let shift = depth as u32 * degree.trailing_zeros();
+
+        if (shift as usize) < 8 * size_of_val(&hash) {
+            Some(((hash >> shift) & mask) as usize)
+        } else {
+            None
+        }
+    }
+
+    pub fn hash<T: ?Sized + Hash, H: BuildHasher>(v: &T, hasher_builder: &H) -> HashValue {
+        let mut hasher = hasher_builder.build_hasher();
+
+        v.hash(&mut hasher);
+
+        hasher.finish()
+    }
+}
+
+impl<K, V> Node<K, V>
+    where K: Eq + Hash {
+    fn new_empty_branch() -> Node<K, V> {
+        Node::Branch(SparseArrayUsize::new())
+    }
+
+    fn get<Q: ?Sized>(&self, key: &Q, key_hash: HashValue, depth: usize, degree: u8) -> Option<&Entry<K, V>>
+        where K: Borrow<Q>,
+              Q: Hash + Eq {
+        match *self {
+            Node::Branch(ref subtrees) => {
+                let index: usize = node_utils::index_from_hash(key_hash, depth, degree)
+                    .expect("hash cannot be exhausted if we are on a branch");
+
+                subtrees.get(index)
+                    .and_then(|subtree| subtree.get(key, key_hash, depth + 1, degree))
+            },
+            Node::Leaf(ref bucket) => bucket.get(key, key_hash),
+        }
+    }
+
+    /// Returns a pair with the node with the new entry and whether the key is new.
+    fn insert(&self, entry: Arc<Entry<K, V>>, depth: usize, degree: u8) -> (Node<K, V>, bool) {
+        match *self {
+            Node::Branch(ref subtrees) => {
+                let index: usize = node_utils::index_from_hash(entry.key_hash, depth, degree)
+                    .expect("hash cannot be exhausted if we are on a branch");
+
+                match subtrees.get(index) {
+                    Some(subtree) => {
+                        let (new_subtree, is_new_key) =
+                            subtree.insert(entry, depth + 1, degree);
+                        let new_subtrees =
+                            subtrees.set(index, Arc::new(new_subtree));
+                        let new_node = Node::Branch(new_subtrees);
+
+                        (new_node, is_new_key)
+                    },
+
+                    None => {
+                        let new_subtree = Node::Leaf(Bucket::Single(entry));
+                        let new_subtrees =
+                            subtrees.set(index, Arc::new(new_subtree));
+                        let new_node = Node::Branch(new_subtrees);
+
+                        (new_node, true)
+                    },
+                }
+            },
+            Node::Leaf(ref bucket) => {
+                // If we are at maximum depth then the hash was totally consumed and we have a
+                // collision.
+                let maximum_depth =
+                    node_utils::index_from_hash(entry.key_hash, depth, degree).is_none();
+
+                match maximum_depth {
+                    // We reached a bucket.  If the bucket contains the key we are inserting then
+                    // we just need to replace it.
+                    false if bucket.contains_key(&entry.key, entry.key_hash) => {
+                        let (new_bucket, _) = bucket.insert(entry);
+                        let new_node = Node::Leaf(new_bucket);
+
+                        (new_node, false)
+                    },
+
+                    // We reached a bucket and the key we will insert is not there.  We need to
+                    // create a `Node::Branch` and insert the elements of the bucket there, as well
+                    // as the new element.
+                    false => {
+                        let old_entry = match *bucket {
+                            Bucket::Single(ref e) => Arc::clone(e),
+                            Bucket::Collision(_) =>
+                                unreachable!("hash is not exhausted, so there cannot be a collision here"),
+                        };
+
+                        let (new_node, _) =
+                            Node::new_empty_branch()
+                                .insert(old_entry, depth, degree).0
+                                .insert(entry, depth, degree);
+
+                        (new_node, true)
+                    },
+
+                    // Hash was already totally consumed.  This is a collision.
+                    true => {
+                        let (new_bucket, is_new_key) = bucket.insert(entry);
+                        let new_node = Node::Leaf(new_bucket);
+
+                        (new_node, is_new_key)
+                    },
+                }
+            },
+        }
+    }
+
+    /// Compresses a node.  This returns the shallowest tree that is well-formed.
+    ///
+    /// For branches with a single entry this will return a leaf with it.  For branches with no
+    /// entries this returns `None.`
+    fn compress(self) -> Option<Node<K, V>> {
+        match self {
+            Node::Branch(ref subtrees) =>
+                match subtrees.size() {
+                    0 => None,
+
+                    1 => {
+                        let first_index = subtrees.first_index().unwrap();
+
+                        // Keep collision at the bottom of the tree.
+                        match **subtrees.get(first_index).unwrap() {
+                            ref node@Node::Leaf(Bucket::Single(_)) => Some(node.clone()),
+                            // TODO Once non-lexical lifetimes are stable we can probably avoid the
+                            //      clone below.
+                            _ => Some(self.clone()),
+                        }
+                    },
+
+                    // TODO Once non-lexical lifetimes are stable we can probably avoid the clone below.
+                    _ => Some(Node::Branch(subtrees.clone()))
+                },
+            Node::Leaf(_) => Some(self),
+        }
+    }
+
+    /// Returns a pair with the node without the entry matching `key` and whether the key was present.
+    ///
+    /// If the node becomes empty it will return `None` in the first component of the pair.
+    fn remove<Q: ?Sized>(&self, key: &Q, key_hash: HashValue, depth: usize, degree: u8) -> (Option<Node<K, V>>, bool)
+        where K: Borrow<Q>,
+              Q: Hash + Eq {
+        match *self {
+            Node::Branch(ref subtrees) => {
+                let index: usize = node_utils::index_from_hash(key_hash, depth, degree)
+                    .expect("hash cannot be exhausted if we are on a branch");
+
+                match subtrees.get(index) {
+                    Some(subtree) => {
+                        let (new_subtree, removed) =
+                            subtree.remove(key, key_hash, depth + 1, degree);
+                        let new_subtrees = match new_subtree {
+                            Some(st) => subtrees.set(index, Arc::new(st)),
+                            None     => subtrees.remove(index),
+                        };
+
+                        (Node::Branch(new_subtrees).compress(), removed)
+                    },
+
+                    None =>
+                        (Some(self.clone()), false),
+                }
+            },
+            Node::Leaf(ref bucket) => {
+                let (new_bucket, removed) = bucket.remove(key, key_hash);
+
+                (new_bucket.map(|b| Node::Leaf(b)), removed)
+            },
+        }
+    }
+}
+
+impl<K, V> Clone for Node<K, V>
+    where K: Eq + Hash {
+    fn clone(&self) -> Node<K, V> {
+        match *self {
+            Node::Branch(ref subtrees) => Node::Branch(subtrees.clone()),
+            Node::Leaf(ref bucket)     => Node::Leaf(bucket.clone()),
+        }
+    }
+}
+
+mod bucket_utils {
+    use super::*;
+
+    /// Returns a pair with the bucket with the new entry and whether an element was removed.
+    pub fn list_remove_first<T: Clone, F: Fn(&T) -> bool>(list: &List<T>, predicate: F) -> (List<T>, bool) {
+        let mut before_needle: Vec<T> = Vec::with_capacity(list.len());
+        let mut remaining: List<T> = list.clone();
+        let mut removed = false;
+
+        while !remaining.is_empty() {
+            let e: T = remaining.first().unwrap().clone();
+
+            remaining = remaining.drop_first().unwrap();
+
+            if predicate(&e) {
+                removed = true;
+                break;
+            }
+
+            before_needle.push(e);
+        }
+
+        let mut new_entries = remaining;
+
+        while let Some(e) = before_needle.pop() {
+            new_entries = new_entries.push_front(e);
+        }
+
+        (new_entries, removed)
+    }
+}
+
+impl<K, V> Bucket<K, V>
+    where K: Eq + Hash {
+    fn get<Q: ?Sized>(&self, key: &Q, key_hash: HashValue) -> Option<&Entry<K, V>>
+        where K: Borrow<Q>,
+              Q: Hash + Eq {
+        match *self {
+            Bucket::Single(ref entry) if entry.matches(key, key_hash) => Some(entry.borrow()),
+            Bucket::Single(_) => None,
+            Bucket::Collision(ref entries) =>
+                entries.iter()
+                    .find(|e| e.matches(key, key_hash))
+                    .map(|e| e.borrow()),
+        }
+    }
+
+    #[inline]
+    fn contains_key<Q: ?Sized>(&self, key: &Q, key_hash: HashValue) -> bool
+        where K: Borrow<Q>,
+              Q: Hash + Eq {
+        self.get(key, key_hash).is_some()
+    }
+
+    /// Returns a pair with the bucket with the new entry and whether the key is new.
+    ///
+    /// If there is a collision then `entry` will be put on the front of the entries list to
+    /// improve performance with high temporal locality (since `get()` will try to match according
+    /// to the list order).  The order of the rest of the list must be preserved for the same
+    /// reason.
+    fn insert(&self, entry: Arc<Entry<K, V>>) -> (Bucket<K, V>, bool) {
+        match *self {
+            Bucket::Single(ref existing_entry) if existing_entry.matches(&entry.key, entry.key_hash) =>
+                (Bucket::Single(entry), false),
+            Bucket::Single(ref existing_entry) => {
+                let entries = List::new()
+                    .push_front(Arc::clone(existing_entry))
+                    .push_front(entry);
+
+                (Bucket::Collision(entries), true)
+            },
+            Bucket::Collision(ref entries) => {
+                let (mut new_entries, key_existed) =
+                    bucket_utils::list_remove_first(
+                        entries,
+                        |e| e.matches(&entry.key, entry.key_hash)
+                    );
+
+                new_entries = new_entries.push_front(entry);
+
+                (Bucket::Collision(new_entries), !key_existed)
+            }
+        }
+    }
+
+    /// Returns a pair with the bucket without the entry matching `key` and whether the key was present.
+    ///
+    /// If the bucket becomes empty it will return `None` in the first component of the pair.
+    fn remove<Q: ?Sized>(&self, key: &Q, key_hash: HashValue) -> (Option<Bucket<K, V>>, bool)
+        where K: Borrow<Q>,
+              Q: Hash + Eq {
+        match *self {
+            Bucket::Single(ref existing_entry) if existing_entry.matches(key, key_hash) =>
+                (None, true),
+            Bucket::Single(_) =>
+                (Some(self.clone()), false),
+            Bucket::Collision(ref entries) => {
+                let (new_entries, removed) =
+                    bucket_utils::list_remove_first(
+                        entries,
+                        |e|  e.matches(&key, key_hash)
+                    );
+
+                let new_bucket = match new_entries.len() {
+                    0 => unreachable!("impossible to have collision with a single or no entry"),
+                    1 => Bucket::Single(Arc::clone(new_entries.first().unwrap())),
+                    _ => Bucket::Collision(new_entries),
+                };
+
+                (Some(new_bucket), removed)
+            }
+        }
+    }
+}
+
+impl<K, V> Clone for Bucket<K, V>
+    where K: Eq + Hash {
+    fn clone(&self) -> Bucket<K, V> {
+        match *self {
+            Bucket::Single(ref entry)      => Bucket::Single(Arc::clone(entry)),
+            Bucket::Collision(ref entries) => Bucket::Collision(List::clone(entries)),
+        }
+    }
+}
+
+impl<K, V> Entry<K, V>
+    where K: Eq + Hash {
+    fn new<H: BuildHasher>(key: K, value : V, hash_builder: &H) -> Entry<K, V> {
+        let key_hash = node_utils::hash(&key, hash_builder);
+
+        Entry {
+            key,
+            value,
+            key_hash,
+        }
+    }
+
+    #[inline]
+    fn matches<Q: ?Sized>(&self, key: &Q, key_hash: HashValue) -> bool
+        where K: Borrow<Q>,
+              Q: Hash + Eq {
+        key_hash == self.key_hash && key == self.key.borrow()
+    }
+}
+
+impl<K, V> HashTrieMap<K, V, RandomState>
+    where K: Eq + Hash {
+    pub fn new() -> HashTrieMap<K, V> {
+        HashTrieMap::new_with_degree(default_degree())
+    }
+
+    pub fn new_with_degree(degree: u8) -> HashTrieMap<K, V> {
+        HashTrieMap::new_with_hasher_and_degree(RandomState::new(), degree)
+    }
+}
+
+impl<K, V, H: BuildHasher> HashTrieMap<K, V, H>
+    where K: Eq + Hash,
+          H: Clone {
+    pub fn new_with_hasher(hasher_builder: H) -> HashTrieMap<K, V, H> {
+        HashTrieMap::new_with_hasher_and_degree(hasher_builder, default_degree())
+    }
+
+    pub fn new_with_hasher_and_degree(hasher_builder: H, degree: u8) -> HashTrieMap<K, V, H> {
+        assert!(degree.is_power_of_two(), format!("degree must be a power of two"));
+        assert!(degree <= default_degree(), format!("degree must not exceed {}", default_degree()));
+
+        HashTrieMap {
+            root: Arc::new(Node::new_empty_branch()),
+            size: 0,
+            degree,
+            hasher_builder,
+        }
+    }
+
+    pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
+        where K: Borrow<Q>,
+              Q: Hash + Eq {
+        let key_hash = node_utils::hash(key, &self.hasher_builder);
+
+        self.root.get(key, key_hash, 0, self.degree)
+            .map(|e| &e.value)
+    }
+
+    pub fn insert(&self, key: K, value: V) -> HashTrieMap<K, V, H> {
+        let entry = Entry::new(key, value, &self.hasher_builder);
+        let (new_root, is_new_key) =
+            self.root.insert(Arc::new(entry), 0, self.degree);
+
+        HashTrieMap {
+            root: Arc::new(new_root),
+            size: self.size + if is_new_key { 1 } else { 0 },
+            hasher_builder: self.hasher_builder.clone(),
+            degree: self.degree,
+        }
+    }
+
+    pub fn remove<Q: ?Sized>(&self, key: &Q) -> HashTrieMap<K, V, H>
+        where K: Borrow<Q>,
+              Q: Hash + Eq {
+        let key_hash = node_utils::hash(key, &self.hasher_builder);
+        let (new_root, removed) =
+            self.root.remove(key, key_hash, 0, self.degree);
+
+        // We want to keep maximum sharing so in case of no change we just `clone()` ourselves.
+        if removed {
+            HashTrieMap {
+                root: Arc::new(new_root.unwrap_or_else(|| Node::new_empty_branch())),
+                size: self.size - 1,
+                hasher_builder: self.hasher_builder.clone(),
+                degree: self.degree,
+            }
+        } else {
+            self.clone()
+        }
+    }
+
+    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+        where K: Borrow<Q>,
+              Q: Hash + Eq {
+        self.get(key).is_some()
+    }
+
+    #[inline]
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.size() == 0
+    }
+
+    pub fn iter(&self) -> Iter<K, V> {
+        Iter::new(self)
+    }
+
+    // TODO Use impl trait for return value when available
+    pub fn keys<'a>(&'a self) -> ::std::iter::Map<Iter<K, V>, fn((&'a K, &V)) -> &'a K> {
+        self.iter().map(|(k, _)| k)
+    }
+
+    // TODO Use impl trait for return value when available
+    pub fn values<'a>(&'a self) -> ::std::iter::Map<Iter<K, V>, fn((&K, &'a V)) -> &'a V> {
+        self.iter().map(|(_, v)| v)
+    }
+}
+
+impl<'a, K, Q: ?Sized, V, H: BuildHasher> Index<&'a Q> for HashTrieMap<K, V, H>
+    where K: Eq + Hash + Borrow<Q>,
+          Q: Hash + Eq,
+          H: Clone {
+    type Output = V;
+
+    fn index(&self, index: &Q) -> &V {
+        self.get(index)
+            .expect("no entry found for key")
+    }
+}
+
+impl<K, V, H: BuildHasher> Clone for HashTrieMap<K, V, H>
+    where K: Eq + Hash,
+          H: Clone {
+    fn clone(&self) -> HashTrieMap<K, V, H> {
+        HashTrieMap {
+            root: Arc::clone(&self.root),
+            size: self.size,
+            degree: self.degree,
+            hasher_builder: self.hasher_builder.clone(),
+        }
+    }
+}
+
+impl<K, V, H: BuildHasher> Default for HashTrieMap<K, V, H>
+    where K: Eq + Hash,
+          H: Default + Clone {
+    fn default() -> HashTrieMap<K, V, H> {
+        HashTrieMap::new_with_hasher(H::default())
+    }
+}
+
+impl<K: Eq, V: PartialEq, H: BuildHasher> PartialEq for HashTrieMap<K, V, H>
+    where K: Hash,
+          H: Clone {
+    fn eq(&self, other: &HashTrieMap<K, V, H>) -> bool {
+        self.size() == other.size() && self.iter().all(|(key, value)|
+            other.get(key).map_or(false, |v| *value == *v)
+        )
+    }
+}
+
+impl<K: Eq, V: Eq, H: BuildHasher> Eq for HashTrieMap<K, V, H>
+    where K: Hash,
+          H: Clone {}
+
+impl<K, V, H: BuildHasher> Display for HashTrieMap<K, V, H>
+    where K: Eq + Hash + Display,
+          V: Display,
+          H: Clone {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        let mut first = true;
+
+        fmt.write_str("{")?;
+
+        for (k, v) in self.iter() {
+            if !first {
+                fmt.write_str(", ")?;
+            }
+            k.fmt(fmt)?;
+            fmt.write_str(": ")?;
+            v.fmt(fmt)?;
+            first = false;
+        }
+
+        fmt.write_str("}")
+    }
+}
+
+impl<'a, K, V, H: BuildHasher> IntoIterator for &'a HashTrieMap<K, V, H>
+    where K: Eq + Hash,
+          H: Default + Clone {
+    type Item = (&'a K, &'a V);
+    type IntoIter = Iter<'a, K, V>;
+
+    fn into_iter(self) -> Iter<'a, K, V> {
+        self.iter()
+    }
+}
+
+impl<K, V, H> FromIterator<(K, V)> for HashTrieMap<K, V, H> where
+    K: Eq + Hash,
+    H: BuildHasher + Clone + Default {
+    fn from_iter<I: IntoIterator<Item = (K, V)>>(into_iter: I) -> HashTrieMap<K, V, H> {
+        let mut map = HashTrieMap::new_with_hasher(Default::default());
+
+        for (k, v) in into_iter {
+            map = map.insert(k, v);
+        }
+
+        map
+    }
+}
+
+#[derive(Debug)]
+pub struct Iter<'a, K: 'a, V: 'a>
+    where K: Eq + Hash {
+    stack: Vec<IterStackElement<'a, K, V>>,
+    size: usize,
+}
+
+#[derive(Debug)]
+enum IterStackElement<'a, K: 'a, V: 'a>
+    where K: Eq + Hash {
+    Branch(Peekable<slice::Iter<'a, Arc<Node<K, V>>>>),
+    LeafSingle(&'a Entry<K, V>),
+    LeafCollision(Peekable<list::Iter<'a, Arc<Entry<K, V>>>>),
+}
+
+impl<'a, K, V> IterStackElement<'a, K, V>
+    where K: Eq + Hash {
+
+    fn new(node: &Node<K, V>) -> IterStackElement<K, V> {
+        match *node {
+            Node::Branch(ref children) =>
+                IterStackElement::Branch(children.iter().peekable()),
+            Node::Leaf(Bucket::Single(ref entry)) =>
+                IterStackElement::LeafSingle(entry),
+            Node::Leaf(Bucket::Collision(ref entries)) =>
+                IterStackElement::LeafCollision(entries.iter().peekable()),
+        }
+    }
+
+    fn current_elem(&mut self) -> &'a Entry<K, V> {
+        match *self {
+            IterStackElement::Branch(_) =>
+                panic!("called current element of a branch"),
+            IterStackElement::LeafSingle(ref entry) => entry,
+            IterStackElement::LeafCollision(ref mut iter) => iter.peek().unwrap(),
+        }
+    }
+
+    /// Advance and returns `true` if finished.
+    #[inline]
+    fn advance(&mut self) -> bool {
+        match *self {
+            IterStackElement::Branch(ref mut iter) => {
+                iter.next();
+                iter.peek().is_none()
+            },
+            IterStackElement::LeafSingle(_) => true,
+            IterStackElement::LeafCollision(ref mut iter) => {
+                iter.next();
+                iter.peek().is_none()
+            },
+        }
+    }
+}
+
+mod iter_utils {
+    use std::mem::size_of;
+    use super::HashValue;
+
+    pub fn trie_max_height(degree: u8) -> usize {
+        let bits_per_level = (degree - 1).count_ones() as  usize;
+        let hash_bits = 8 * size_of::<HashValue>();
+
+        (hash_bits / bits_per_level) + if hash_bits % bits_per_level > 0 { 1 } else { 0 }
+    }
+}
+
+impl<'a, K, V> Iter<'a, K, V>
+    where K: Eq + Hash {
+    fn new<H: BuildHasher + Clone>(map: &HashTrieMap<K, V, H>) -> Iter<K, V> {
+        let mut stack: Vec<IterStackElement<K, V>> =
+            Vec::with_capacity(iter_utils::trie_max_height(map.degree) + 1);
+
+        if map.size() > 0 {
+            stack.push(IterStackElement::new(map.root.borrow()));
+        }
+
+        let mut iter = Iter {
+            stack: stack,
+            size: map.size(),
+        };
+
+        iter.dig();
+
+        iter
+    }
+
+    fn dig(&mut self) -> () {
+        let next_stack_elem: Option<IterStackElement<K, V>> =
+            self.stack.last_mut().and_then(|stack_top| {
+                match *stack_top {
+                    IterStackElement::Branch(ref mut iter) =>
+                        iter.peek().map(|node| IterStackElement::new(node)),
+                    _ => None,
+                }
+            });
+
+        // TODO use for_each when stable.
+        next_stack_elem.map(|e| {
+            self.stack.push(e);
+            self.dig();
+        });
+    }
+
+    fn advance(&mut self) -> () {
+        match self.stack.pop() {
+            Some(mut stack_element) => {
+                let finished = stack_element.advance();
+
+                if finished {
+                    self.advance();
+                } else {
+                    self.stack.push(stack_element);
+
+                    self.dig();
+                }
+            },
+            None => (), // Reached the end.  Nothing to do.
+        }
+    }
+
+    fn current(&mut self) -> Option<(&'a K, &'a V)> {
+        self.stack.last_mut().map(|e| {
+            let entry = e.current_elem();
+
+            (&entry.key, &entry.value)
+        })
+    }
+}
+
+impl<'a, K, V> Iterator for Iter<'a, K, V>
+    where K: Eq + Hash {
+    type Item = (&'a K, &'a V);
+
+    fn next(&mut self) -> Option<(&'a K, &'a V)> {
+        let current = self.current();
+
+        self.advance();
+
+        if current.is_some() {
+            self.size -= 1;
+        }
+
+        current
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.size, Some(self.size))
+    }
+}
+
+impl<'a, K: Eq + Hash, V> ExactSizeIterator for Iter<'a, K, V> {}
+
+#[cfg(test)]
+mod test;

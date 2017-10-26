@@ -17,7 +17,7 @@
 use super::*;
 
 mod iter {
-    use super::super::*;
+    use super::*;
 
     #[test]
     fn test_iter() -> () {
@@ -84,7 +84,7 @@ mod iter {
 }
 
 mod compile_time {
-    use super::super::*;
+    use super::*;
 
     #[test]
     fn test_is_send() -> () {

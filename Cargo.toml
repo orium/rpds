@@ -37,3 +37,11 @@ harness = false
 [[bench]]
 name = "rpds_vector"
 harness = false
+
+[[bench]]
+name = "rust_hashmap"
+harness = false
+
+[[bench]]
+name = "rpds_hash_trie_map"
+harness = false

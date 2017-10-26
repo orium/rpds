@@ -14,16 +14,4 @@
  * along with rpds.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#![cfg_attr(feature = "fatal-warnings", deny(warnings))]
-
-//! # Rust Persistent Data Structures
-//!
-//! Rust Persistent Data Structures provides [fully persistent data structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
-//! with structural sharing.
-
-pub mod sequence;
-pub mod map;
-
-pub use sequence::list::List;
-pub use sequence::vector::Vector;
-pub use map::hash_trie_map::HashTrieMap;
+pub mod hash_trie_map;

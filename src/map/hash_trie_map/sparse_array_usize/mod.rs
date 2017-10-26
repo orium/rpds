@@ -1,0 +1,158 @@
+/* This file is part of rpds.
+ *
+ * rpds is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * rpds is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with rpds.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+use std::vec::Vec;
+use std::slice;
+use std::mem::size_of_val;
+
+/// Sparse array of size `8⋅size_of::<usize>()`.  The space used is proportional to the number of
+/// elements set.
+#[derive(Debug, PartialEq, Eq)]
+pub struct SparseArrayUsize<T: Clone> {
+    bitmap: usize,
+    array: Vec<T>,
+}
+
+mod sparse_array_usize_utils {
+    #[inline]
+    pub fn map_index(bitmap: usize, virtual_index: usize) -> Option<usize> {
+        if bitmap & (1usize << virtual_index) == 0 {
+            None
+        } else {
+            let mask = (1usize << virtual_index) - 1;
+
+            Some((bitmap & mask).count_ones() as usize)
+        }
+    }
+}
+
+impl<T: Clone> SparseArrayUsize<T> {
+    pub fn new() -> SparseArrayUsize<T> {
+        SparseArrayUsize {
+            bitmap: 0,
+            array: Vec::new(),
+        }
+    }
+
+    #[inline]
+    pub fn get(&self, index: usize) -> Option<&T> {
+        debug_assert!(index < 8 * size_of_val(&self.bitmap));
+
+        sparse_array_usize_utils::map_index(self.bitmap, index).map(|i| &self.array[i])
+    }
+
+    #[inline]
+    pub fn first_index(&self) -> Option<usize> {
+        if self.is_empty() {
+            None
+        } else {
+            Some(self.bitmap.trailing_zeros() as usize)
+        }
+    }
+
+    fn vec_insert_cloned(vec: &Vec<T>, value: T, index: usize) -> Vec<T> {
+        let mut cloned_vec = Vec::with_capacity(vec.len() + 1);
+
+        debug_assert!(index <= vec.len());
+
+        cloned_vec.extend_from_slice(&vec[0..index]);
+        cloned_vec.push(value);
+        cloned_vec.extend_from_slice(&vec[index..vec.len()]);
+
+        cloned_vec
+    }
+
+    fn vec_replace_cloned(vec: &Vec<T>, value: T, index: usize) -> Vec<T> {
+        let mut cloned_vec = Vec::with_capacity(vec.len());
+
+        debug_assert!(index < vec.len());
+
+        cloned_vec.extend_from_slice(&vec[0..index]);
+        cloned_vec.push(value);
+        cloned_vec.extend_from_slice(&vec[(index + 1)..vec.len()]);
+
+        cloned_vec
+    }
+
+    fn vec_remove_cloned(vec: &Vec<T>, index: usize) -> Vec<T> {
+        let mut cloned_vec = Vec::with_capacity(vec.len() - 1);
+
+        debug_assert!(index < vec.len());
+
+        cloned_vec.extend_from_slice(&vec[0..index]);
+        cloned_vec.extend_from_slice(&vec[(index + 1)..vec.len()]);
+
+        cloned_vec
+    }
+
+    pub fn set(&self, index: usize, value: T) -> SparseArrayUsize<T> {
+        debug_assert!(index < 8 * size_of_val(&self.bitmap));
+
+        match sparse_array_usize_utils::map_index(self.bitmap, index) {
+            Some(i) =>
+                SparseArrayUsize {
+                    bitmap: self.bitmap,
+                    array: SparseArrayUsize::vec_replace_cloned(&self.array, value, i),
+                },
+            None => {
+                let new_bitmap = self.bitmap | (1 << index);
+                let i = sparse_array_usize_utils::map_index(new_bitmap, index).unwrap();
+
+                SparseArrayUsize {
+                    bitmap: new_bitmap,
+                    array:  SparseArrayUsize::vec_insert_cloned(&self.array, value, i),
+                }
+            },
+        }
+    }
+
+    pub fn remove(&self, index: usize) -> SparseArrayUsize<T> {
+        match sparse_array_usize_utils::map_index(self.bitmap, index) {
+            Some(i) =>
+                SparseArrayUsize {
+                    bitmap: self.bitmap ^ (1 << index),
+                    array: SparseArrayUsize::vec_remove_cloned(&self.array, i),
+                },
+            None => self.clone(),
+        }
+    }
+
+    #[inline]
+    pub fn size(&self) -> usize {
+        self.bitmap.count_ones() as usize
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.bitmap == 0
+    }
+
+    pub fn iter(&self) -> slice::Iter<T> {
+        self.array.iter()
+    }
+}
+
+impl<T: Clone> Clone for SparseArrayUsize<T> {
+    fn clone(&self) -> SparseArrayUsize<T> {
+        SparseArrayUsize {
+            bitmap: self.bitmap,
+            array: Vec::clone(&self.array),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test;

@@ -21,8 +21,8 @@ use std::hash::{Hasher, Hash};
 use std::borrow::Borrow;
 use std::iter::FromIterator;
 
-/// A persistent list with structural sharing.  This data structure supports fast get head,
-/// get tail, and cons.
+/// A persistent list with structural sharing.  This data structure supports fast `push_front()`,
+/// `drop_first()`, and `first()`.
 ///
 /// # Complexity
 ///
@@ -33,10 +33,11 @@ use std::iter::FromIterator;
 /// | Operation         | Best case | Average | Worst case  |
 /// |:----------------- | ---------:| -------:| -----------:|
 /// | `new()`           |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `cons()`          |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `tail()`          |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `clone()`         |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `push_front()`    |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `drop_first()`    |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `first()`         |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `len()`           |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `clone()`         |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator creation |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator step     |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator full     |      Θ(n) |    Θ(n) |        Θ(n) |
@@ -106,7 +107,7 @@ impl<T> Default for List<T> {
     }
 }
 
-impl<T: PartialEq<T>> PartialEq<List<T>> for List<T> {
+impl<T: PartialEq> PartialEq for List<T> {
     fn eq(&self, other: &List<T>) -> bool {
         self.length == other.length && self.iter().eq(other.iter())
     }

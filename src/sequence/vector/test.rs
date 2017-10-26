@@ -17,7 +17,7 @@
 use super::*;
 
 mod node {
-    use super::super::*;
+    use super::*;
 
     #[test]
     fn test_new_empty_branch() -> () {
@@ -119,10 +119,10 @@ mod node {
 }
 
 mod iter {
-    use super::super::*;
+    use super::*;
 
     #[test]
-    fn test_iter_empty_vector() -> () {
+    fn test_iter_empty() -> () {
         let vector: Vector<i32> = Vector::new();
 
         for _ in vector.iter() {
@@ -131,7 +131,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_empty_vector_backwards() -> () {
+    fn test_iter_empty_backwards() -> () {
         let vector: Vector<i32> = Vector::new();
 
         for _ in vector.iter().rev() {
@@ -275,7 +275,7 @@ mod iter {
 }
 
 mod internal {
-    use super::super::*;
+    use super::*;
 
     fn dummy_vector_with_length(len: usize) -> Vector<u8> {
         let mut v = Vector::new_with_bits(5);
@@ -320,10 +320,10 @@ mod internal {
 
     #[test]
     fn test_bucket() -> () {
-        assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b00100_00011_00010_00001, 0), 0b00001);
-        assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b00100_00011_00010_00001, 1), 0b00010);
-        assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b00100_00011_00010_00001, 2), 0b00011);
-        assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b00100_00011_00010_00001, 3), 0b00100);
+        assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b_00100_00011_00010_00001, 0), 0b00001);
+        assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b_00100_00011_00010_00001, 1), 0b00010);
+        assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b_00100_00011_00010_00001, 2), 0b00011);
+        assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b_00100_00011_00010_00001, 3), 0b00100);
     }
 
     #[test]
@@ -379,7 +379,7 @@ mod internal {
 }
 
 mod compile_time {
-    use super::super::*;
+    use super::*;
 
     #[test]
     fn test_is_send() -> () {

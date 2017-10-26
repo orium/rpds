@@ -16,6 +16,7 @@
 
 use std::vec::Vec;
 use std::sync::Arc;
+use std::borrow::Borrow;
 use std::fmt::Display;
 use std::cmp::Ordering;
 use std::hash::{Hasher, Hash};
@@ -39,8 +40,8 @@ impl<T: Clone> CloneWithCapacity for Vec<T> {
     }
 }
 
-/// A persistent vector with structural sharing.  This data structure supports fast get, set,
-/// and push.
+/// A persistent vector with structural sharing.  This data structure supports fast `push()`, `set()`,
+/// `drop_last()`, and `get()`.
 ///
 /// # Complexity
 ///
@@ -51,12 +52,12 @@ impl<T: Clone> CloneWithCapacity for Vec<T> {
 /// | Operation                  | Best case | Average   | Worst case  |
 /// |:-------------------------- | ---------:| ---------:| -----------:|
 /// | `new()`                    |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | `first()`/`last()`/`get()` | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
 /// | `set()`                    | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
 /// | `push()`                   | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
 /// | `drop_last()`              | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
-/// | `clone()`                  |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | `first()`/`last()`/`get()` | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
 /// | `len()`                    |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | `clone()`                  |      Θ(1) |      Θ(1) |        Θ(1) |
 /// | iterator creation          |      Θ(1) |      Θ(1) |        Θ(1) |
 /// | iterator step              |      Θ(1) |      Θ(1) |   Θ(log(n)) |
 /// | iterator full              |      Θ(n) |      Θ(n) |        Θ(n) |
@@ -147,7 +148,7 @@ impl<T> Node<T> {
 
         match *self {
             Node::Leaf(ref a) => {
-                debug_assert_eq!(height, 0, "Cannot have a leaf at this height");
+                debug_assert_eq!(height, 0, "cannot have a leaf at this height");
 
                 let mut a = Vec::clone_with_capacity(a, b + 1);
 
@@ -157,7 +158,7 @@ impl<T> Node<T> {
             },
 
             Node::Branch(ref a) => {
-                debug_assert!(height > 0, "Cannot have a branch at this height");
+                debug_assert!(height > 0, "cannot have a branch at this height");
 
                 let mut a = Vec::clone_with_capacity(a, b + 1);
 
@@ -244,7 +245,7 @@ impl<T> Vector<T> {
     }
 
     pub fn new_with_bits(bits: u8) -> Vector<T> {
-        assert!(bits > 0, "Number of bits for the vector must be positive");
+        assert!(bits > 0, "number of bits for the vector must be positive");
 
         Vector {
             root: Arc::new(Node::new_empty_leaf()),
@@ -372,8 +373,8 @@ impl<T> Vector<T> {
         }
     }
 
-    /// Compresses a root.  A root is compressed if, whenever if is a branch, it has more than one
-    /// children.
+    /// Compresses a root.  A root is compressed if, whenever there is a branch, it has more than
+    /// one child.
     ///
     /// The trie must always have a compressed root.
     fn compress_root(root: Node<T>) -> Node<T> {
@@ -443,7 +444,7 @@ impl<T> Default for Vector<T> {
     }
 }
 
-impl<T: PartialEq<T>> PartialEq<Vector<T>> for Vector<T> {
+impl<T: PartialEq> PartialEq for Vector<T> {
     fn eq(&self, other: &Vector<T>) -> bool {
         self.length == other.length && self.iter().eq(other.iter())
     }
@@ -547,7 +548,7 @@ impl<'a, T> IterStackElement<'a, T> {
     fn current_node(&self) -> &'a Node<T> {
         match *self.node {
             Node::Branch(ref a) => a[self.index as usize].as_ref(),
-            Node::Leaf(_) => panic!("called current child of a branch"),
+            Node::Leaf(_) => panic!("called current node of a branch"),
         }
     }
 
@@ -558,14 +559,16 @@ impl<'a, T> IterStackElement<'a, T> {
         }
     }
 
+    /// Advance and returns `true` if finished.
     #[inline]
-    fn advance(&mut self, backwards: bool) -> () {
-        self.index += if backwards { -1 } else { 1 };
-    }
-
-    #[inline]
-    fn finished(&self) -> bool {
-        self.index as usize >= self.node.used() || self.index < 0
+    fn advance(&mut self, backwards: bool) -> bool {
+        if backwards {
+            self.index -= 1;
+            self.index < 0
+        } else {
+            self.index += 1;
+            self.index as usize >= self.node.used()
+        }
     }
 }
 
@@ -608,7 +611,7 @@ impl<'a, T> Iter<'a, T> {
         if stack_field.is_none() {
             let mut stack: Vec<IterStackElement<T>> = Vec::with_capacity(self.vector.height() + 1);
 
-            stack.push(IterStackElement::new(&*self.vector.root, backwards));
+            stack.push(IterStackElement::new(self.vector.root.borrow(), backwards));
 
             Iter::dig(&mut stack, backwards);
 
@@ -624,9 +627,9 @@ impl<'a, T> Iter<'a, T> {
     fn advance(stack: &mut Vec<IterStackElement<T>>, backwards: bool) -> () {
         match stack.pop() {
             Some(mut stack_element) => {
-                stack_element.advance(backwards);
+                let finished = stack_element.advance(backwards);
 
-                if stack_element.finished() {
+                if finished {
                     Iter::advance(stack, backwards);
                 } else {
                     stack.push(stack_element);
