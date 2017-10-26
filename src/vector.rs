@@ -24,6 +24,20 @@ use std::iter::Peekable;
 
 const DEFAULT_BITS: u8 = 5;
 
+trait CloneWithCapacity {
+    fn clone_with_capacity(&self, capacity: usize) -> Self;
+}
+
+impl<T: Clone> CloneWithCapacity for Vec<T> {
+    fn clone_with_capacity(&self, capacity: usize) -> Self {
+        let mut vec: Vec<T> = Vec::with_capacity(capacity.max(self.len()));
+
+        vec.extend_from_slice(self);
+
+        vec
+    }
+}
+
 /// A persistent vector with structural sharing.  This data structure supports fast get, set,
 /// and push.
 ///
@@ -133,7 +147,7 @@ impl<T> Node<T> {
             Node::Leaf(ref a) => {
                 debug_assert_eq!(height, 0, "Cannot have a leaf at this height");
 
-                let mut a = Vec::clone(a);
+                let mut a = Vec::clone_with_capacity(a, b + 1);
 
                 set_array(&mut a, b, Arc::new(value));
 
@@ -143,7 +157,7 @@ impl<T> Node<T> {
             Node::Branch(ref a) => {
                 debug_assert!(height > 0, "Cannot have a branch at this height");
 
-                let mut a = Vec::clone(a);
+                let mut a = Vec::clone_with_capacity(a, b + 1);
 
                 let subtree: Node<T> = match a.get(b) {
                     Some(s) => Node::clone(s),
@@ -189,9 +203,7 @@ impl<T> Node<T> {
 
         let new_node: Node<T> = match *self {
             Node::Leaf(ref a) => {
-                let mut new_a = Vec::clone(a);
-
-                new_a.pop();
+                let new_a = a[0..(a.len() - 1)].to_vec();
 
                 Node::Leaf(new_a)
             },
