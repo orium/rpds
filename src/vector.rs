@@ -21,6 +21,7 @@ use std::cmp::Ordering;
 use std::hash::{Hasher, Hash};
 use std::ops::Index;
 use std::iter::Peekable;
+use std::mem::size_of;
 
 const DEFAULT_BITS: u8 = 5;
 
@@ -176,10 +177,12 @@ impl<T> Node<T> {
         }
     }
 
+    #[inline(always)]
     fn is_empty(&self) -> bool {
         self.used() == 0
     }
 
+    #[inline(always)]
     fn is_singleton(&self) -> bool {
         self.used() == 1
     }
@@ -265,16 +268,17 @@ impl<T> Vector<T> {
         1 << self.bits
     }
 
+    #[inline(always)]
     fn height(&self) -> usize {
-        let mut capacity = self.degree();
-        let mut height = 0;
+        if self.size > 1 {
+            let u: usize = self.size - 1;
+            let c: usize = 8 * size_of::<usize>() - u.leading_zeros() as usize;
+            let b: usize = self.bits as usize;
 
-        while capacity < self.size {
-            capacity <<= self.bits;
-            height += 1;
+            c / b + if c % b > 0 { 1 } else { 0 } - 1
+        } else {
+            0
         }
-
-        height
     }
 
     #[inline(always)]
@@ -407,12 +411,14 @@ impl<T> Vector<T> {
         Some(new_vector)
     }
 
+    #[inline(always)]
     pub fn len(&self) -> usize {
         self.size
     }
 
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        self.size == 0
+        self.len() == 0
     }
 
     pub fn iter(&self) -> Iter<T> {
@@ -809,58 +815,248 @@ mod test {
             assert_eq!(node_three.drop_last(), Some(node_three_after_drop));
             assert_eq!(node_four.drop_last(), Some(node_four_after_drop));
         }
-
-        // test clone keeps capazity
     }
 
-    fn dummy_vector_with_size(size: usize) -> Vector<u8> {
-        let mut v = Vector::new_with_bits(5);
-        v.size = size;
-        v
+    mod iter {
+        use super::super::*;
+
+        #[test]
+        fn test_iter_empty_vector() -> () {
+            let vector: Vector<i32> = Vector::new();
+
+            for _ in vector.iter() {
+                panic!("iterator should be empty");
+            }
+        }
+
+        #[test]
+        fn test_iter_big_vector() -> () {
+            let limit = 32*32*32+1;
+            let mut vector = Vector::new();
+            let mut expected = 0;
+            let mut left = limit;
+
+            for i in 0..limit {
+                vector = vector.push(i);
+            }
+
+            for v in vector.iter() {
+                left -= 1;
+
+                assert!(left >= 0);
+                assert_eq!(*v, expected);
+
+                expected += 1;
+            }
+
+            assert_eq!(left, 0);
+        }
+
+        #[test]
+        fn test_iter_backwards() -> () {
+            let vector = Vector::new()
+                .push(0)
+                .push(1)
+                .push(2)
+                .push(3);
+            let mut expected = 3;
+            let mut left = 4;
+
+            for n in vector.iter().rev() {
+                left -= 1;
+
+                assert!(left >= 0);
+                assert_eq!(*n, expected);
+
+                expected -= 1;
+            }
+
+            assert_eq!(left, 0);
+        }
+
+        #[test]
+        fn test_iter_both_directions() -> () {
+            let vector = Vector::new()
+                .push(0)
+                .push(1)
+                .push(2)
+                .push(3)
+                .push(4)
+                .push(5);
+            let mut iterator = vector.iter();
+
+            assert_eq!(iterator.next(),      Some(&0));
+            assert_eq!(iterator.next_back(), Some(&5));
+            assert_eq!(iterator.next_back(), Some(&4));
+            assert_eq!(iterator.next(),      Some(&1));
+            assert_eq!(iterator.next(),      Some(&2));
+            assert_eq!(iterator.next_back(), Some(&3));
+            assert_eq!(iterator.next_back(), None);
+            assert_eq!(iterator.next(),      None);
+        }
+
+        #[test]
+        fn test_iter_size_hint() -> () {
+            let vector = Vector::new()
+                .push(0)
+                .push(1)
+                .push(2);
+            let mut iterator = vector.iter();
+
+            assert_eq!(iterator.size_hint(), (3, Some(3)));
+
+            iterator.next();
+
+            assert_eq!(iterator.size_hint(), (2, Some(2)));
+
+            iterator.next_back();
+
+            assert_eq!(iterator.size_hint(), (1, Some(1)));
+
+            iterator.next_back();
+
+            assert_eq!(iterator.size_hint(), (0, Some(0)));
+        }
+
+        #[test]
+        fn test_into_iterator() -> () {
+            let vector = Vector::new()
+                .push(0)
+                .push(1)
+                .push(2)
+                .push(3);
+            let mut expected = 0;
+            let mut left = 4;
+
+            for n in &vector {
+                left -= 1;
+
+                assert!(left >= 0);
+                assert_eq!(*n, expected);
+
+                expected += 1;
+            }
+
+            assert_eq!(left, 0);
+        }
     }
 
-    #[test]
-    fn test_degree() -> () {
-        assert_eq!(Vector::<u8>::new_with_bits(1).degree(),  2);
-        assert_eq!(Vector::<u8>::new_with_bits(2).degree(),  4);
-        assert_eq!(Vector::<u8>::new_with_bits(3).degree(),  8);
-        assert_eq!(Vector::<u8>::new_with_bits(4).degree(), 16);
-        assert_eq!(Vector::<u8>::new_with_bits(5).degree(), 32);
+    mod internal {
+        use super::super::*;
+
+        fn dummy_vector_with_size(size: usize) -> Vector<u8> {
+            let mut v = Vector::new_with_bits(5);
+            v.size = size;
+            v
+        }
+
+        #[test]
+        fn test_degree() -> () {
+            assert_eq!(Vector::<u8>::new_with_bits(1).degree(), 2);
+            assert_eq!(Vector::<u8>::new_with_bits(2).degree(), 4);
+            assert_eq!(Vector::<u8>::new_with_bits(3).degree(), 8);
+            assert_eq!(Vector::<u8>::new_with_bits(4).degree(), 16);
+            assert_eq!(Vector::<u8>::new_with_bits(5).degree(), 32);
+        }
+
+        #[test]
+        fn test_height() -> () {
+            assert_eq!(dummy_vector_with_size(      0).height(), 0);
+            assert_eq!(dummy_vector_with_size(      5).height(), 0);
+            assert_eq!(dummy_vector_with_size(     32).height(), 0);
+            assert_eq!(dummy_vector_with_size(     33).height(), 1);
+            assert_eq!(dummy_vector_with_size(     64).height(), 1);
+            assert_eq!(dummy_vector_with_size(    128).height(), 1);
+            assert_eq!(dummy_vector_with_size(    512).height(), 1);
+            assert_eq!(dummy_vector_with_size(   1024).height(), 1);
+            assert_eq!(dummy_vector_with_size(   1025).height(), 2);
+            assert_eq!(dummy_vector_with_size(  32768).height(), 2);
+            assert_eq!(dummy_vector_with_size(  32769).height(), 3);
+            assert_eq!(dummy_vector_with_size(1048576).height(), 3);
+            assert_eq!(dummy_vector_with_size(1048577).height(), 4);
+        }
+
+        #[test]
+        fn test_mask() -> () {
+            assert_eq!(Vector::<u8>::new_with_bits(1).mask(), 0b00001);
+            assert_eq!(Vector::<u8>::new_with_bits(2).mask(), 0b00011);
+            assert_eq!(Vector::<u8>::new_with_bits(3).mask(), 0b00111);
+            assert_eq!(Vector::<u8>::new_with_bits(4).mask(), 0b01111);
+            assert_eq!(Vector::<u8>::new_with_bits(5).mask(), 0b11111);
+        }
+
+        #[test]
+        fn test_bucket() -> () {
+            assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b00100_00011_00010_00001, 0), 0b00001);
+            assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b00100_00011_00010_00001, 1), 0b00010);
+            assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b00100_00011_00010_00001, 2), 0b00011);
+            assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b00100_00011_00010_00001, 3), 0b00100);
+        }
+
+        #[test]
+        fn test_compress_root() -> () {
+            let empty_leaf: Node<u32> = Node::new_empty_leaf();
+            let empty_branch: Node<u32> = Node::new_empty_branch();
+            let singleton_leaf: Node<u32> = Vector::new().push(0).root.as_ref().clone();
+            let compressed_branch: Node<u32> = Vector::new_with_bits(1)
+                .push(0).push(1).push(3).root.as_ref().clone();
+            let (uncompressed_branch, uncompressed_branch_leaf) = {
+                let leaf = Vector::new_with_bits(1)
+                    .push(0).push(1).root.as_ref().clone();
+
+                let a_branch = {
+                    let mut a = Vec::with_capacity(2);
+                    a.push(Arc::new(leaf.clone()));
+                    a
+                };
+
+                (Node::Branch(a_branch), leaf)
+            };
+
+            assert_eq!(empty_leaf.clone(), Vector::compress_root(empty_leaf));
+            assert_eq!(empty_branch.clone(), Vector::compress_root(empty_branch));
+            assert_eq!(singleton_leaf.clone(), Vector::compress_root(singleton_leaf));
+            assert_eq!(compressed_branch.clone(), Vector::compress_root(compressed_branch));
+            assert_eq!(uncompressed_branch_leaf, Vector::compress_root(uncompressed_branch));
+        }
+
+        #[test]
+        fn test_root_max_capacity() -> () {
+            assert_eq!(dummy_vector_with_size(    0).root_max_capacity(),      32);
+            assert_eq!(dummy_vector_with_size(    5).root_max_capacity(),      32);
+            assert_eq!(dummy_vector_with_size(   32).root_max_capacity(),      32);
+            assert_eq!(dummy_vector_with_size(   33).root_max_capacity(),    1024);
+            assert_eq!(dummy_vector_with_size( 1024).root_max_capacity(),    1024);
+            assert_eq!(dummy_vector_with_size( 1025).root_max_capacity(),   32768);
+            assert_eq!(dummy_vector_with_size(32768).root_max_capacity(),   32768);
+            assert_eq!(dummy_vector_with_size(32769).root_max_capacity(), 1048576);
+        }
+
+        #[test]
+        fn test_is_root_full() -> () {
+            assert!(!dummy_vector_with_size(    0).is_root_full());
+            assert!(!dummy_vector_with_size(    5).is_root_full());
+            assert!( dummy_vector_with_size(   32).is_root_full());
+            assert!(!dummy_vector_with_size(   33).is_root_full());
+            assert!( dummy_vector_with_size( 1024).is_root_full());
+            assert!(!dummy_vector_with_size( 1025).is_root_full());
+            assert!( dummy_vector_with_size(32768).is_root_full());
+            assert!(!dummy_vector_with_size(32769).is_root_full());
+        }
     }
 
-    #[test]
-    fn test_height() -> () {
-        assert_eq!(dummy_vector_with_size(      0).height(), 0);
-        assert_eq!(dummy_vector_with_size(      5).height(), 0);
-        assert_eq!(dummy_vector_with_size(     32).height(), 0);
-        assert_eq!(dummy_vector_with_size(     33).height(), 1);
-        assert_eq!(dummy_vector_with_size(     64).height(), 1);
-        assert_eq!(dummy_vector_with_size(    128).height(), 1);
-        assert_eq!(dummy_vector_with_size(    512).height(), 1);
-        assert_eq!(dummy_vector_with_size(   1024).height(), 1);
-        assert_eq!(dummy_vector_with_size(   1025).height(), 2);
-        assert_eq!(dummy_vector_with_size(   1025).height(), 2);
-        assert_eq!(dummy_vector_with_size(  32768).height(), 2);
-        assert_eq!(dummy_vector_with_size(  32769).height(), 3);
-        assert_eq!(dummy_vector_with_size(1048576).height(), 3);
-        assert_eq!(dummy_vector_with_size(1048577).height(), 4);
-    }
+    mod compile_time {
+        use super::super::*;
 
-    #[test]
-    fn test_mask() -> () {
-        assert_eq!(Vector::<u8>::new_with_bits(1).mask(), 0b00001);
-        assert_eq!(Vector::<u8>::new_with_bits(2).mask(), 0b00011);
-        assert_eq!(Vector::<u8>::new_with_bits(3).mask(), 0b00111);
-        assert_eq!(Vector::<u8>::new_with_bits(4).mask(), 0b01111);
-        assert_eq!(Vector::<u8>::new_with_bits(5).mask(), 0b11111);
-    }
+        #[test]
+        fn test_is_send() -> () {
+            let _: Box<Send> = Box::new(Vector::<i32>::new());
+        }
 
-    #[test]
-    fn test_bucket() -> () {
-        assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b00100_00011_00010_00001, 0), 0b00001);
-        assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b00100_00011_00010_00001, 1), 0b00010);
-        assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b00100_00011_00010_00001, 2), 0b00011);
-        assert_eq!(Vector::<u8>::new_with_bits(5).bucket(0b00100_00011_00010_00001, 3), 0b00100);
+        #[test]
+        fn test_is_sync() -> () {
+            let _: Box<Sync> = Box::new(Vector::<i32>::new());
+        }
     }
 
     #[test]
@@ -885,33 +1081,6 @@ mod test {
         }
 
         assert_eq!(vector.len(), limit as usize);
-    }
-
-    #[test]
-    fn test_compress_root() -> () {
-        let empty_leaf: Node<u32> = Node::new_empty_leaf();
-        let empty_branch: Node<u32> = Node::new_empty_branch();
-        let singleton_leaf: Node<u32> = Vector::new().push(0).root.as_ref().clone();
-        let compressed_branch: Node<u32> = Vector::new_with_bits(1)
-            .push(0).push(1).push(3).root.as_ref().clone();
-        let (uncompressed_branch, uncompressed_branch_leaf) = {
-            let leaf = Vector::new_with_bits(1)
-                .push(0).push(1).root.as_ref().clone();
-
-            let a_branch = {
-                let mut a = Vec::with_capacity(2);
-                a.push(Arc::new(leaf.clone()));
-                a
-            };
-
-            (Node::Branch(a_branch), leaf)
-        };
-
-        assert_eq!(empty_leaf.clone(), Vector::compress_root(empty_leaf));
-        assert_eq!(empty_branch.clone(), Vector::compress_root(empty_branch));
-        assert_eq!(singleton_leaf.clone(), Vector::compress_root(singleton_leaf));
-        assert_eq!(compressed_branch.clone(), Vector::compress_root(compressed_branch));
-        assert_eq!(uncompressed_branch_leaf, Vector::compress_root(uncompressed_branch));
     }
 
     #[test]
@@ -1022,30 +1191,6 @@ mod test {
     }
 
     #[test]
-    fn test_root_max_capacity() -> () {
-        assert_eq!(dummy_vector_with_size(    0).root_max_capacity(),      32);
-        assert_eq!(dummy_vector_with_size(    5).root_max_capacity(),      32);
-        assert_eq!(dummy_vector_with_size(   32).root_max_capacity(),      32);
-        assert_eq!(dummy_vector_with_size(   33).root_max_capacity(),    1024);
-        assert_eq!(dummy_vector_with_size( 1024).root_max_capacity(),    1024);
-        assert_eq!(dummy_vector_with_size( 1025).root_max_capacity(),   32768);
-        assert_eq!(dummy_vector_with_size(32768).root_max_capacity(),   32768);
-        assert_eq!(dummy_vector_with_size(32769).root_max_capacity(), 1048576);
-    }
-
-    #[test]
-    fn test_is_root_full() -> () {
-        assert!(!dummy_vector_with_size(    0).is_root_full());
-        assert!(!dummy_vector_with_size(    5).is_root_full());
-        assert!( dummy_vector_with_size(   32).is_root_full());
-        assert!(!dummy_vector_with_size(   33).is_root_full());
-        assert!( dummy_vector_with_size( 1024).is_root_full());
-        assert!(!dummy_vector_with_size( 1025).is_root_full());
-        assert!( dummy_vector_with_size(32768).is_root_full());
-        assert!(!dummy_vector_with_size(32769).is_root_full());
-    }
-
-    #[test]
     fn test_get() -> () {
         let limit = 32*32*32+1;
         let mut vector = Vector::new();
@@ -1091,127 +1236,6 @@ mod test {
 
         assert_eq!(empty_vector.last(), None);
         assert_eq!(vector.last(), Some(&2));
-    }
-
-    #[test]
-    fn test_iter_empty_vector() -> () {
-        let vector: Vector<i32> = Vector::new();
-
-        for _ in vector.iter() {
-            panic!("iterator should be empty");
-        }
-    }
-
-    #[test]
-    fn test_iter_big_vector() -> () {
-        let limit = 32*32*32+1;
-        let mut vector = Vector::new();
-        let mut expected = 0;
-        let mut left = limit;
-
-        for i in 0..limit {
-            vector = vector.push(i);
-        }
-
-        for v in vector.iter() {
-            left -= 1;
-
-            assert!(left >= 0);
-            assert_eq!(*v, expected);
-
-            expected += 1;
-        }
-
-        assert_eq!(left, 0);
-    }
-
-
-    #[test]
-    fn test_iter_backwards() -> () {
-        let vector = Vector::new()
-            .push(0)
-            .push(1)
-            .push(2)
-            .push(3);
-        let mut expected = 3;
-        let mut left = 4;
-
-        for n in vector.iter().rev() {
-            left -= 1;
-
-            assert!(left >= 0);
-            assert_eq!(*n, expected);
-
-            expected -= 1;
-        }
-
-        assert_eq!(left, 0);
-    }
-
-    #[test]
-    fn test_iter_both_directions() -> () {
-        let vector = Vector::new()
-            .push(0)
-            .push(1)
-            .push(2)
-            .push(3)
-            .push(4)
-            .push(5);
-        let mut iterator = vector.iter();
-
-        assert_eq!(iterator.next(),      Some(&0));
-        assert_eq!(iterator.next_back(), Some(&5));
-        assert_eq!(iterator.next_back(), Some(&4));
-        assert_eq!(iterator.next(),      Some(&1));
-        assert_eq!(iterator.next(),      Some(&2));
-        assert_eq!(iterator.next_back(), Some(&3));
-        assert_eq!(iterator.next_back(), None);
-        assert_eq!(iterator.next(),      None);
-    }
-
-    #[test]
-    fn test_iter_size_hint() -> () {
-        let vector = Vector::new()
-            .push(0)
-            .push(1)
-            .push(2);
-        let mut iterator = vector.iter();
-
-        assert_eq!(iterator.size_hint(), (3, Some(3)));
-
-        iterator.next();
-
-        assert_eq!(iterator.size_hint(), (2, Some(2)));
-
-        iterator.next_back();
-
-        assert_eq!(iterator.size_hint(), (1, Some(1)));
-
-        iterator.next_back();
-
-        assert_eq!(iterator.size_hint(), (0, Some(0)));
-    }
-
-    #[test]
-    fn test_into_iterator() -> () {
-        let vector = Vector::new()
-            .push(0)
-            .push(1)
-            .push(2)
-            .push(3);
-        let mut expected = 0;
-        let mut left = 4;
-
-        for n in &vector {
-            left -= 1;
-
-            assert!(left >= 0);
-            assert_eq!(*n, expected);
-
-            expected += 1;
-        }
-
-        assert_eq!(left, 0);
     }
 
     #[test]
@@ -1329,19 +1353,5 @@ mod test {
 
         assert_eq!(clone.len(), vector.len());
         assert!(clone.iter().eq(vector.iter()));
-    }
-
-    #[test]
-    fn compile_time_test_is_send() -> () {
-        let vector: Box<Send> = Box::new(Vector::<i32>::new());
-
-        ::std::mem::drop(vector);
-    }
-
-    #[test]
-    fn compile_time_test_is_sync() -> () {
-        let vector: Box<Sync> = Box::new(Vector::<i32>::new());
-
-        ::std::mem::drop(vector);
     }
 }

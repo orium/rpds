@@ -15,4 +15,9 @@
 * TreeMap/Set
 * Vector
   * Support `push_front()`/`drop_first()`
+  * extend
+  * fromiterator
+* List
+  * extend
+  * fromiterator
 * Add clippy to travis.

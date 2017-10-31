@@ -185,6 +185,64 @@ impl<'a, T> Iterator for Iter<'a, T> {
 mod test {
     use super::*;
 
+    mod iter {
+        use super::super::*;
+
+        #[test]
+        fn test_iter() -> () {
+            let limit = 1024;
+            let mut list = List::new();
+            let mut left = limit;
+
+            for i in 0..limit {
+                list = list.cons(i);
+            }
+
+            for v in list.iter() {
+                left -= 1;
+                assert_eq!(*v, left);
+            }
+
+            assert!(left == 0);
+        }
+
+        #[test]
+        fn test_into_iterator() -> () {
+            let list = List::new()
+                .cons(3)
+                .cons(2)
+                .cons(1)
+                .cons(0);
+            let mut expected = 0;
+            let mut left = 4;
+
+            for n in &list {
+                left -= 1;
+
+                assert!(left >= 0);
+                assert_eq!(*n, expected);
+
+                expected += 1;
+            }
+
+            assert!(left == 0);
+        }
+    }
+
+    mod compile_time {
+        use super::super::*;
+
+        #[test]
+        fn test_is_send() -> () {
+            let _: Box<Send> = Box::new(List::<i32>::new());
+        }
+
+        #[test]
+        fn test_is_sync() -> () {
+            let _: Box<Sync> = Box::new(List::<i32>::new());
+        }
+    }
+
     #[test]
     fn test_new() -> () {
         let empty_list: List<i32> = List::new();
@@ -248,46 +306,6 @@ mod test {
         assert_eq!(format!("{}", empty_list), "[]");
         assert_eq!(format!("{}", singleton_list), "[hello]");
         assert_eq!(format!("{}", list), "[0, 1, 2, 3]");
-    }
-
-    #[test]
-    fn test_iter() -> () {
-        let limit = 1024;
-        let mut list = List::new();
-        let mut left = limit;
-
-        for i in 0..limit {
-            list = list.cons(i);
-        }
-
-        for v in list.iter() {
-            left -= 1;
-            assert_eq!(*v, left);
-        }
-
-        assert!(left == 0);
-    }
-
-    #[test]
-    fn test_into_iterator() -> () {
-        let list = List::new()
-            .cons(3)
-            .cons(2)
-            .cons(1)
-            .cons(0);
-        let mut expected = 0;
-        let mut left = 4;
-
-        for n in &list {
-            left -= 1;
-
-            assert!(left >= 0);
-            assert_eq!(*n, expected);
-
-            expected += 1;
-        }
-
-        assert!(left == 0);
     }
 
     #[test]
@@ -372,19 +390,5 @@ mod test {
         let clone = list.clone();
 
         assert!(clone.iter().eq(list.iter()));
-    }
-
-    #[test]
-    fn compile_time_test_is_send() -> () {
-        let vector: Box<Send> = Box::new(List::<i32>::new());
-
-        ::std::mem::drop(vector);
-    }
-
-    #[test]
-    fn compile_time_test_is_sync() -> () {
-        let vector: Box<Sync> = Box::new(List::<i32>::new());
-
-        ::std::mem::drop(vector);
     }
 }
