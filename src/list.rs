@@ -35,6 +35,7 @@ use std::borrow::Borrow;
 /// | `cons()`          |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `tail()`          |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `clone()`         |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `len()`           |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator creation |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator step     |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator full     |      Θ(n) |    Θ(n) |        Θ(n) |
@@ -45,6 +46,7 @@ use std::borrow::Borrow;
 #[derive(Debug)]
 pub struct List<T> {
     node: Arc<Node<T>>,
+    length: usize,
 }
 
 #[derive(Debug)]
@@ -56,7 +58,8 @@ enum Node<T> {
 impl<T> List<T> {
     pub fn new() -> List<T> {
         List {
-            node: Arc::new(Node::Nil)
+            node: Arc::new(Node::Nil),
+            length: 0,
         }
     }
 
@@ -69,15 +72,26 @@ impl<T> List<T> {
 
     pub fn tail(&self) -> Option<List<T>> {
         match *self.node {
-            Node::Cons(_, ref t) => Some(List { node: Arc::clone(t) }),
+            Node::Cons(_, ref t) => Some(List { node: Arc::clone(t), length: self.length - 1 }),
             Node::Nil            => None,
         }
     }
 
     pub fn cons(&self, v: T) -> List<T> {
         List {
-            node: Arc::new(Node::Cons(v, Arc::clone(&self.node)))
+            node: Arc::new(Node::Cons(v, Arc::clone(&self.node))),
+            length: self.length + 1,
         }
+    }
+
+    #[inline(always)]
+    pub fn len(&self) -> usize {
+        self.length
+    }
+
+    #[inline(always)]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn iter(&self) -> Iter<T> {
@@ -93,7 +107,7 @@ impl<T> Default for List<T> {
 
 impl<T: PartialEq<T>> PartialEq<List<T>> for List<T> {
     fn eq(&self, other: &List<T>) -> bool {
-        self.iter().eq(other.iter())
+        self.length == other.length && self.iter().eq(other.iter())
     }
 }
 
@@ -122,7 +136,8 @@ impl<T: Hash> Hash for List<T> {
 impl<T> Clone for List<T> {
     fn clone(&self) -> List<T> {
         List {
-            node: Arc::clone(&self.node)
+            node: Arc::clone(&self.node),
+            length: self.length,
         }
     }
 }
@@ -156,13 +171,15 @@ impl<'a, T> IntoIterator for &'a List<T> {
 
 #[derive(Debug)]
 pub struct Iter<'a, T: 'a> {
-    next: &'a Node<T>
+    next: &'a Node<T>,
+    length: usize,
 }
 
 impl<'a, T> Iter<'a, T> {
     fn new(list: &List<T>) -> Iter<T> {
         Iter {
-            next: list.node.borrow()
+            next: list.node.borrow(),
+            length: list.len(),
         }
     }
 }
@@ -174,12 +191,19 @@ impl<'a, T> Iterator for Iter<'a, T> {
         match *self.next {
             Node::Cons(ref v, ref t) => {
                 self.next = t;
+                self.length -= 1;
                 Some(v)
             },
             Node::Nil => None
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.length, Some(self.length))
+    }
 }
+
+impl<'a, T> ExactSizeIterator for Iter<'a, T> {}
 
 #[cfg(test)]
 mod test {
@@ -204,6 +228,30 @@ mod test {
             }
 
             assert!(left == 0);
+        }
+
+
+        #[test]
+        fn test_iter_size_hint() -> () {
+            let vector = List::new()
+                .cons(2)
+                .cons(1)
+                .cons(0);
+            let mut iterator = vector.iter();
+
+            assert_eq!(iterator.size_hint(), (3, Some(3)));
+
+            iterator.next();
+
+            assert_eq!(iterator.size_hint(), (2, Some(2)));
+
+            iterator.next();
+
+            assert_eq!(iterator.size_hint(), (1, Some(1)));
+
+            iterator.next();
+
+            assert_eq!(iterator.size_hint(), (0, Some(0)));
         }
 
         #[test]
@@ -250,7 +298,10 @@ mod test {
         match *empty_list.node {
             Node::Nil => (),
             _         => panic!("should be nil"),
-        }
+        };
+
+        assert_eq!(empty_list.len(), 0);
+        assert!(empty_list.is_empty());
     }
 
     #[test]
@@ -283,6 +334,9 @@ mod test {
         assert!(empty_list.tail().is_none());
         assert_eq!(singleton_list.tail().unwrap().head(), None);
         assert_eq!(list.tail().unwrap().head(), Some(&1));
+
+        assert_eq!(list.len(), 4);
+        assert_eq!(list.tail().unwrap().len(), 3);
     }
 
     #[test]
@@ -290,6 +344,7 @@ mod test {
         let list: List<i32> = List::default();
 
         assert_eq!(list.head(), None);
+        assert_eq!(list.len(), 0);
     }
 
     #[test]
@@ -390,5 +445,6 @@ mod test {
         let clone = list.clone();
 
         assert!(clone.iter().eq(list.iter()));
+        assert_eq!(clone.len(), list.len());
     }
 }

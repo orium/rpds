@@ -56,6 +56,7 @@ impl<T: Clone> CloneWithCapacity for Vec<T> {
 /// | `push()`                   | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
 /// | `drop_last()`              | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
 /// | `clone()`                  |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | `len()`                    |      Θ(1) |      Θ(1) |        Θ(1) |
 /// | iterator creation          |      Θ(1) |      Θ(1) |        Θ(1) |
 /// | iterator step              |      Θ(1) |      Θ(1) |   Θ(log(n)) |
 /// | iterator full              |      Θ(n) |      Θ(n) |        Θ(n) |
@@ -93,7 +94,7 @@ impl<T: Clone> CloneWithCapacity for Vec<T> {
 pub struct Vector<T> {
     root: Arc<Node<T>>,
     bits: u8,
-    size: usize,
+    length: usize,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -248,7 +249,7 @@ impl<T> Vector<T> {
         Vector {
             root: Arc::new(Node::new_empty_leaf()),
             bits,
-            size: 0
+            length: 0
         }
     }
 
@@ -257,7 +258,7 @@ impl<T> Vector<T> {
     }
 
     pub fn last(&self) -> Option<&T> {
-        match self.size {
+        match self.length {
             0 => None,
             n => self.get(n - 1),
         }
@@ -270,8 +271,8 @@ impl<T> Vector<T> {
 
     #[inline(always)]
     fn height(&self) -> usize {
-        if self.size > 1 {
-            let u: usize = self.size - 1;
+        if self.length > 1 {
+            let u: usize = self.length - 1;
             let c: usize = 8 * size_of::<usize>() - u.leading_zeros() as usize;
             let b: usize = self.bits as usize;
 
@@ -292,7 +293,7 @@ impl<T> Vector<T> {
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
-        if index >= self.size {
+        if index >= self.length {
             None
         } else {
             Some(self.root.get(index, self.height(), |index, height| self.bucket(index, height)))
@@ -300,7 +301,7 @@ impl<T> Vector<T> {
     }
 
     pub fn set(&self, index: usize, v: T) -> Option<Vector<T>> {
-        if index >= self.size {
+        if index >= self.length {
             None
         } else {
             Some(self.assoc(index, v))
@@ -323,12 +324,12 @@ impl<T> Vector<T> {
             |index, height| self.bucket(index, height),
             self.degree()
         );
-        let adds_item: bool = index >= self.size;
+        let adds_item: bool = index >= self.length;
 
         Vector {
             root: Arc::new(new_root),
             bits: self.bits,
-            size: self.size + if adds_item { 1 } else { 0 },
+            length: self.length + if adds_item { 1 } else { 0 },
         }
     }
 
@@ -346,7 +347,7 @@ impl<T> Vector<T> {
 
     #[inline(always)]
     fn is_root_full(&self) -> bool {
-        self.size == self.root_max_capacity()
+        self.length == self.root_max_capacity()
     }
 
     pub fn push(&self, v: T) -> Vector<T> {
@@ -361,12 +362,12 @@ impl<T> Vector<T> {
             let new_vector = Vector {
                 root: Arc::new(new_root),
                 bits: self.bits,
-                size: self.size + 1,
+                length: self.length + 1,
             };
 
-            new_vector.assoc(self.size, v)
+            new_vector.assoc(self.length, v)
         } else  {
-            self.assoc(self.size, v)
+            self.assoc(self.length, v)
         }
     }
 
@@ -391,7 +392,7 @@ impl<T> Vector<T> {
     }
 
     pub fn drop_last(&self) -> Option<Vector<T>> {
-        if self.size == 0 {
+        if self.length == 0 {
             return None;
         }
 
@@ -403,7 +404,7 @@ impl<T> Vector<T> {
                 Vector {
                     root: Arc::new(new_root),
                     bits: self.bits,
-                    size: self.size - 1,
+                    length: self.length - 1,
                 }
             }
         };
@@ -413,7 +414,7 @@ impl<T> Vector<T> {
 
     #[inline(always)]
     pub fn len(&self) -> usize {
-        self.size
+        self.length
     }
 
     #[inline(always)]
@@ -443,7 +444,7 @@ impl<T> Default for Vector<T> {
 
 impl<T: PartialEq<T>> PartialEq<Vector<T>> for Vector<T> {
     fn eq(&self, other: &Vector<T>) -> bool {
-        self.size == other.size && self.iter().eq(other.iter())
+        self.length == other.length && self.iter().eq(other.iter())
     }
 }
 
@@ -474,7 +475,7 @@ impl<T> Clone for Vector<T> {
         Vector {
             root: Arc::clone(&self.root),
             bits: self.bits,
-            size: self.size,
+            length: self.length,
         }
     }
 }
@@ -944,9 +945,9 @@ mod test {
     mod internal {
         use super::super::*;
 
-        fn dummy_vector_with_size(size: usize) -> Vector<u8> {
+        fn dummy_vector_with_length(len: usize) -> Vector<u8> {
             let mut v = Vector::new_with_bits(5);
-            v.size = size;
+            v.length = len;
             v
         }
 
@@ -961,19 +962,19 @@ mod test {
 
         #[test]
         fn test_height() -> () {
-            assert_eq!(dummy_vector_with_size(      0).height(), 0);
-            assert_eq!(dummy_vector_with_size(      5).height(), 0);
-            assert_eq!(dummy_vector_with_size(     32).height(), 0);
-            assert_eq!(dummy_vector_with_size(     33).height(), 1);
-            assert_eq!(dummy_vector_with_size(     64).height(), 1);
-            assert_eq!(dummy_vector_with_size(    128).height(), 1);
-            assert_eq!(dummy_vector_with_size(    512).height(), 1);
-            assert_eq!(dummy_vector_with_size(   1024).height(), 1);
-            assert_eq!(dummy_vector_with_size(   1025).height(), 2);
-            assert_eq!(dummy_vector_with_size(  32768).height(), 2);
-            assert_eq!(dummy_vector_with_size(  32769).height(), 3);
-            assert_eq!(dummy_vector_with_size(1048576).height(), 3);
-            assert_eq!(dummy_vector_with_size(1048577).height(), 4);
+            assert_eq!(dummy_vector_with_length(      0).height(), 0);
+            assert_eq!(dummy_vector_with_length(      5).height(), 0);
+            assert_eq!(dummy_vector_with_length(     32).height(), 0);
+            assert_eq!(dummy_vector_with_length(     33).height(), 1);
+            assert_eq!(dummy_vector_with_length(     64).height(), 1);
+            assert_eq!(dummy_vector_with_length(    128).height(), 1);
+            assert_eq!(dummy_vector_with_length(    512).height(), 1);
+            assert_eq!(dummy_vector_with_length(   1024).height(), 1);
+            assert_eq!(dummy_vector_with_length(   1025).height(), 2);
+            assert_eq!(dummy_vector_with_length(  32768).height(), 2);
+            assert_eq!(dummy_vector_with_length(  32769).height(), 3);
+            assert_eq!(dummy_vector_with_length(1048576).height(), 3);
+            assert_eq!(dummy_vector_with_length(1048577).height(), 4);
         }
 
         #[test]
@@ -1022,26 +1023,26 @@ mod test {
 
         #[test]
         fn test_root_max_capacity() -> () {
-            assert_eq!(dummy_vector_with_size(    0).root_max_capacity(),      32);
-            assert_eq!(dummy_vector_with_size(    5).root_max_capacity(),      32);
-            assert_eq!(dummy_vector_with_size(   32).root_max_capacity(),      32);
-            assert_eq!(dummy_vector_with_size(   33).root_max_capacity(),    1024);
-            assert_eq!(dummy_vector_with_size( 1024).root_max_capacity(),    1024);
-            assert_eq!(dummy_vector_with_size( 1025).root_max_capacity(),   32768);
-            assert_eq!(dummy_vector_with_size(32768).root_max_capacity(),   32768);
-            assert_eq!(dummy_vector_with_size(32769).root_max_capacity(), 1048576);
+            assert_eq!(dummy_vector_with_length(    0).root_max_capacity(), 32);
+            assert_eq!(dummy_vector_with_length(    5).root_max_capacity(), 32);
+            assert_eq!(dummy_vector_with_length(   32).root_max_capacity(), 32);
+            assert_eq!(dummy_vector_with_length(   33).root_max_capacity(), 1024);
+            assert_eq!(dummy_vector_with_length( 1024).root_max_capacity(), 1024);
+            assert_eq!(dummy_vector_with_length( 1025).root_max_capacity(), 32768);
+            assert_eq!(dummy_vector_with_length(32768).root_max_capacity(), 32768);
+            assert_eq!(dummy_vector_with_length(32769).root_max_capacity(), 1048576);
         }
 
         #[test]
         fn test_is_root_full() -> () {
-            assert!(!dummy_vector_with_size(    0).is_root_full());
-            assert!(!dummy_vector_with_size(    5).is_root_full());
-            assert!( dummy_vector_with_size(   32).is_root_full());
-            assert!(!dummy_vector_with_size(   33).is_root_full());
-            assert!( dummy_vector_with_size( 1024).is_root_full());
-            assert!(!dummy_vector_with_size( 1025).is_root_full());
-            assert!( dummy_vector_with_size(32768).is_root_full());
-            assert!(!dummy_vector_with_size(32769).is_root_full());
+            assert!(!dummy_vector_with_length(    0).is_root_full());
+            assert!(!dummy_vector_with_length(    5).is_root_full());
+            assert!( dummy_vector_with_length(   32).is_root_full());
+            assert!(!dummy_vector_with_length(   33).is_root_full());
+            assert!( dummy_vector_with_length( 1024).is_root_full());
+            assert!(!dummy_vector_with_length( 1025).is_root_full());
+            assert!( dummy_vector_with_length(32768).is_root_full());
+            assert!(!dummy_vector_with_length(32769).is_root_full());
         }
     }
 
