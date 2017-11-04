@@ -21,6 +21,7 @@ use std::cmp::Ordering;
 use std::hash::{Hasher, Hash};
 use std::ops::Index;
 use std::iter::Peekable;
+use std::iter::FromIterator;
 use std::mem::size_of;
 
 const DEFAULT_BITS: u8 = 5;
@@ -712,6 +713,18 @@ impl<'a, T> IntoIterator for &'a Vector<T> {
     }
 }
 
+impl<T> FromIterator<T> for Vector<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> Vector<T> {
+        let mut vector = Vector::new();
+
+        for e in into_iter {
+            vector = vector.push(e);
+        }
+
+        vector
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -1237,6 +1250,14 @@ mod test {
 
         assert_eq!(empty_vector.last(), None);
         assert_eq!(vector.last(), Some(&2));
+    }
+
+    #[test]
+    fn test_from_iterator() -> () {
+        let vec: Vec<u32> = vec![10, 11, 12, 13];
+        let vector: Vector<u32> = vec.iter().map(|v| *v).collect();
+
+        assert!(vec.iter().eq(vector.iter()));
     }
 
     #[test]

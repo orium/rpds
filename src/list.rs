@@ -19,6 +19,7 @@ use std::fmt::Display;
 use std::cmp::Ordering;
 use std::hash::{Hasher, Hash};
 use std::borrow::Borrow;
+use std::iter::FromIterator;
 
 /// A persistent list with structural sharing.  This data structure supports fast get head,
 /// get tail, and cons.
@@ -166,6 +167,26 @@ impl<'a, T> IntoIterator for &'a List<T> {
 
     fn into_iter(self) -> Iter<'a, T> {
         self.iter()
+    }
+}
+
+impl<T> FromIterator<T> for List<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> List<T> {
+        let iter = into_iter.into_iter();
+        let (min_size, max_size_hint) = iter.size_hint();
+        let mut vec: Vec<T> = Vec::with_capacity(max_size_hint.unwrap_or(min_size));
+
+        for e in iter {
+            vec.push(e);
+        }
+
+        let mut list: List<T> = List::new();
+
+        for e in vec.into_iter().rev() {
+            list = list.cons(e);
+        }
+
+        list
     }
 }
 
@@ -337,6 +358,14 @@ mod test {
 
         assert_eq!(list.len(), 4);
         assert_eq!(list.tail().unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_from_iterator() -> () {
+        let vec: Vec<u32> = vec![10, 11, 12, 13];
+        let list: List<u32> = vec.iter().map(|v| *v).collect();
+
+        assert!(vec.iter().eq(list.iter()));
     }
 
     #[test]
