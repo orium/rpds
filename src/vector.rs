@@ -179,12 +179,12 @@ impl<T> Node<T> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     fn is_empty(&self) -> bool {
         self.used() == 0
     }
 
-    #[inline(always)]
+    #[inline]
     fn is_singleton(&self) -> bool {
         self.used() == 1
     }
@@ -254,6 +254,7 @@ impl<T> Vector<T> {
         }
     }
 
+    #[inline]
     pub fn first(&self) -> Option<&T> {
         self.get(0)
     }
@@ -265,12 +266,12 @@ impl<T> Vector<T> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     fn degree(&self) -> usize {
         1 << self.bits
     }
 
-    #[inline(always)]
+    #[inline]
     fn height(&self) -> usize {
         if self.length > 1 {
             let u: usize = self.length - 1;
@@ -283,12 +284,12 @@ impl<T> Vector<T> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     fn mask(&self) -> usize {
         self.degree() - 1
     }
 
-    #[inline(always)]
+    #[inline]
     fn bucket(&self, index: usize, height: usize) -> usize {
         (index >> (height * self.bits as usize)) & self.mask()
     }
@@ -334,7 +335,7 @@ impl<T> Vector<T> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     fn root_max_capacity(&self) -> usize {
         /* A Trie's root max capacity is
          *
@@ -346,7 +347,7 @@ impl<T> Vector<T> {
         1 << (self.bits as usize * (self.height() + 1))
     }
 
-    #[inline(always)]
+    #[inline]
     fn is_root_full(&self) -> bool {
         self.length == self.root_max_capacity()
     }
@@ -413,12 +414,12 @@ impl<T> Vector<T> {
         Some(new_vector)
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn len(&self) -> usize {
         self.length
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -531,7 +532,6 @@ impl<'a, T> IterStackElement<'a, T> {
         }
     }
 
-    #[inline(always)]
     fn current_node(&mut self) -> &'a Node<T> {
         match *self.node {
             Node::Branch(ref a) => a[*self.index_iter.peek().unwrap()].as_ref(),
@@ -539,7 +539,6 @@ impl<'a, T> IterStackElement<'a, T> {
         }
     }
 
-    #[inline(always)]
     fn current_elem(&mut self) -> &'a T {
         match *self.node {
             Node::Leaf(ref a) => a[*self.index_iter.peek().unwrap()].as_ref(),
@@ -547,12 +546,12 @@ impl<'a, T> IterStackElement<'a, T> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     fn advance(&mut self) -> () {
         self.index_iter.next();
     }
 
-    #[inline(always)]
+    #[inline]
     fn finished(&mut self) -> bool {
         self.index_iter.peek().is_none()
     }
@@ -587,7 +586,6 @@ impl<'a, T> Iter<'a, T> {
         Iter::dig(stack, backwards);
     }
 
-    #[inline(always)]
     fn init_if_needed(&mut self, backwards: bool) -> () {
         let stack_field = if backwards {
             &mut self.stack_backward
@@ -606,7 +604,7 @@ impl<'a, T> Iter<'a, T> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     fn current(stack: &mut Vec<IterStackElement<'a, T>>) -> Option<&'a T> {
         stack.last_mut().map(|e| e.current_elem())
     }
@@ -628,12 +626,11 @@ impl<'a, T> Iter<'a, T> {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     fn non_empty(&self) -> bool {
         self.left_index < self.right_index
     }
 
-    #[inline(always)]
     fn advance_forward(&mut self) -> () {
         if self.non_empty() {
             Iter::advance(self.stack_forward.as_mut().unwrap(), false);
@@ -642,7 +639,6 @@ impl<'a, T> Iter<'a, T> {
         }
     }
 
-    #[inline(always)]
     fn current_forward(&mut self) -> Option<&'a T> {
         if self.non_empty() {
             Iter::current(self.stack_forward.as_mut().unwrap())
@@ -651,7 +647,6 @@ impl<'a, T> Iter<'a, T> {
         }
     }
 
-    #[inline(always)]
     fn advance_backward(&mut self) -> () {
         if self.non_empty() {
             Iter::advance(self.stack_backward.as_mut().unwrap(), false);
@@ -660,7 +655,6 @@ impl<'a, T> Iter<'a, T> {
         }
     }
 
-    #[inline(always)]
     fn current_backward(&mut self) -> Option<&'a T> {
         if self.non_empty() {
             Iter::current(self.stack_backward.as_mut().unwrap())
