@@ -20,7 +20,6 @@ use std::fmt::Display;
 use std::cmp::Ordering;
 use std::hash::{Hasher, Hash};
 use std::ops::Index;
-use std::iter::Peekable;
 use std::iter::FromIterator;
 use std::mem::size_of;
 
@@ -513,47 +512,39 @@ pub struct Iter<'a, T: 'a> {
 
 struct IterStackElement<'a, T: 'a> {
     node: &'a Node<T>,
-    index_iter: Peekable<Box<Iterator<Item=usize>>>,
+    index: isize,
 }
 
 impl<'a, T> IterStackElement<'a, T> {
     fn new(node: &Node<T>, backwards: bool) -> IterStackElement<T> {
-        let ranges: Peekable<Box<Iterator<Item=usize>>> = {
-            let r = 0..node.used();
-            let range_iter: Box<Iterator<Item=usize>> =
-                if backwards { Box::new(r.rev()) } else { Box::new(r) };
-
-            range_iter.peekable()
-        };
-
         IterStackElement {
             node,
-            index_iter: ranges,
+            index: if backwards { node.used() as isize - 1 } else { 0 },
         }
     }
 
-    fn current_node(&mut self) -> &'a Node<T> {
+    fn current_node(&self) -> &'a Node<T> {
         match *self.node {
-            Node::Branch(ref a) => a[*self.index_iter.peek().unwrap()].as_ref(),
+            Node::Branch(ref a) => a[self.index as usize].as_ref(),
             Node::Leaf(_) => panic!("called current child of a branch"),
         }
     }
 
-    fn current_elem(&mut self) -> &'a T {
+    fn current_elem(&self) -> &'a T {
         match *self.node {
-            Node::Leaf(ref a) => a[*self.index_iter.peek().unwrap()].as_ref(),
+            Node::Leaf(ref a) => a[self.index as usize].as_ref(),
             Node::Branch(_) => panic!("called current element of a branch"),
         }
     }
 
     #[inline]
-    fn advance(&mut self) -> () {
-        self.index_iter.next();
+    fn advance(&mut self, backwards: bool) -> () {
+        self.index += if backwards { -1 } else { 1 };
     }
 
     #[inline]
-    fn finished(&mut self) -> bool {
-        self.index_iter.peek().is_none()
+    fn finished(&self) -> bool {
+        self.index as usize >= self.node.used() || self.index < 0
     }
 }
 
@@ -572,7 +563,7 @@ impl<'a, T> Iter<'a, T> {
 
     fn dig(stack: &mut Vec<IterStackElement<T>>, backwards: bool) -> () {
         let next_node: &Node<T> = {
-            let stack_top = stack.last_mut().unwrap();
+            let stack_top = stack.last().unwrap();
 
             if let Node::Leaf(_) = *stack_top.node {
                 return;
@@ -605,14 +596,14 @@ impl<'a, T> Iter<'a, T> {
     }
 
     #[inline]
-    fn current(stack: &mut Vec<IterStackElement<'a, T>>) -> Option<&'a T> {
-        stack.last_mut().map(|e| e.current_elem())
+    fn current(stack: &Vec<IterStackElement<'a, T>>) -> Option<&'a T> {
+        stack.last().map(|e| e.current_elem())
     }
 
     fn advance(stack: &mut Vec<IterStackElement<T>>, backwards: bool) -> () {
         match stack.pop() {
             Some(mut stack_element) => {
-                stack_element.advance();
+                stack_element.advance(backwards);
 
                 if stack_element.finished() {
                     Iter::advance(stack, backwards);
@@ -639,9 +630,9 @@ impl<'a, T> Iter<'a, T> {
         }
     }
 
-    fn current_forward(&mut self) -> Option<&'a T> {
+    fn current_forward(&self) -> Option<&'a T> {
         if self.non_empty() {
-            Iter::current(self.stack_forward.as_mut().unwrap())
+            Iter::current(self.stack_forward.as_ref().unwrap())
         } else {
             None
         }
@@ -649,15 +640,15 @@ impl<'a, T> Iter<'a, T> {
 
     fn advance_backward(&mut self) -> () {
         if self.non_empty() {
-            Iter::advance(self.stack_backward.as_mut().unwrap(), false);
+            Iter::advance(self.stack_backward.as_mut().unwrap(), true);
 
             self.right_index -= 1;
         }
     }
 
-    fn current_backward(&mut self) -> Option<&'a T> {
+    fn current_backward(&self) -> Option<&'a T> {
         if self.non_empty() {
-            Iter::current(self.stack_backward.as_mut().unwrap())
+            Iter::current(self.stack_backward.as_ref().unwrap())
         } else {
             None
         }
@@ -838,6 +829,15 @@ mod test {
         }
 
         #[test]
+        fn test_iter_empty_vector_backwards() -> () {
+            let vector: Vector<i32> = Vector::new();
+
+            for _ in vector.iter().rev() {
+                panic!("iterator should be empty");
+            }
+        }
+
+        #[test]
         fn test_iter_big_vector() -> () {
             let limit = 32*32*32+1;
             let mut vector = Vector::new();
@@ -855,6 +855,29 @@ mod test {
                 assert_eq!(*v, expected);
 
                 expected += 1;
+            }
+
+            assert_eq!(left, 0);
+        }
+
+        #[test]
+        fn test_iter_big_vector_backwards() -> () {
+            let limit = 32*32*32+1;
+            let mut vector = Vector::new();
+            let mut expected = limit - 1;
+            let mut left = limit;
+
+            for i in 0..limit {
+                vector = vector.push(i);
+            }
+
+            for v in vector.iter().rev() {
+                left -= 1;
+
+                assert!(left >= 0);
+                assert_eq!(*v, expected);
+
+                expected -= 1;
             }
 
             assert_eq!(left, 0);
