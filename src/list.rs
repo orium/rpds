@@ -64,21 +64,21 @@ impl<T> List<T> {
         }
     }
 
-    pub fn head(&self) -> Option<&T> {
+    pub fn first(&self) -> Option<&T> {
         match *self.node {
             Node::Cons(ref h, _) => Some(h),
             Node::Nil            => None,
         }
     }
 
-    pub fn tail(&self) -> Option<List<T>> {
+    pub fn drop_first(&self) -> Option<List<T>> {
         match *self.node {
             Node::Cons(_, ref t) => Some(List { node: Arc::clone(t), length: self.length - 1 }),
             Node::Nil            => None,
         }
     }
 
-    pub fn cons(&self, v: T) -> List<T> {
+    pub fn push_front(&self, v: T) -> List<T> {
         List {
             node: Arc::new(Node::Cons(v, Arc::clone(&self.node))),
             length: self.length + 1,
@@ -183,7 +183,7 @@ impl<T> FromIterator<T> for List<T> {
         let mut list: List<T> = List::new();
 
         for e in vec.into_iter().rev() {
-            list = list.cons(e);
+            list = list.push_front(e);
         }
 
         list
@@ -240,7 +240,7 @@ mod test {
             let mut left = limit;
 
             for i in 0..limit {
-                list = list.cons(i);
+                list = list.push_front(i);
             }
 
             for v in list.iter() {
@@ -255,9 +255,9 @@ mod test {
         #[test]
         fn test_iter_size_hint() -> () {
             let vector = List::new()
-                .cons(2)
-                .cons(1)
-                .cons(0);
+                .push_front(2)
+                .push_front(1)
+                .push_front(0);
             let mut iterator = vector.iter();
 
             assert_eq!(iterator.size_hint(), (3, Some(3)));
@@ -278,10 +278,10 @@ mod test {
         #[test]
         fn test_into_iterator() -> () {
             let list = List::new()
-                .cons(3)
-                .cons(2)
-                .cons(1)
-                .cons(0);
+                .push_front(3)
+                .push_front(2)
+                .push_front(1)
+                .push_front(0);
             let mut expected = 0;
             let mut left = 4;
 
@@ -329,35 +329,35 @@ mod test {
     fn test_head() -> () {
         let empty_list: List<i32> = List::new();
         let singleton_list = List::new()
-            .cons("hello");
+            .push_front("hello");
         let list = List::new()
-            .cons(3)
-            .cons(2)
-            .cons(1)
-            .cons(0);
+            .push_front(3)
+            .push_front(2)
+            .push_front(1)
+            .push_front(0);
 
-        assert_eq!(empty_list.head(), None);
-        assert_eq!(singleton_list.head(), Some(&"hello"));
-        assert_eq!(list.head(), Some(&0));
+        assert_eq!(empty_list.first(), None);
+        assert_eq!(singleton_list.first(), Some(&"hello"));
+        assert_eq!(list.first(), Some(&0));
     }
 
     #[test]
     fn test_tail() -> () {
         let empty_list: List<i32> = List::new();
         let singleton_list = List::new()
-            .cons("hello");
+            .push_front("hello");
         let list = List::new()
-            .cons(3)
-            .cons(2)
-            .cons(1)
-            .cons(0);
+            .push_front(3)
+            .push_front(2)
+            .push_front(1)
+            .push_front(0);
 
-        assert!(empty_list.tail().is_none());
-        assert_eq!(singleton_list.tail().unwrap().head(), None);
-        assert_eq!(list.tail().unwrap().head(), Some(&1));
+        assert!(empty_list.drop_first().is_none());
+        assert_eq!(singleton_list.drop_first().unwrap().first(), None);
+        assert_eq!(list.drop_first().unwrap().first(), Some(&1));
 
         assert_eq!(list.len(), 4);
-        assert_eq!(list.tail().unwrap().len(), 3);
+        assert_eq!(list.drop_first().unwrap().len(), 3);
     }
 
     #[test]
@@ -372,7 +372,7 @@ mod test {
     fn test_default() -> () {
         let list: List<i32> = List::default();
 
-        assert_eq!(list.head(), None);
+        assert_eq!(list.first(), None);
         assert_eq!(list.len(), 0);
     }
 
@@ -380,12 +380,12 @@ mod test {
     fn test_display() -> () {
         let empty_list: List<i32> = List::new();
         let singleton_list = List::new()
-            .cons("hello");
+            .push_front("hello");
         let list = List::new()
-            .cons(3)
-            .cons(2)
-            .cons(1)
-            .cons(0);
+            .push_front(3)
+            .push_front(2)
+            .push_front(1)
+            .push_front(0);
 
         assert_eq!(format!("{}", empty_list), "[]");
         assert_eq!(format!("{}", singleton_list), "[hello]");
@@ -395,14 +395,14 @@ mod test {
     #[test]
     fn test_eq() -> () {
         let list_1 = List::new()
-            .cons("a")
-            .cons("a");
+            .push_front("a")
+            .push_front("a");
         let list_1_prime = List::new()
-            .cons("a")
-            .cons("a");
+            .push_front("a")
+            .push_front("a");
         let list_2 = List::new()
-            .cons("b")
-            .cons("a");
+            .push_front("b")
+            .push_front("a");
 
         assert_ne!(list_1, list_2);
         assert_eq!(list_1, list_1);
@@ -413,15 +413,15 @@ mod test {
     #[test]
     fn test_partial_ord() -> () {
         let list_1 = List::new()
-            .cons("a");
+            .push_front("a");
         let list_1_prime = List::new()
-            .cons("a");
+            .push_front("a");
         let list_2 = List::new()
-            .cons("b");
+            .push_front("b");
         let list_3 = List::new()
-            .cons(0.0);
+            .push_front(0.0);
         let list_4 = List::new()
-            .cons(::std::f32::NAN);
+            .push_front(::std::f32::NAN);
 
         assert!(list_1.partial_cmp(&list_1_prime) == Some(Ordering::Equal));
         assert!(list_1.partial_cmp(&list_2) == Some(Ordering::Less));
@@ -432,11 +432,11 @@ mod test {
     #[test]
     fn test_ord() -> () {
         let list_1 = List::new()
-            .cons("a");
+            .push_front("a");
         let list_1_prime = List::new()
-            .cons("a");
+            .push_front("a");
         let list_2 = List::new()
-            .cons("b");
+            .push_front("b");
 
         assert!(list_1.cmp(&list_1_prime) == Ordering::Equal);
         assert!(list_1.cmp(&list_2) == Ordering::Less);
@@ -454,12 +454,12 @@ mod test {
     #[test]
     fn test_hash() -> () {
         let list_1 = List::new()
-            .cons("a");
+            .push_front("a");
         let list_1_prime = List::new()
-            .cons("a");
+            .push_front("a");
         let list_2 = List::new()
-            .cons("b")
-            .cons("a");
+            .push_front("b")
+            .push_front("a");
 
         assert_eq!(hash(&list_1), hash(&list_1));
         assert_eq!(hash(&list_1), hash(&list_1_prime));
@@ -469,8 +469,8 @@ mod test {
     #[test]
     fn test_clone() -> () {
         let list = List::new()
-            .cons("there")
-            .cons("hello");
+            .push_front("there")
+            .push_front("hello");
         let clone = list.clone();
 
         assert!(clone.iter().eq(list.iter()));

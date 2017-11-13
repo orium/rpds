@@ -1115,7 +1115,7 @@ mod test {
     }
 
     #[test]
-    fn test_drop_left_drops_last_element() -> () {
+    fn test_drop_last_drops_last_element() -> () {
         let limit = 4*4*4*4+1;
         let mut vector: Vector<i32> = Vector::new_with_bits(2);
         let mut vectors = Vec::with_capacity(limit);
@@ -1135,7 +1135,7 @@ mod test {
     }
 
     #[test]
-    fn test_drop_left_keeps_vector_consistent() -> () {
+    fn test_drop_last_keeps_vector_consistent() -> () {
         let limit = 4*4*4*4*4*4+1;
         let mut vector: Vector<i32> = Vector::new_with_bits(2);
 

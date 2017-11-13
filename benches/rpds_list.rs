@@ -26,14 +26,14 @@ use rpds::list::List;
 use utils::BencherNoDrop;
 use bencher::{Bencher, black_box};
 
-fn list_cons(bench: &mut Bencher) -> () {
+fn list_push_front(bench: &mut Bencher) -> () {
     let limit = 100_000;
 
     bench.iter_no_drop(|| {
         let mut list: List<isize> = List::new();
 
         for i in 0..limit {
-            list = list.cons(i);
+            list = list.push_front(i);
         }
 
         list
@@ -45,7 +45,7 @@ fn list_iterate(bench: &mut Bencher) -> () {
     let mut list: List<isize> = List::new();
 
     for i in 0..limit {
-        list = list.cons(i);
+        list = list.push_front(i);
     }
 
     bench.iter(|| {
@@ -55,5 +55,5 @@ fn list_iterate(bench: &mut Bencher) -> () {
     });
 }
 
-benchmark_group!(benches, list_cons, list_iterate);
+benchmark_group!(benches, list_push_front, list_iterate);
 benchmark_main!(benches);
