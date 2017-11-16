@@ -23,7 +23,7 @@ build=$(cargo test --no-run --message-format=json 2>/dev/null | \
     rev | cut -d'/' -f 1 | rev)
 
 kcov --verify target/cov \
-    --exclude-pattern=/.cargo,/usr/lib \
+    --exclude-pattern='test' \
     --exclude-region='#[cfg(test)]' \
     --exclude-line='unreachable!' \
     target/debug/$build 2>&1 >/dev/null

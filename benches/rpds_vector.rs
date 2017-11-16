@@ -22,7 +22,7 @@ extern crate rpds;
 
 mod utils;
 
-use rpds::vector::Vector;
+use rpds::Vector;
 use utils::BencherNoDrop;
 use bencher::{Bencher, black_box};
 
