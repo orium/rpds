@@ -4,16 +4,32 @@ description = "Persistent data structures with structural sharing"
 version = "0.0.0"
 authors = ["Diogo Sousa <diogogsousa@gmail.com>"]
 
-# TODO add more properties (see http://doc.crates.io/manifest.html)
 homepage = "https://github.com/orium/rpds"
 repository = "https://github.com/orium/rpds"
-# documentation = "..."
+documentation = "https://docs.rs/rpds"
 readme = "README.md"
 
-keywords = ["data-structures", "persistent-data-structures", "immutable-data-structures"]
-categories = ["data-structures"]
+keywords = [
+    "data-structure",
+    "data-structures",
+    "persistent",
+    "immutable",
+]
+categories = [
+    "data-structures",
+]
 
 license = "LGPL-3.0"
+
+include = [
+    "src/**/*.rs",
+    "Cargo.toml",
+    "LICENSE",
+]
+
+[badges]
+travis-ci = { repository = "orium/rpds", branch = "master" }
+codecov = { repository = "orium/rpds", branch = "master", service = "github" }
 
 [dev-dependencies]
 # TODO This will probably be part of rust in the future (see https://github.com/rust-lang/rust/issues/29553)
