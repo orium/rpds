@@ -15,7 +15,7 @@ categories = ["data-structures"]
 
 license = "LGPL-3.0"
 
-[dependencies]
+[dev-dependencies]
 # TODO This will probably be part of rust in the future (see https://github.com/rust-lang/rust/issues/29553)
 bencher = "0.1"
 
