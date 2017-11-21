@@ -45,6 +45,10 @@ use List;
 /// ## Space complexity
 ///
 /// The space complexity is *Θ(n)*.
+///
+/// # Implementation details
+///
+/// This is a thin wrapper around a [List](../sequence/list/struct.List.html).
 #[derive(Debug)]
 pub struct Stack<T> {
     list: List<T>

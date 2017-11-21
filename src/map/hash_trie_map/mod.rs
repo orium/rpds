@@ -45,7 +45,7 @@ fn default_degree() -> u8 {
 ///
 /// # Complexity
 ///
-/// Let *n* be the number of elements in the vector.
+/// Let *n* be the number of elements in the map.
 ///
 /// ## Temporal complexity
 ///

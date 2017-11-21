@@ -22,7 +22,7 @@ use std::borrow::Borrow;
 use std::iter::FromIterator;
 
 /// A persistent list with structural sharing.  This data structure supports fast `push_front()`,
-/// `drop_first()`, and `first()`.
+/// `drop_first()`, `first()`, and `last()`.
 ///
 /// # Complexity
 ///
@@ -36,6 +36,7 @@ use std::iter::FromIterator;
 /// | `push_front()`    |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `drop_first()`    |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `first()`         |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `last()`          |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `len()`           |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `clone()`         |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator creation |      Θ(1) |    Θ(1) |        Θ(1) |
@@ -45,15 +46,20 @@ use std::iter::FromIterator;
 /// ## Space complexity
 ///
 /// The space complexity is *Θ(n)*.
+///
+/// # Implementation details
+///
+/// This is your classic functional list with "cons" and "nil" nodes.
 #[derive(Debug)]
 pub struct List<T> {
     node: Arc<Node<T>>,
+    last: Option<Arc<T>>,
     length: usize,
 }
 
 #[derive(Debug)]
 enum Node<T> {
-    Cons(T, Arc<Node<T>>),
+    Cons(Arc<T>, Arc<Node<T>>),
     Nil,
 }
 
@@ -61,6 +67,7 @@ impl<T> List<T> {
     pub fn new() -> List<T> {
         List {
             node: Arc::new(Node::Nil),
+            last: None,
             length: 0,
         }
     }
@@ -72,16 +79,41 @@ impl<T> List<T> {
         }
     }
 
+    pub fn last(&self) -> Option<&T> {
+        match self.last {
+            Some(ref v) => Some(v.borrow()),
+            None        => None,
+        }
+    }
+
     pub fn drop_first(&self) -> Option<List<T>> {
         match *self.node {
-            Node::Cons(_, ref t) => Some(List { node: Arc::clone(t), length: self.length - 1 }),
-            Node::Nil            => None,
+            Node::Cons(_, ref t) => {
+                let new_length = self.length - 1;
+                let new_list = List {
+                    node: Arc::clone(t),
+                    last: if new_length == 0 { None } else { self.last.clone() },
+                    length: new_length
+                };
+
+                Some(new_list)
+            },
+            Node::Nil => None,
         }
     }
 
     pub fn push_front(&self, v: T) -> List<T> {
+        let value = Arc::new(v);
+
         List {
-            node: Arc::new(Node::Cons(v, Arc::clone(&self.node))),
+            // TODO With non-lexical lifetimes can we put the "last" after "node"?
+            last: {
+                match self.last {
+                    Some(ref v) => Some(Arc::clone(v)),
+                    None        => Some(Arc::clone(&value)),
+                }
+            },
+            node: Arc::new(Node::Cons(value, Arc::clone(&self.node))),
             length: self.length + 1,
         }
     }
@@ -139,6 +171,7 @@ impl<T> Clone for List<T> {
     fn clone(&self) -> List<T> {
         List {
             node: Arc::clone(&self.node),
+            last: self.last.clone(),
             length: self.length,
         }
     }
