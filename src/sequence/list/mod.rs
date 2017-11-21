@@ -21,6 +21,9 @@ use std::hash::{Hasher, Hash};
 use std::borrow::Borrow;
 use std::iter::FromIterator;
 
+// TODO Use impl trait instead of this when available.
+pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
+
 /// A persistent list with structural sharing.  This data structure supports fast `push_front()`,
 /// `drop_first()`, `first()`, and `last()`.
 ///
@@ -35,6 +38,7 @@ use std::iter::FromIterator;
 /// | `new()`           |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `push_front()`    |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `drop_first()`    |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `reverse()`       |      Θ(n) |    Θ(n) |        Θ(n) |
 /// | `first()`         |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `last()`          |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `len()`           |      Θ(1) |    Θ(1) |        Θ(1) |
@@ -49,7 +53,8 @@ use std::iter::FromIterator;
 ///
 /// # Implementation details
 ///
-/// This is your classic functional list with "cons" and "nil" nodes.
+/// This is your classic functional list with "cons" and "nil" nodes, with a little extra sauce to
+/// make some operations more efficient.
 #[derive(Debug)]
 pub struct List<T> {
     node: Arc<Node<T>>,
@@ -102,20 +107,32 @@ impl<T> List<T> {
         }
     }
 
-    pub fn push_front(&self, v: T) -> List<T> {
-        let value = Arc::new(v);
-
+    fn push_front_arc(&self, v: Arc<T>) -> List<T> {
         List {
             // TODO With non-lexical lifetimes can we put the "last" after "node"?
             last: {
                 match self.last {
                     Some(ref v) => Some(Arc::clone(v)),
-                    None        => Some(Arc::clone(&value)),
+                    None        => Some(Arc::clone(&v)),
                 }
             },
-            node: Arc::new(Node::Cons(value, Arc::clone(&self.node))),
+            node: Arc::new(Node::Cons(v, Arc::clone(&self.node))),
             length: self.length + 1,
         }
+    }
+
+    pub fn push_front(&self, v: T) -> List<T> {
+        self.push_front_arc(Arc::new(v))
+    }
+
+    pub fn reverse(&self) -> List<T> {
+        let mut list = List::new();
+
+        for v in self.iter_arc() {
+            list = list.push_front_arc(Arc::clone(v));
+        }
+
+        list
     }
 
     #[inline]
@@ -128,8 +145,13 @@ impl<T> List<T> {
         self.len() == 0
     }
 
+    // TODO Use impl trait for return value when available
     pub fn iter(&self) -> Iter<T> {
-        Iter::new(self)
+        self.iter_arc().map(|v| v.borrow())
+    }
+
+    fn iter_arc(&self) -> IterArc<T> {
+        IterArc::new(self)
     }
 }
 
@@ -197,6 +219,7 @@ impl<T: Display> Display for List<T> {
 
 impl<'a, T> IntoIterator for &'a List<T> {
     type Item = &'a T;
+    // TODO Use impl trait for return value when available
     type IntoIter = Iter<'a, T>;
 
     fn into_iter(self) -> Iter<'a, T> {
@@ -225,24 +248,24 @@ impl<T> FromIterator<T> for List<T> {
 }
 
 #[derive(Debug)]
-pub struct Iter<'a, T: 'a> {
+pub struct IterArc<'a, T: 'a> {
     next: &'a Node<T>,
     length: usize,
 }
 
-impl<'a, T> Iter<'a, T> {
-    fn new(list: &List<T>) -> Iter<T> {
-        Iter {
-            next: list.node.borrow(),
+impl<'a, T> IterArc<'a, T> {
+    fn new(list: &List<T>) -> IterArc<T> {
+        IterArc {
+            next:   list.node.borrow(),
             length: list.len(),
         }
     }
 }
 
-impl<'a, T> Iterator for Iter<'a, T> {
-    type Item = &'a T;
+impl<'a, T> Iterator for IterArc<'a, T> {
+    type Item = &'a Arc<T>;
 
-    fn next(&mut self) -> Option<&'a T> {
+    fn next(&mut self) -> Option<&'a Arc<T>> {
         match *self.next {
             Node::Cons(ref v, ref t) => {
                 self.next = t;
@@ -258,7 +281,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
     }
 }
 
-impl<'a, T> ExactSizeIterator for Iter<'a, T> {}
+impl<'a, T> ExactSizeIterator for IterArc<'a, T> {}
 
 #[cfg(test)]
 mod test;

@@ -163,6 +163,27 @@ fn test_drop_first() -> () {
 }
 
 #[test]
+fn test_reverse() -> () {
+    let empty_list: List<i32> = List::new();
+    let singleton_list = List::new()
+        .push_front("hello");
+    let list = List::new()
+        .push_front(3)
+        .push_front(2)
+        .push_front(1)
+        .push_front(0);
+    let list_reversed = List::new()
+        .push_front(0)
+        .push_front(1)
+        .push_front(2)
+        .push_front(3);
+
+    assert_eq!(empty_list.reverse(), empty_list);
+    assert_eq!(singleton_list.reverse(), singleton_list);
+    assert_eq!(list.reverse(), list_reversed);
+}
+
+#[test]
 fn test_from_iterator() -> () {
     let vec: Vec<u32> = vec![10, 11, 12, 13];
     let list: List<u32> = vec.iter().map(|v| *v).collect();

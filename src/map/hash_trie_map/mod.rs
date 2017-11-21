@@ -34,6 +34,10 @@ use self::sparse_array_usize::SparseArrayUsize;
 
 type HashValue = u64;
 
+// TODO Use impl trait instead of this when available.
+pub type IterKeys<'a, K, V>   = ::std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
+pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
+
 // TODO when const_fn is stabilized this can be a const.
 fn default_degree() -> u8 {
     debug_assert!(8 * size_of::<usize>() <= u8::max_value() as usize);
@@ -598,12 +602,12 @@ impl<K, V, H: BuildHasher> HashTrieMap<K, V, H>
     }
 
     // TODO Use impl trait for return value when available
-    pub fn keys<'a>(&'a self) -> ::std::iter::Map<Iter<K, V>, fn((&'a K, &V)) -> &'a K> {
+    pub fn keys(&self) -> IterKeys<K, V> {
         self.iter().map(|(k, _)| k)
     }
 
     // TODO Use impl trait for return value when available
-    pub fn values<'a>(&'a self) -> ::std::iter::Map<Iter<K, V>, fn((&K, &'a V)) -> &'a V> {
+    pub fn values(&self) -> IterValues<K, V> {
         self.iter().map(|(_, v)| v)
     }
 }
