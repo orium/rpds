@@ -34,16 +34,16 @@ mod iter {
             assert_eq!(*v, left);
         }
 
-        assert!(left == 0);
+        assert_eq!(left, 0);
     }
 
     #[test]
     fn test_iter_size_hint() -> () {
-        let vector = List::new()
+        let list = List::new()
             .push_front(2)
             .push_front(1)
             .push_front(0);
-        let mut iterator = vector.iter();
+        let mut iterator = list.iter();
 
         assert_eq!(iterator.size_hint(), (3, Some(3)));
 
@@ -79,7 +79,7 @@ mod iter {
             expected += 1;
         }
 
-        assert!(left == 0);
+        assert_eq!(left, 0);
     }
 }
 
@@ -208,10 +208,10 @@ fn test_partial_ord() -> () {
     let list_4 = List::new()
         .push_front(::std::f32::NAN);
 
-    assert!(list_1.partial_cmp(&list_1_prime) == Some(Ordering::Equal));
-    assert!(list_1.partial_cmp(&list_2) == Some(Ordering::Less));
-    assert!(list_2.partial_cmp(&list_1) == Some(Ordering::Greater));
-    assert!(list_3.partial_cmp(&list_4) == None);
+    assert_eq!(list_1.partial_cmp(&list_1_prime), Some(Ordering::Equal));
+    assert_eq!(list_1.partial_cmp(&list_2), Some(Ordering::Less));
+    assert_eq!(list_2.partial_cmp(&list_1), Some(Ordering::Greater));
+    assert_eq!(list_3.partial_cmp(&list_4), None);
 }
 
 #[test]
@@ -223,9 +223,9 @@ fn test_ord() -> () {
     let list_2 = List::new()
         .push_front("b");
 
-    assert!(list_1.cmp(&list_1_prime) == Ordering::Equal);
-    assert!(list_1.cmp(&list_2) == Ordering::Less);
-    assert!(list_2.cmp(&list_1) == Ordering::Greater);
+    assert_eq!(list_1.cmp(&list_1_prime), Ordering::Equal);
+    assert_eq!(list_1.cmp(&list_2), Ordering::Less);
+    assert_eq!(list_2.cmp(&list_1), Ordering::Greater);
 }
 
 fn hash<T: Hash>(list: &List<T>) -> u64 {

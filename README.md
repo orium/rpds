@@ -4,8 +4,6 @@
 [![Documentation (latest)](https://docs.rs/rpds/badge.svg)](https://docs.rs/rpds/)
 [![LGPLv3.0 licensed](https://img.shields.io/badge/license-LGPLv3-blue.svg)](./LICENSE)
 
-
-
 # Rust Persistent Data Structures
 
 Rust Persistent Data Structures provides [fully persistent data structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
