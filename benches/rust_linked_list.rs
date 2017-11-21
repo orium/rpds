@@ -23,13 +23,14 @@ mod utils;
 
 use std::collections::LinkedList;
 use utils::BencherNoDrop;
+use utils::iterations;
 use bencher::{Bencher, black_box};
 
 fn rust_linked_list_push_front(bench: &mut Bencher) -> () {
-    let limit = 100_000;
+    let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
-        let mut linked_list: LinkedList<isize> = LinkedList::new();
+        let mut linked_list: LinkedList<usize> = LinkedList::new();
 
         for i in 0..limit {
             linked_list.push_front(i);
@@ -40,10 +41,10 @@ fn rust_linked_list_push_front(bench: &mut Bencher) -> () {
 }
 
 fn rust_linked_list_push_back(bench: &mut Bencher) -> () {
-    let limit = 100_000;
+    let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
-        let mut linked_list: LinkedList<isize> = LinkedList::new();
+        let mut linked_list: LinkedList<usize> = LinkedList::new();
 
         for i in 0..limit {
             linked_list.push_back(i);
@@ -54,8 +55,8 @@ fn rust_linked_list_push_back(bench: &mut Bencher) -> () {
 }
 
 fn rust_linked_list_iterate(bench: &mut Bencher) -> () {
-    let limit = 100_000;
-    let mut linked_list: LinkedList<isize> = LinkedList::new();
+    let limit = iterations(100_000);
+    let mut linked_list: LinkedList<usize> = LinkedList::new();
 
     for i in 0..limit {
         linked_list.push_back(i);

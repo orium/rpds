@@ -37,3 +37,11 @@ impl BencherNoDrop for Bencher {
                    "Vector of to-be-dropped values was resized.  This might have impacted the benchmark measurement.");
     }
 }
+
+/// To avoid long benchmarks running in the CI system we limit the iteration number to *2*.
+pub fn iterations(n: usize) -> usize {
+    match ::std::env::var("CI") {
+        Ok(ref v) if v == "true" => 2,
+        _ => n
+    }
+}

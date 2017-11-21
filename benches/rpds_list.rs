@@ -24,13 +24,14 @@ mod utils;
 
 use rpds::List;
 use utils::BencherNoDrop;
+use utils::iterations;
 use bencher::{Bencher, black_box};
 
 fn list_push_front(bench: &mut Bencher) -> () {
-    let limit = 100_000;
+    let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
-        let mut list: List<isize> = List::new();
+        let mut list: List<usize> = List::new();
 
         for i in 0..limit {
             list = list.push_front(i);
@@ -41,8 +42,8 @@ fn list_push_front(bench: &mut Bencher) -> () {
 }
 
 fn list_iterate(bench: &mut Bencher) -> () {
-    let limit = 100_000;
-    let mut list: List<isize> = List::new();
+    let limit = iterations(100_000);
+    let mut list: List<usize> = List::new();
 
     for i in 0..limit {
         list = list.push_front(i);

@@ -22,13 +22,14 @@ extern crate bencher;
 mod utils;
 
 use utils::BencherNoDrop;
+use utils::iterations;
 use bencher::{Bencher, black_box};
 
 fn rust_vec_push(bench: &mut Bencher) -> () {
-    let limit = 100_000;
+    let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
-        let mut vector: Vec<isize> = Vec::new();
+        let mut vector: Vec<usize> = Vec::new();
 
         for i in 0..limit {
             vector.push(i);
@@ -42,8 +43,8 @@ fn rust_vec_push(bench: &mut Bencher) -> () {
 // do per-iteration initialization.
 
 fn rust_vec_get(bench: &mut Bencher) -> () {
-    let limit = 100_000;
-    let mut vector: Vec<isize> = Vec::new();
+    let limit = iterations(100_000);
+    let mut vector: Vec<usize> = Vec::new();
 
     for i in 0..limit {
         vector.push(i);
@@ -57,8 +58,8 @@ fn rust_vec_get(bench: &mut Bencher) -> () {
 }
 
 fn rust_vec_iterate(bench: &mut Bencher) -> () {
-    let limit = 100_000;
-    let mut vector: Vec<isize> = Vec::new();
+    let limit = iterations(100_000);
+    let mut vector: Vec<usize> = Vec::new();
 
     for i in 0..limit {
         vector.push(i);

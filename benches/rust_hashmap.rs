@@ -23,16 +23,17 @@ mod utils;
 
 use std::collections::HashMap;
 use utils::BencherNoDrop;
+use utils::iterations;
 use bencher::{Bencher, black_box};
 
 fn rust_hashmap_insert(bench: &mut Bencher) -> () {
-    let limit = 100_000;
+    let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
-        let mut map: HashMap<isize, isize> = HashMap::new();
+        let mut map: HashMap<usize, isize> = HashMap::new();
 
         for i in 0..limit {
-            map.insert(i, -i);
+            map.insert(i, -(i as isize));
         }
 
         map
@@ -43,11 +44,11 @@ fn rust_hashmap_insert(bench: &mut Bencher) -> () {
 // we can do per-iteration initialization.
 
 fn rust_hashmap_get(bench: &mut Bencher) -> () {
-    let limit = 100_000;
-    let mut map: HashMap<isize, isize> = HashMap::new();
+    let limit = iterations(100_000);
+    let mut map: HashMap<usize, isize> = HashMap::new();
 
     for i in 0..limit {
-        map.insert(i, -i);
+        map.insert(i, -(i as isize));
     }
 
     bench.iter(|| {
@@ -58,11 +59,11 @@ fn rust_hashmap_get(bench: &mut Bencher) -> () {
 }
 
 fn rust_hashmap_iterate(bench: &mut Bencher) -> () {
-    let limit = 100_000;
-    let mut map: HashMap<isize, isize> = HashMap::new();
+    let limit = iterations(100_000);
+    let mut map: HashMap<usize, isize> = HashMap::new();
 
     for i in 0..limit {
-        map.insert(i, -i);
+        map.insert(i, -(i as isize));
     }
 
     bench.iter(|| {

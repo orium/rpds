@@ -24,16 +24,17 @@ mod utils;
 
 use rpds::HashTrieMap;
 use utils::BencherNoDrop;
+use utils::iterations;
 use bencher::{Bencher, black_box};
 
 fn hash_trie_map_insert(bench: &mut Bencher) -> () {
-    let limit = 100_000;
+    let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
         let mut map = HashTrieMap::new();
 
         for i in 0..limit {
-            map = map.insert(i, -i);
+            map = map.insert(i, -(i as isize));
         }
 
         map
@@ -41,11 +42,11 @@ fn hash_trie_map_insert(bench: &mut Bencher) -> () {
 }
 
 fn hash_trie_map_remove(bench: &mut Bencher) -> () {
-    let limit = 100_000;
+    let limit = iterations(100_000);
     let mut full_map = HashTrieMap::new();
 
     for i in 0..limit {
-        full_map = full_map.insert(i, -i);
+        full_map = full_map.insert(i, -(i as isize));
     }
 
     bench.iter_no_drop(|| {
@@ -60,11 +61,11 @@ fn hash_trie_map_remove(bench: &mut Bencher) -> () {
 }
 
 fn hash_trie_map_get(bench: &mut Bencher) -> () {
-    let limit = 100_000;
+    let limit = iterations(100_000);
     let mut map = HashTrieMap::new();
 
     for i in 0..limit {
-        map = map.insert(i, -i);
+        map = map.insert(i, -(i as isize));
     }
 
     bench.iter(|| {
@@ -75,11 +76,11 @@ fn hash_trie_map_get(bench: &mut Bencher) -> () {
 }
 
 fn hash_trie_map_iterate(bench: &mut Bencher) -> () {
-    let limit = 100_000;
+    let limit = iterations(100_000);
     let mut map = HashTrieMap::new();
 
     for i in 0..limit {
-        map = map.insert(i, -i);
+        map = map.insert(i, -(i as isize));
     }
 
     bench.iter(|| {
@@ -89,5 +90,8 @@ fn hash_trie_map_iterate(bench: &mut Bencher) -> () {
     });
 }
 
-benchmark_group!(benches, hash_trie_map_insert, hash_trie_map_remove, hash_trie_map_get, hash_trie_map_iterate);
+benchmark_group!(
+    benches,
+    hash_trie_map_insert, hash_trie_map_remove, hash_trie_map_get, hash_trie_map_iterate
+);
 benchmark_main!(benches);
