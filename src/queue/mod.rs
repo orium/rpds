@@ -1,0 +1,267 @@
+/* This file is part of rpds.
+ *
+ * rpds is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * rpds is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with rpds.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+use std::fmt::Display;
+use std::cmp::Ordering;
+use std::hash::{Hasher, Hash};
+use std::iter::FromIterator;
+use sequence::list;
+use List;
+
+// TODO Use impl trait instead of this when available.
+pub type Iter<'a, T> =
+    ::std::iter::Chain<::std::iter::Map<list::IterArc<'a, T>, fn(&::std::sync::Arc<T>) -> &T>, LazilyReversedListIter<'a, T>>;
+
+
+
+/// A persistent queue with structural sharing.  This data structure supports fast `enqueue()`,
+/// `dequeue()`, and `peek()`.
+///
+/// # Complexity
+///
+/// Let *n* be the number of elements in the queue.
+///
+/// ## Temporal complexity
+///
+/// | Operation             | Best case | Average | Worst case  |
+/// |:--------------------- | ---------:| -------:| -----------:|
+/// | `new()`               |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `enqueue()`           |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `dequeue()`           |      Θ(1) |    Θ(1) |        Θ(n) |
+/// | `dequeue()` amortized |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `peek()`              |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `len()`               |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `clone()`             |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | iterator creation     |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | iterator step         |      Θ(1) |    Θ(1) |        Θ(n) |
+/// | iterator full         |      Θ(n) |    Θ(n) |        Θ(n) |
+///
+/// ## Space complexity
+///
+/// The space complexity is *Θ(n)*.
+///
+/// # Implementation details
+///
+/// This queue is implemented as described in
+/// [Immutability in C# Part Four: An Immutable Queue](https://blogs.msdn.microsoft.com/ericlippert/2007/12/10/immutability-in-c-part-four-an-immutable-queue/).
+#[derive(Debug)]
+pub struct Queue<T> {
+    in_list:  List<T>,
+    out_list: List<T>,
+}
+
+impl<T> Queue<T> {
+    pub fn new() -> Queue<T> {
+        Queue {
+            in_list: List::new(),
+            out_list: List::new(),
+        }
+    }
+
+    pub fn peek(&self) -> Option<&T> {
+        if !self.out_list.is_empty() {
+            self.out_list.first()
+        } else {
+            self.in_list.last()
+        }
+    }
+
+    pub fn dequeue(&self) -> Option<Queue<T>> {
+        if !self.out_list.is_empty() {
+            Some(
+                Queue {
+                    in_list:  self.in_list.clone(),
+                    out_list: self.out_list.drop_first().unwrap(),
+                }
+            )
+        } else if !self.in_list.is_empty() {
+            Some(
+                Queue {
+                    in_list:  List::new(),
+                    out_list: self.in_list.reverse().drop_first().unwrap(),
+                }
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn enqueue(&self, v: T) -> Queue<T> {
+        Queue {
+            in_list:  self.in_list.push_front(v),
+            out_list: self.out_list.clone(),
+        }
+    }
+
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.in_list.len() + self.out_list.len()
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn iter(&self) -> Iter<T> {
+        self.out_list.iter().chain(LazilyReversedListIter::new(&self.in_list))
+    }
+}
+
+impl<T> Default for Queue<T> {
+    fn default() -> Queue<T> {
+        Queue::new()
+    }
+}
+
+impl<T: PartialEq> PartialEq for Queue<T> {
+    fn eq(&self, other: &Queue<T>) -> bool {
+        self.len() == other.len() && self.iter().eq(other.iter())
+    }
+}
+
+impl<T: Eq> Eq for Queue<T> {}
+
+impl<T: PartialOrd<T>> PartialOrd<Queue<T>> for Queue<T> {
+    fn partial_cmp(&self, other: &Queue<T>) -> Option<Ordering> {
+        self.iter().partial_cmp(other.iter())
+    }
+}
+
+impl<T: Ord> Ord for Queue<T> {
+    fn cmp(&self, other: &Queue<T>) -> Ordering {
+        self.iter().cmp(other.iter())
+    }
+}
+
+impl<T: Hash> Hash for Queue<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) -> () {
+        // Add the hash of length so that if two collections are added one after the other it doesn't
+        // hash to the same thing as a single collection with the same elements in the same order.
+        self.len().hash(state);
+
+        for e in self {
+            e.hash(state);
+        }
+    }
+}
+
+impl<T> Clone for Queue<T> {
+    fn clone(&self) -> Queue<T> {
+        Queue {
+            in_list:  self.in_list.clone(),
+            out_list: self.out_list.clone(),
+        }
+    }
+}
+
+impl<T: Display> Display for Queue<T> {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        let mut first = true;
+
+        fmt.write_str("Queue(")?;
+
+        for v in self.iter() {
+            if !first {
+                fmt.write_str(", ")?;
+            }
+            v.fmt(fmt)?;
+            first = false;
+        }
+
+        fmt.write_str(")")
+    }
+}
+
+impl<'a, T> IntoIterator for &'a Queue<T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Iter<'a, T> {
+        self.iter()
+    }
+}
+
+impl<T> FromIterator<T> for Queue<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> Queue<T> {
+        Queue {
+            out_list: List::from_iter(into_iter),
+            in_list:  List::new(),
+        }
+    }
+}
+
+pub enum LazilyReversedListIter<'a, T: 'a> {
+    Uninitialized { list: &'a List<T> },
+    Initialized { vec: Vec<&'a T>, current: Option<usize> },
+}
+
+impl<'a, T> LazilyReversedListIter<'a, T> {
+    fn new(list: &List<T>) -> LazilyReversedListIter<T> {
+        LazilyReversedListIter::Uninitialized { list }
+    }
+}
+
+impl<'a, T> Iterator for LazilyReversedListIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<&'a T> {
+        match *self {
+            LazilyReversedListIter::Uninitialized { list } => {
+                let len = list.len();
+                let mut vec: Vec<&'a T> = Vec::with_capacity(len);
+
+                for v in list.iter() {
+                    vec.push(v);
+                }
+
+                *self = LazilyReversedListIter::Initialized {
+                    vec,
+                    current: if len > 0 { Some(len - 1) } else { None },
+                };
+
+                self.next()
+            },
+
+            LazilyReversedListIter::Initialized { ref vec, ref mut current } => {
+                let v = current.map(|i| vec[i]);
+
+                *current = match *current {
+                    Some(0) => None,
+                    Some(i) => Some(i - 1),
+                    None    => None,
+                };
+
+                v
+            },
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = match *self {
+            LazilyReversedListIter::Uninitialized { list } => list.len(),
+            LazilyReversedListIter::Initialized { current: Some(i), .. } => i + 1,
+            LazilyReversedListIter::Initialized { current: None, .. }    => 0,
+        };
+
+        (len, Some(len))
+    }
+}
+
+impl<'a, T> ExactSizeIterator for LazilyReversedListIter<'a, T> {}
+
+#[cfg(test)]
+mod test;

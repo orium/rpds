@@ -298,4 +298,5 @@ fn test_clone() -> () {
 
     assert!(clone.iter().eq(list.iter()));
     assert_eq!(clone.len(), list.len());
+    assert_eq!(clone.last(), list.last());
 }

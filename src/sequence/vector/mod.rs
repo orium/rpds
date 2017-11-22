@@ -452,7 +452,7 @@ impl<T: PartialEq> PartialEq for Vector<T> {
 
 impl<T: Eq> Eq for Vector<T> {}
 
-impl<T: PartialOrd<T>> PartialOrd<Vector<T>> for Vector<T>  {
+impl<T: PartialOrd<T>> PartialOrd<Vector<T>> for Vector<T> {
     fn partial_cmp(&self, other: &Vector<T>) -> Option<Ordering> {
         self.iter().partial_cmp(other.iter())
     }

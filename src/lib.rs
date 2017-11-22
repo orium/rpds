@@ -24,8 +24,10 @@
 pub mod sequence;
 pub mod map;
 pub mod stack;
+pub mod queue;
 
 pub use sequence::list::List;
 pub use sequence::vector::Vector;
 pub use map::hash_trie_map::HashTrieMap;
 pub use stack::Stack;
+pub use queue::Queue;

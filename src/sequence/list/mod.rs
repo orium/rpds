@@ -145,7 +145,6 @@ impl<T> List<T> {
         self.len() == 0
     }
 
-    // TODO Use impl trait for return value when available
     pub fn iter(&self) -> Iter<T> {
         self.iter_arc().map(|v| v.borrow())
     }
@@ -169,7 +168,7 @@ impl<T: PartialEq> PartialEq for List<T> {
 
 impl<T: Eq> Eq for List<T> {}
 
-impl<T: PartialOrd<T>> PartialOrd<List<T>> for List<T>  {
+impl<T: PartialOrd<T>> PartialOrd<List<T>> for List<T> {
     fn partial_cmp(&self, other: &List<T>) -> Option<Ordering> {
         self.iter().partial_cmp(other.iter())
     }
@@ -219,7 +218,6 @@ impl<T: Display> Display for List<T> {
 
 impl<'a, T> IntoIterator for &'a List<T> {
     type Item = &'a T;
-    // TODO Use impl trait for return value when available
     type IntoIter = Iter<'a, T>;
 
     fn into_iter(self) -> Iter<'a, T> {

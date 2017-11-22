@@ -1,22 +1,21 @@
 * README.md
   * Show the data structures
   * Table with asymptotic complexity
-* Publish crate to cargo.io
-  * Add badges to `Cargo.toml`
 * Trait for all collections/iterators factoring everything common there?
 * Unit tests
   * Use property based tests with [quickcheck](https://github.com/BurntSushi/quickcheck)?
-* Add more properties to `Cargo.toml`
 * Docs
   * list
   * vector
   * hash_trie_map
+  * stack
+  * queue
 * HashMap/Set
   * extend
-* TreeMap/Set
+* RedBlackTreeMap/Set
 * Queue
 * Stack
-  * wrap a list with only push, pop, peek, and size.
+  * extend
 * Vector
   * Support `push_front()`/`drop_first()`
   * extend

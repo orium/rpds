@@ -601,12 +601,10 @@ impl<K, V, H: BuildHasher> HashTrieMap<K, V, H>
         Iter::new(self)
     }
 
-    // TODO Use impl trait for return value when available
     pub fn keys(&self) -> IterKeys<K, V> {
         self.iter().map(|(k, _)| k)
     }
 
-    // TODO Use impl trait for return value when available
     pub fn values(&self) -> IterValues<K, V> {
         self.iter().map(|(_, v)| v)
     }
