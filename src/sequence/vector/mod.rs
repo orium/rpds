@@ -466,6 +466,10 @@ impl<T: Ord> Ord for Vector<T> {
 
 impl<T: Hash> Hash for Vector<T> {
     fn hash<H: Hasher>(&self, state: &mut H) -> () {
+        // Add the hash of length so that if two collections are added one after the other it doesn't
+        // hash to the same thing as a single collection with the same elements in the same order.
+        self.len().hash(state);
+
         for e in self {
             e.hash(state);
         }
