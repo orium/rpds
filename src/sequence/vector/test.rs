@@ -624,7 +624,7 @@ fn test_eq() -> () {
     assert_eq!(vector_1, vector_1_prime);
     assert_eq!(vector_2, vector_2);
 
-    // We also use check this since `assert_ne!()` does not call `ne`.
+    // We also check this since `assert_ne!()` does not call `ne`.
     assert!(vector_1.ne(&vector_2));
     assert!(vector_2.ne(&vector_3));
 }

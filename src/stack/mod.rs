@@ -21,6 +21,9 @@ use std::fmt::Display;
 use sequence::list;
 use List;
 
+// TODO Use impl trait for return value when available
+pub type Iter<'a, T> = list::Iter<'a, T>;
+
 /// A persistent stack with structural sharing.  This data structure supports fast `push()`,
 /// `pop()`, and `peek()`.
 ///
@@ -85,8 +88,7 @@ impl<T> Stack<T> {
         self.size() == 0
     }
 
-    // TODO Use impl trait for return value when available
-    pub fn iter(&self) -> list::Iter<T> {
+    pub fn iter(&self) -> Iter<T> {
         self.list.iter()
     }
 }
@@ -151,9 +153,9 @@ impl<T: Display> Display for Stack<T> {
 
 impl<'a, T> IntoIterator for &'a Stack<T> {
     type Item = &'a T;
-    type IntoIter = list::Iter<'a, T>;
+    type IntoIter = Iter<'a, T>;
 
-    fn into_iter(self) -> list::Iter<'a, T> {
+    fn into_iter(self) -> Iter<'a, T> {
         self.list.iter()
     }
 }

@@ -955,7 +955,7 @@ fn test_eq() -> () {
     assert_eq!(map_1, map_1);
     assert_eq!(map_2, map_2);
 
-    // We also use check this since `assert_ne!()` does not call `ne`.
+    // We also check this since `assert_ne!()` does not call `ne`.
     assert!(map_1.ne(&map_2));
     assert!(map_2.ne(&map_3));
 }
