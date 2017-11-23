@@ -64,22 +64,22 @@ impl<T: Clone> CloneWithCapacity for Vec<T> {
 ///
 /// ### Proof sketch of the complexity of full iteration
 ///
-/// 1. A tree of size *n* and degree *d* has height *⌈log_d(n)⌉ - 1*.
+/// 1. A tree of size *n* and degree *d* has height *⌈log<sub>d</sub>(n)⌉ - 1*.
 /// 2. A complete iteration is a depth-first search on the tree.
 /// 3. A depth-first search has complexity *Θ(|V| + |E|)*, where *|V|* is the number of nodes and
 ///    *|E|* the number of edges.
 /// 4. The number of nodes *|V|* for a complete tree of height *h* is the sum of powers of *d*, which is
-///    *(d ** h - 1) / (d - 1)*. See
-///    [Calculating sum of consecutive powers of a number](https://math.stackexchange.com/questions/971761/calculating-sum-of-consecutive-powers-of-a-number)).
+///    *(dʰ - 1) / (d - 1)*. See
+///    [Calculating sum of consecutive powers of a number](https://math.stackexchange.com/questions/971761/calculating-sum-of-consecutive-powers-of-a-number).
 /// 5. The number of edges is exactly *|V| - 1*.
 ///
 /// By 2. and 3. we have that the complexity of a full iteration is
 ///
 /// ```text
 ///      Θ(|V| + |E|)
-///    = Θ((d ** h - 1) / (d - 1))      (by 4. and 5.)
-///    = Θ(d ** h)
-///    = Θ(n)                           (by 1.)
+///    = Θ((dʰ - 1) / (d - 1))      (by 4. and 5.)
+///    = Θ(dʰ)
+///    = Θ(n)                       (by 1.)
 /// ```
 ///
 /// ## Space complexity

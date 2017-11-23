@@ -69,7 +69,7 @@ assert_eq!(screaming_vector[2], "VECTOR!!!");
 
 ## `Stack`
 
-A LIFO (last in, first out) data structure.  This is just a [`List`](#list) on disguise.
+A LIFO (last in, first out) data structure.  This is just a [`List`](#list) in disguise.
 
 ### Example
 
