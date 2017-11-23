@@ -21,8 +21,11 @@ use std::hash::{Hasher, Hash};
 use std::borrow::Borrow;
 use std::iter::FromIterator;
 
+// TODO Use impl trait instead of this when available.
+pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
+
 /// A persistent list with structural sharing.  This data structure supports fast `push_front()`,
-/// `drop_first()`, and `first()`.
+/// `drop_first()`, `first()`, and `last()`.
 ///
 /// # Complexity
 ///
@@ -35,7 +38,9 @@ use std::iter::FromIterator;
 /// | `new()`           |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `push_front()`    |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `drop_first()`    |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `reverse()`       |      Θ(n) |    Θ(n) |        Θ(n) |
 /// | `first()`         |      Θ(1) |    Θ(1) |        Θ(1) |
+/// | `last()`          |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `len()`           |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | `clone()`         |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator creation |      Θ(1) |    Θ(1) |        Θ(1) |
@@ -45,15 +50,21 @@ use std::iter::FromIterator;
 /// ## Space complexity
 ///
 /// The space complexity is *Θ(n)*.
+///
+/// # Implementation details
+///
+/// This is your classic functional list with "cons" and "nil" nodes, with a little extra sauce to
+/// make some operations more efficient.
 #[derive(Debug)]
 pub struct List<T> {
     node: Arc<Node<T>>,
+    last: Option<Arc<T>>,
     length: usize,
 }
 
 #[derive(Debug)]
 enum Node<T> {
-    Cons(T, Arc<Node<T>>),
+    Cons(Arc<T>, Arc<Node<T>>),
     Nil,
 }
 
@@ -61,6 +72,7 @@ impl<T> List<T> {
     pub fn new() -> List<T> {
         List {
             node: Arc::new(Node::Nil),
+            last: None,
             length: 0,
         }
     }
@@ -72,18 +84,55 @@ impl<T> List<T> {
         }
     }
 
+    pub fn last(&self) -> Option<&T> {
+        match self.last {
+            Some(ref v) => Some(v.borrow()),
+            None        => None,
+        }
+    }
+
     pub fn drop_first(&self) -> Option<List<T>> {
         match *self.node {
-            Node::Cons(_, ref t) => Some(List { node: Arc::clone(t), length: self.length - 1 }),
-            Node::Nil            => None,
+            Node::Cons(_, ref t) => {
+                let new_length = self.length - 1;
+                let new_list = List {
+                    node: Arc::clone(t),
+                    last: if new_length == 0 { None } else { self.last.clone() },
+                    length: new_length
+                };
+
+                Some(new_list)
+            },
+            Node::Nil => None,
+        }
+    }
+
+    fn push_front_arc(&self, v: Arc<T>) -> List<T> {
+        List {
+            // TODO With non-lexical lifetimes can we put the "last" after "node"?
+            last: {
+                match self.last {
+                    Some(ref v) => Some(Arc::clone(v)),
+                    None        => Some(Arc::clone(&v)),
+                }
+            },
+            node: Arc::new(Node::Cons(v, Arc::clone(&self.node))),
+            length: self.length + 1,
         }
     }
 
     pub fn push_front(&self, v: T) -> List<T> {
-        List {
-            node: Arc::new(Node::Cons(v, Arc::clone(&self.node))),
-            length: self.length + 1,
+        self.push_front_arc(Arc::new(v))
+    }
+
+    pub fn reverse(&self) -> List<T> {
+        let mut list = List::new();
+
+        for v in self.iter_arc() {
+            list = list.push_front_arc(Arc::clone(v));
         }
+
+        list
     }
 
     #[inline]
@@ -97,7 +146,11 @@ impl<T> List<T> {
     }
 
     pub fn iter(&self) -> Iter<T> {
-        Iter::new(self)
+        self.iter_arc().map(|v| v.borrow())
+    }
+
+    fn iter_arc(&self) -> IterArc<T> {
+        IterArc::new(self)
     }
 }
 
@@ -115,7 +168,7 @@ impl<T: PartialEq> PartialEq for List<T> {
 
 impl<T: Eq> Eq for List<T> {}
 
-impl<T: PartialOrd<T>> PartialOrd<List<T>> for List<T>  {
+impl<T: PartialOrd<T>> PartialOrd<List<T>> for List<T> {
     fn partial_cmp(&self, other: &List<T>) -> Option<Ordering> {
         self.iter().partial_cmp(other.iter())
     }
@@ -143,6 +196,7 @@ impl<T> Clone for List<T> {
     fn clone(&self) -> List<T> {
         List {
             node: Arc::clone(&self.node),
+            last: self.last.clone(),
             length: self.length,
         }
     }
@@ -196,24 +250,24 @@ impl<T> FromIterator<T> for List<T> {
 }
 
 #[derive(Debug)]
-pub struct Iter<'a, T: 'a> {
+pub struct IterArc<'a, T: 'a> {
     next: &'a Node<T>,
     length: usize,
 }
 
-impl<'a, T> Iter<'a, T> {
-    fn new(list: &List<T>) -> Iter<T> {
-        Iter {
-            next: list.node.borrow(),
+impl<'a, T> IterArc<'a, T> {
+    fn new(list: &List<T>) -> IterArc<T> {
+        IterArc {
+            next:   list.node.borrow(),
             length: list.len(),
         }
     }
 }
 
-impl<'a, T> Iterator for Iter<'a, T> {
-    type Item = &'a T;
+impl<'a, T> Iterator for IterArc<'a, T> {
+    type Item = &'a Arc<T>;
 
-    fn next(&mut self) -> Option<&'a T> {
+    fn next(&mut self) -> Option<&'a Arc<T>> {
         match *self.next {
             Node::Cons(ref v, ref t) => {
                 self.next = t;
@@ -229,7 +283,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
     }
 }
 
-impl<'a, T> ExactSizeIterator for Iter<'a, T> {}
+impl<'a, T> ExactSizeIterator for IterArc<'a, T> {}
 
 #[cfg(test)]
 mod test;

@@ -111,7 +111,7 @@ fn test_new() -> () {
 }
 
 #[test]
-fn test_head() -> () {
+fn test_first() -> () {
     let empty_list: List<i32> = List::new();
     let singleton_list = List::new()
         .push_front("hello");
@@ -127,7 +127,24 @@ fn test_head() -> () {
 }
 
 #[test]
-fn test_tail() -> () {
+fn test_last() -> () {
+    let empty_list: List<i32> = List::new();
+    let singleton_list = List::new()
+        .push_front("hello");
+    let list = List::new()
+        .push_front(3)
+        .push_front(2)
+        .push_front(1)
+        .push_front(0);
+
+    assert_eq!(empty_list.last(), None);
+    assert_eq!(singleton_list.last(), Some(&"hello"));
+    assert_eq!(list.last(), Some(&3));
+    assert_eq!(singleton_list.drop_first().unwrap().last(), None);
+}
+
+#[test]
+fn test_drop_first() -> () {
     let empty_list: List<i32> = List::new();
     let singleton_list = List::new()
         .push_front("hello");
@@ -143,6 +160,27 @@ fn test_tail() -> () {
 
     assert_eq!(list.len(), 4);
     assert_eq!(list.drop_first().unwrap().len(), 3);
+}
+
+#[test]
+fn test_reverse() -> () {
+    let empty_list: List<i32> = List::new();
+    let singleton_list = List::new()
+        .push_front("hello");
+    let list = List::new()
+        .push_front(3)
+        .push_front(2)
+        .push_front(1)
+        .push_front(0);
+    let list_reversed = List::new()
+        .push_front(0)
+        .push_front(1)
+        .push_front(2)
+        .push_front(3);
+
+    assert_eq!(empty_list.reverse(), empty_list);
+    assert_eq!(singleton_list.reverse(), singleton_list);
+    assert_eq!(list.reverse(), list_reversed);
 }
 
 #[test]
@@ -260,4 +298,5 @@ fn test_clone() -> () {
 
     assert!(clone.iter().eq(list.iter()));
     assert_eq!(clone.len(), list.len());
+    assert_eq!(clone.last(), list.last());
 }

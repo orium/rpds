@@ -45,6 +45,10 @@ use List;
 /// ## Space complexity
 ///
 /// The space complexity is *Θ(n)*.
+///
+/// # Implementation details
+///
+/// This is a thin wrapper around a [List](../sequence/list/struct.List.html).
 #[derive(Debug)]
 pub struct Stack<T> {
     list: List<T>
@@ -101,7 +105,7 @@ impl<T: PartialEq> PartialEq for Stack<T> {
 
 impl<T: Eq> Eq for Stack<T> {}
 
-impl<T: PartialOrd<T>> PartialOrd<Stack<T>> for Stack<T>  {
+impl<T: PartialOrd<T>> PartialOrd<Stack<T>> for Stack<T> {
     fn partial_cmp(&self, other: &Stack<T>) -> Option<Ordering> {
         self.list.partial_cmp(&other.list)
     }
