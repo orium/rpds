@@ -72,7 +72,7 @@ fn default_degree() -> u8 {
 ///
 /// # Implementation details
 ///
-/// This implementation is based on
+/// This implementation an hash array mapped trie.  Details can be found in
 /// [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf).
 ///
 /// See the `Node` documentation for details.

@@ -49,9 +49,9 @@ mod node {
     fn test_drop_last_single_level() -> () {
         let empty_leaf: Node<u32> = Node::new_empty_leaf();
         let empty_branch: Node<u32> = Node::new_empty_branch();
-        let singleton_node: Node<u32> = Vector::new().push(0).root.as_ref().clone();
+        let singleton_node: Node<u32> = Vector::new().push_back(0).root.as_ref().clone();
         let one_level_node: Node<u32> = Vector::new()
-            .push(0).push(1).root.as_ref().clone();
+            .push_back(0).push_back(1).root.as_ref().clone();
 
         assert!(empty_leaf.drop_last().is_none());
         assert!(empty_branch.drop_last().is_none());
@@ -62,9 +62,9 @@ mod node {
     #[test]
     fn test_drop_last_multi_level() -> () {
         let node_three: Node<u32> = Vector::new_with_bits(1)
-            .push(0).push(1).push(2).root.as_ref().clone();
+            .push_back(0).push_back(1).push_back(2).root.as_ref().clone();
         let node_four: Node<u32> = Vector::new_with_bits(1)
-            .push(0).push(1).push(2).push(3).root.as_ref().clone();
+            .push_back(0).push_back(1).push_back(2).push_back(3).root.as_ref().clone();
 
         let node_three_after_drop = {
             let a_leaf = {
@@ -147,7 +147,7 @@ mod iter {
         let mut left = limit;
 
         for i in 0..limit {
-            vector = vector.push(i);
+            vector = vector.push_back(i);
         }
 
         for v in vector.iter() {
@@ -170,7 +170,7 @@ mod iter {
         let mut left = limit;
 
         for i in 0..limit {
-            vector = vector.push(i);
+            vector = vector.push_back(i);
         }
 
         for v in vector.iter().rev() {
@@ -188,10 +188,10 @@ mod iter {
     #[test]
     fn test_iter_backwards() -> () {
         let vector = Vector::new()
-            .push(0)
-            .push(1)
-            .push(2)
-            .push(3);
+            .push_back(0)
+            .push_back(1)
+            .push_back(2)
+            .push_back(3);
         let mut expected = 3;
         let mut left = 4;
 
@@ -210,12 +210,12 @@ mod iter {
     #[test]
     fn test_iter_both_directions() -> () {
         let vector = Vector::new()
-            .push(0)
-            .push(1)
-            .push(2)
-            .push(3)
-            .push(4)
-            .push(5);
+            .push_back(0)
+            .push_back(1)
+            .push_back(2)
+            .push_back(3)
+            .push_back(4)
+            .push_back(5);
         let mut iterator = vector.iter();
 
         assert_eq!(iterator.next(),      Some(&0));
@@ -231,9 +231,9 @@ mod iter {
     #[test]
     fn test_iter_size_hint() -> () {
         let vector = Vector::new()
-            .push(0)
-            .push(1)
-            .push(2);
+            .push_back(0)
+            .push_back(1)
+            .push_back(2);
         let mut iterator = vector.iter();
 
         assert_eq!(iterator.size_hint(), (3, Some(3)));
@@ -254,10 +254,10 @@ mod iter {
     #[test]
     fn test_into_iterator() -> () {
         let vector = Vector::new()
-            .push(0)
-            .push(1)
-            .push(2)
-            .push(3);
+            .push_back(0)
+            .push_back(1)
+            .push_back(2)
+            .push_back(3);
         let mut expected = 0;
         let mut left = 4;
 
@@ -330,12 +330,12 @@ mod internal {
     fn test_compress_root() -> () {
         let empty_leaf: Node<u32> = Node::new_empty_leaf();
         let empty_branch: Node<u32> = Node::new_empty_branch();
-        let singleton_leaf: Node<u32> = Vector::new().push(0).root.as_ref().clone();
+        let singleton_leaf: Node<u32> = Vector::new().push_back(0).root.as_ref().clone();
         let compressed_branch: Node<u32> = Vector::new_with_bits(1)
-            .push(0).push(1).push(3).root.as_ref().clone();
+            .push_back(0).push_back(1).push_back(3).root.as_ref().clone();
         let (uncompressed_branch, uncompressed_branch_leaf) = {
             let leaf = Vector::new_with_bits(1)
-                .push(0).push(1).root.as_ref().clone();
+                .push_back(0).push_back(1).root.as_ref().clone();
 
             let a_branch = {
                 let mut a = Vec::with_capacity(2);
@@ -393,24 +393,24 @@ mod compile_time {
 }
 
 #[test]
-fn test_push_adds_element() -> () {
+fn test_push_back_adds_element() -> () {
     let limit = 32*32*32+1;
     let mut vector: Vector<i32> = Vector::new();
 
     for i in 0..limit {
-        vector = vector.push(-i);
+        vector = vector.push_back(-i);
         assert_eq!(vector.get(i as usize), Some(&-i));
     }
 }
 
 #[test]
-fn test_push_maintains_size() -> () {
+fn test_push_back_maintains_size() -> () {
     let limit = 128;
     let mut vector: Vector<i32> = Vector::new();
 
     for i in 0..limit {
         assert_eq!(vector.len(), i as usize);
-        vector = vector.push(-i);
+        vector = vector.push_back(-i);
     }
 
     assert_eq!(vector.len(), limit as usize);
@@ -423,7 +423,7 @@ fn test_drop_last_drops_last_element() -> () {
     let mut vectors = Vec::with_capacity(limit);
 
     for i in 0..limit {
-        vector = vector.push(2 * i as i32);
+        vector = vector.push_back(2 * i as i32);
         vectors.push(vector.clone())
     }
 
@@ -442,7 +442,7 @@ fn test_drop_last_keeps_vector_consistent() -> () {
     let mut vector: Vector<i32> = Vector::new_with_bits(2);
 
     for i in 0..limit {
-        vector = vector.push(2 * i as i32);
+        vector = vector.push_back(2 * i as i32);
     }
 
     for _ in 0..(limit / (4 * 4)) {
@@ -464,7 +464,7 @@ fn test_drop_last_maintains_size() -> () {
     let mut vector: Vector<i32> = Vector::new();
 
     for i in 0..limit {
-        vector = vector.push(-i);
+        vector = vector.push_back(-i);
     }
 
     for i in 0..limit {
@@ -488,7 +488,7 @@ fn test_set_overwrites() -> () {
     let mut vector: Vector<i32> = Vector::new();
 
     for i in 0..limit {
-        vector = vector.push(-i);
+        vector = vector.push_back(-i);
     }
 
     vector = vector.set(834, 0).unwrap();
@@ -505,7 +505,7 @@ fn test_set_maintains_size() -> () {
     let mut vector: Vector<i32> = Vector::new();
 
     for i in 0..limit {
-        vector = vector.push(-i);
+        vector = vector.push_back(-i);
     }
 
     for i in 0..limit {
@@ -517,7 +517,7 @@ fn test_set_maintains_size() -> () {
 #[test]
 fn test_set_out_of_bounds() -> () {
     let empty_vector: Vector<i32> = Vector::new();
-    let singleton_vector: Vector<i32> = Vector::new().push(0);
+    let singleton_vector: Vector<i32> = Vector::new().push_back(0);
 
     assert_eq!(empty_vector.set(0, 0), None);
     assert_eq!(singleton_vector.set(1, 0), None);
@@ -529,7 +529,7 @@ fn test_get() -> () {
     let mut vector = Vector::new();
 
     for i in 0..limit {
-        vector = vector.push(i + 1);
+        vector = vector.push_back(i + 1);
     }
 
     assert_eq!(vector.get(0), Some(&1));
@@ -541,9 +541,9 @@ fn test_get() -> () {
 #[test]
 fn test_index() -> () {
     let vector = Vector::new()
-        .push(10)
-        .push(11)
-        .push(12);
+        .push_back(10)
+        .push_back(11)
+        .push_back(12);
 
     assert_eq!(vector[0], 10);
     assert_eq!(vector[1], 11);
@@ -554,7 +554,7 @@ fn test_index() -> () {
 fn test_first() -> () {
     let empty_vector: Vector<i32> = Vector::new();
     let vector = Vector::new()
-        .push(1);
+        .push_back(1);
 
     assert_eq!(empty_vector.first(), None);
     assert_eq!(vector.first(), Some(&1));
@@ -564,8 +564,8 @@ fn test_first() -> () {
 fn test_last() -> () {
     let empty_vector: Vector<i32> = Vector::new();
     let vector = Vector::new()
-        .push(1)
-        .push(2);
+        .push_back(1)
+        .push_back(2);
 
     assert_eq!(empty_vector.last(), None);
     assert_eq!(vector.last(), Some(&2));
@@ -590,12 +590,12 @@ fn test_default() -> () {
 fn test_display() -> () {
     let empty_vector: Vector<i32> = Vector::new();
     let singleton_vector = Vector::new()
-        .push("hello");
+        .push_back("hello");
     let vector = Vector::new()
-        .push(0)
-        .push(1)
-        .push(2)
-        .push(3);
+        .push_back(0)
+        .push_back(1)
+        .push_back(2)
+        .push_back(3);
 
     assert_eq!(format!("{}", empty_vector), "[]");
     assert_eq!(format!("{}", singleton_vector), "[hello]");
@@ -605,18 +605,18 @@ fn test_display() -> () {
 #[test]
 fn test_eq() -> () {
     let vector_1 = Vector::new()
-        .push("a")
-        .push("a");
+        .push_back("a")
+        .push_back("a");
     let vector_1_prime = Vector::new()
-        .push("a")
-        .push("a");
+        .push_back("a")
+        .push_back("a");
     let vector_2 = Vector::new()
-        .push("a")
-        .push("b");
+        .push_back("a")
+        .push_back("b");
     let vector_3 = Vector::new()
-        .push("a")
-        .push("b")
-        .push("c");
+        .push_back("a")
+        .push_back("b")
+        .push_back("c");
 
     assert_ne!(vector_1, vector_2);
     assert_ne!(vector_2, vector_3);
@@ -632,15 +632,15 @@ fn test_eq() -> () {
 #[test]
 fn test_partial_ord() -> () {
     let vector_1 = Vector::new()
-        .push("a");
+        .push_back("a");
     let vector_1_prime = Vector::new()
-        .push("a");
+        .push_back("a");
     let vector_2 = Vector::new()
-        .push("b");
+        .push_back("b");
     let vector_3 = Vector::new()
-        .push(0.0);
+        .push_back(0.0);
     let vector_4 = Vector::new()
-        .push(::std::f32::NAN);
+        .push_back(::std::f32::NAN);
 
     assert_eq!(vector_1.partial_cmp(&vector_1_prime), Some(Ordering::Equal));
     assert_eq!(vector_1.partial_cmp(&vector_2), Some(Ordering::Less));
@@ -651,11 +651,11 @@ fn test_partial_ord() -> () {
 #[test]
 fn test_ord() -> () {
     let vector_1 = Vector::new()
-        .push("a");
+        .push_back("a");
     let vector_1_prime = Vector::new()
-        .push("a");
+        .push_back("a");
     let vector_2 = Vector::new()
-        .push("b");
+        .push_back("b");
 
     assert_eq!(vector_1.cmp(&vector_1_prime), Ordering::Equal);
     assert_eq!(vector_1.cmp(&vector_2), Ordering::Less);
@@ -673,12 +673,12 @@ fn hash<T: Hash>(vector: &Vector<T>) -> u64 {
 #[test]
 fn test_hash() -> () {
     let vector_1 = Vector::new()
-        .push("a");
+        .push_back("a");
     let vector_1_prime = Vector::new()
-        .push("a");
+        .push_back("a");
     let vector_2 = Vector::new()
-        .push("a")
-        .push("b");
+        .push_back("a")
+        .push_back("b");
 
     assert_eq!(hash(&vector_1), hash(&vector_1));
     assert_eq!(hash(&vector_1), hash(&vector_1_prime));
@@ -688,8 +688,8 @@ fn test_hash() -> () {
 #[test]
 fn test_clone() -> () {
     let vector = Vector::new()
-        .push("hello")
-        .push("there");
+        .push_back("hello")
+        .push_back("there");
     let clone = vector.clone();
 
     assert_eq!(clone.len(), vector.len());

@@ -27,14 +27,14 @@ use utils::BencherNoDrop;
 use utils::iterations;
 use bencher::{Bencher, black_box};
 
-fn vector_push(bench: &mut Bencher) -> () {
+fn vector_push_back(bench: &mut Bencher) -> () {
     let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
         let mut vector: Vector<usize> = Vector::new();
 
         for i in 0..limit {
-            vector = vector.push(i);
+            vector = vector.push_back(i);
         }
 
         vector
@@ -46,7 +46,7 @@ fn vector_drop_last(bench: &mut Bencher) -> () {
     let mut full_vector: Vector<usize> = Vector::new();
 
     for i in 0..limit {
-        full_vector = full_vector.push(i);
+        full_vector = full_vector.push_back(i);
     }
 
     bench.iter_no_drop(|| {
@@ -65,7 +65,7 @@ fn vector_get(bench: &mut Bencher) -> () {
     let mut vector: Vector<usize> = Vector::new();
 
     for i in 0..limit {
-        vector = vector.push(i);
+        vector = vector.push_back(i);
     }
 
     bench.iter(|| {
@@ -80,7 +80,7 @@ fn vector_iterate(bench: &mut Bencher) -> () {
     let mut vector: Vector<usize> = Vector::new();
 
     for i in 0..limit {
-        vector = vector.push(i);
+        vector = vector.push_back(i);
     }
 
     bench.iter(|| {
@@ -90,5 +90,5 @@ fn vector_iterate(bench: &mut Bencher) -> () {
     });
 }
 
-benchmark_group!(benches, vector_push, vector_drop_last, vector_get, vector_iterate);
+benchmark_group!(benches, vector_push_back, vector_drop_last, vector_get, vector_iterate);
 benchmark_main!(benches);

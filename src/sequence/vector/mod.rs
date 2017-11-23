@@ -40,7 +40,7 @@ impl<T: Clone> CloneWithCapacity for Vec<T> {
     }
 }
 
-/// A persistent vector with structural sharing.  This data structure supports fast `push()`, `set()`,
+/// A persistent vector with structural sharing.  This data structure supports fast `push_back()`, `set()`,
 /// `drop_last()`, and `get()`.
 ///
 /// # Complexity
@@ -53,7 +53,7 @@ impl<T: Clone> CloneWithCapacity for Vec<T> {
 /// |:-------------------------- | ---------:| ---------:| -----------:|
 /// | `new()`                    |      Θ(1) |      Θ(1) |        Θ(1) |
 /// | `set()`                    | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
-/// | `push()`                   | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
+/// | `push_back()`              | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
 /// | `drop_last()`              | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
 /// | `first()`/`last()`/`get()` | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
 /// | `len()`                    |      Θ(1) |      Θ(1) |        Θ(1) |
@@ -352,7 +352,7 @@ impl<T> Vector<T> {
         self.length == self.root_max_capacity()
     }
 
-    pub fn push(&self, v: T) -> Vector<T> {
+    pub fn push_back(&self, v: T) -> Vector<T> {
         if self.is_root_full() {
             let mut new_root: Node<T> = Node::new_empty_branch();
 
@@ -519,7 +519,7 @@ impl<T> FromIterator<T> for Vector<T> {
         let mut vector = Vector::new();
 
         for e in into_iter {
-            vector = vector.push(e);
+            vector = vector.push_back(e);
         }
 
         vector
