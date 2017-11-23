@@ -10,8 +10,12 @@
   * hash_trie_map
   * stack
   * queue
-* HashMap/Set
+* HashMap
   * extend
+* HashSet
+  * union
+  * difference
+  * intersection
 * RedBlackTreeMap/Set
 * Queue
 * Stack
