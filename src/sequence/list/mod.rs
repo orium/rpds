@@ -74,10 +74,7 @@ impl<T> List<T> {
     }
 
     pub fn last(&self) -> Option<&T> {
-        match self.last {
-            Some(ref v) => Some(v.borrow()),
-            None        => None,
-        }
+        self.last.as_ref().map(|v| v.borrow())
     }
 
     pub fn drop_first(&self) -> Option<List<T>> {

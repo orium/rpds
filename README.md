@@ -112,7 +112,7 @@ assert_eq!(queue_dequeued.peek(), Some(&"dois"));
 
 ## `HashTrieMap`
 
-A map implemented with a hash array mapped trie.  See
+A map implemented with a [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie).  See
 [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf) for
 details.
 

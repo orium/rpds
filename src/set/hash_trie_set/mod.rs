@@ -15,7 +15,8 @@ use HashTrieMap;
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = hash_trie_map::IterKeys<'a, T, ()>;
 
-/// A persistent set with structural sharing.  This implementation uses a hash array mapped trie
+/// A persistent set with structural sharing.  This implementation uses a
+/// [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie)
 /// and supports fast `insert()`, `remove()`, and `contains()`.
 ///
 /// # Complexity

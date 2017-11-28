@@ -33,8 +33,9 @@ fn default_degree() -> u8 {
     8 * size_of::<usize>() as u8
 }
 
-/// A persistent map with structural sharing.  This implementation uses a hash array mapped trie
-/// and supports fast `insert()`, `remove()`, and `get()`.
+/// A persistent map with structural sharing.  This implementation uses a
+/// [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie) and supports
+/// fast `insert()`, `remove()`, and `get()`.
 ///
 /// # Complexity
 ///
@@ -61,14 +62,12 @@ fn default_degree() -> u8 {
 ///
 /// # Implementation details
 ///
-/// This implementation an hash array mapped trie.  Details can be found in
-/// [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf).
+/// This implementation uses a [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie).
+/// Details can be found in [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf).
 ///
 /// See the `Node` documentation for details.
 #[derive(Debug)]
-pub struct HashTrieMap<K, V, H: BuildHasher = RandomState>
-    where K: Eq + Hash,
-          H: Clone {
+pub struct HashTrieMap<K, V, H: BuildHasher = RandomState> {
     root: Arc<Node<K, V>>,
     size: usize,
     degree: u8,
@@ -130,23 +129,20 @@ pub struct HashTrieMap<K, V, H: BuildHasher = RandomState>
 ///   3. A non-root branch always have two or more entries under it (because it could be
 ///      compressed).
 #[derive(Debug, PartialEq, Eq)]
-enum Node<K, V>
-    where K: Eq + Hash {
+enum Node<K, V> {
     Branch(SparseArrayUsize<Arc<Node<K, V>>>),
     Leaf(Bucket<K, V>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
-enum Bucket<K, V>
-    where K: Eq + Hash {
+enum Bucket<K, V> {
     Single(Arc<Entry<K, V>>),
     Collision(List<Arc<Entry<K, V>>>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct Entry<K, V>
-    where K: Eq + Hash {
-    key: K,
+struct Entry<K, V> {
+    key:   K,
     value: V,
     key_hash: HashValue,
 }
@@ -606,8 +602,8 @@ impl<'a, K, Q: ?Sized, V, H: BuildHasher> Index<&'a Q> for HashTrieMap<K, V, H>
           H: Clone {
     type Output = V;
 
-    fn index(&self, index: &Q) -> &V {
-        self.get(index)
+    fn index(&self, key: &Q) -> &V {
+        self.get(key)
             .expect("no entry found for key")
     }
 }
@@ -696,15 +692,13 @@ impl<K, V, H> FromIterator<(K, V)> for HashTrieMap<K, V, H> where
 }
 
 #[derive(Debug)]
-pub struct Iter<'a, K: 'a, V: 'a>
-    where K: Eq + Hash {
+pub struct Iter<'a, K: 'a, V: 'a> {
     stack: Vec<IterStackElement<'a, K, V>>,
     size: usize,
 }
 
 #[derive(Debug)]
-enum IterStackElement<'a, K: 'a, V: 'a>
-    where K: Eq + Hash {
+enum IterStackElement<'a, K: 'a, V: 'a> {
     Branch(Peekable<slice::Iter<'a, Arc<Node<K, V>>>>),
     LeafSingle(&'a Entry<K, V>),
     LeafCollision(Peekable<list::Iter<'a, Arc<Entry<K, V>>>>),

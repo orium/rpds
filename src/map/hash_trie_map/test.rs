@@ -897,6 +897,7 @@ fn test_from_iterator() -> () {
 
     assert_eq!(map, expected_map);
 }
+
 #[test]
 fn test_default() -> () {
     let map: HashTrieMap<u32, char> = HashTrieMap::default();
