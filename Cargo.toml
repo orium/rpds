@@ -19,7 +19,7 @@ categories = [
     "data-structures",
 ]
 
-license = "LGPL-3.0"
+license = "MPL-2.0"
 
 include = [
     "src/**/*.rs",
