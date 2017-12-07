@@ -34,6 +34,7 @@ codecov = { repository = "orium/rpds", branch = "master", service = "github" }
 [dev-dependencies]
 # TODO This will probably be part of rust in the future (see https://github.com/rust-lang/rust/issues/29553)
 bencher = "0.1"
+rand = "0.3"
 
 [features]
 fatal-warnings = []
@@ -60,4 +61,12 @@ harness = false
 
 [[bench]]
 name = "rpds_hash_trie_map"
+harness = false
+
+[[bench]]
+name = "rust_btreemap"
+harness = false
+
+[[bench]]
+name = "rpds_red_black_tree_map"
 harness = false

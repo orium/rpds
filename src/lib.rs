@@ -119,8 +119,8 @@
 //! ## `HashTrieMap`
 //! [![HashTrieMap documentation](https://img.shields.io/badge/doc-HashTrieMap-303070.svg)](map/hash_trie_map/struct.HashTrieMap.html)
 //!
-//! A map implemented with a hash array mapped trie.  See
-//! [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf) for
+//! A map implemented with a [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie).
+//! See [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf) for
 //! details.
 //!
 //! ### Example
@@ -182,3 +182,4 @@ pub use stack::Stack;
 pub use queue::Queue;
 pub use map::hash_trie_map::HashTrieMap;
 pub use set::hash_trie_set::HashTrieSet;
+pub use map::red_black_tree_map::RedBlackTreeMap;

@@ -1,0 +1,790 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+use std::sync::Arc;
+use std::cmp::Ordering;
+use std::borrow::Borrow;
+use std::iter::FromIterator;
+use std::ops::Index;
+use std::fmt::Display;
+use std::hash::{Hasher, Hash};
+
+// TODO Use impl trait instead of this when available.
+pub type IterKeys<'a, K, V>   = ::std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
+pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
+
+/// A persistent map with structural sharing.  This implementation uses a
+/// [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree)
+/// and supports fast `insert()`, and `get()`.
+///
+/// # Complexity
+///
+/// Let *n* be the number of elements in the map.
+///
+/// ## Temporal complexity
+///
+/// | Operation                  | Best case | Average   | Worst case  |
+/// |:-------------------------- | ---------:| ---------:| -----------:|
+/// | `new()`                    |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | `insert()`                 |      Θ(1) |  Θ(lg(n)) |    Θ(lg(n)) |
+/// | `get()`                    |      Θ(1) |  Θ(lg(n)) |    Θ(lg(n)) |
+/// | `contains_key()`           |      Θ(1) |  Θ(lg(n)) |    Θ(lg(n)) |
+/// | `size()`                   |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | `clone()`                  |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | iterator creation          |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | iterator step              |      Θ(1) |      Θ(1) |    Θ(lg(n)) |
+/// | iterator full              |      Θ(n) |      Θ(n) |        Θ(n) |
+///
+/// ## Space complexity
+///
+/// The space complexity is *Θ(n)*.
+///
+/// # Implementation details
+///
+/// This implementation uses a [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree) as
+/// described in "Purely Functional Data Structures" by Chris Okasaki, page 27.
+#[derive(Debug)]
+pub struct RedBlackTreeMap<K, V> {
+    root: Option<Arc<Node<K, V>>>,
+    size: usize,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct Entry<K, V> {
+    key:   K,
+    value: V,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Color {
+    Red,
+    Black,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct Node<K, V> {
+    entry: Arc<Entry<K, V>>,
+    color: Color,
+    left:  Option<Arc<Node<K, V>>>,
+    right: Option<Arc<Node<K, V>>>,
+}
+
+impl<K, V> Entry<K, V> {
+    fn new(key: K, value: V) -> Entry<K, V> {
+        Entry { key, value }
+    }
+}
+
+impl<K, V> Clone for Node<K, V> {
+    fn clone(&self) -> Node<K, V> {
+        Node {
+            entry: Arc::clone(&self.entry),
+            color: self.color,
+            left:  self.left.clone(),
+            right: self.right.clone(),
+        }
+    }
+}
+
+impl<K, V> Node<K, V>
+    where K: Ord {
+    fn new_red(entry: Entry<K, V>) -> Node<K, V> {
+        Node {
+            entry: Arc::new(entry),
+            color: Color::Red,
+            left:  None,
+            right: None,
+        }
+    }
+
+    fn borrow(node: &Option<Arc<Node<K, V>>>) -> Option<&Node<K, V>> {
+        node.as_ref().map(|n| n.borrow())
+    }
+
+    fn left_color(&self) -> Option<Color> {
+        self.left.as_ref().map(|l| l.color)
+    }
+
+    fn right_color(&self) -> Option<Color> {
+        self.right.as_ref().map(|r| r.color)
+    }
+
+    fn with_entry(&self, entry: Entry<K, V>) -> Node<K, V> {
+        Node {
+            entry: Arc::new(entry),
+            color: self.color,
+            left:  self.left.clone(),
+            right: self.right.clone(),
+        }
+    }
+
+    fn with_left(&self, left: Node<K, V>) -> Node<K, V> {
+        Node {
+            entry: Arc::clone(&self.entry),
+            color: self.color,
+            left:  Some(Arc::new(left)),
+            right: self.right.clone(),
+        }
+    }
+
+    fn with_right(&self, right: Node<K, V>) -> Node<K, V> {
+        Node {
+            entry: Arc::clone(&self.entry),
+            color: self.color,
+            left:  self.left.clone(),
+            right: Some(Arc::new(right)),
+        }
+    }
+
+    fn get<Q: ?Sized>(&self, key: &Q) -> Option<&Entry<K, V>>
+        where K: Borrow<Q>,
+              Q: Ord {
+        match key.cmp(self.entry.key.borrow()) {
+            Ordering::Less    => self.left.as_ref().and_then(|l| l.get(key)),
+            Ordering::Equal   => Some(&self.entry),
+            Ordering::Greater => self.right.as_ref().and_then(|r| r.get(key)),
+        }
+    }
+
+    fn first(&self) -> &Entry<K, V> {
+        match self.left {
+            Some(ref l) => l.first(),
+            None => &self.entry,
+        }
+    }
+
+    fn last(&self) -> &Entry<K, V> {
+        match self.right {
+            Some(ref r) => r.last(),
+            None => &self.entry,
+        }
+    }
+
+    /// Balances an unbalanced node.  This is a function is described in "Purely Functional
+    /// Data Structures" by Chris Okasaki, page 27.
+    ///
+    /// The transformation is done as the figure below shows.
+    ///
+    /// ```text
+    ///                                                                    ╭────────────────────╮
+    ///                                                                    │  ┌───┐             │
+    ///                                                                    │  │   │ Red node    │
+    ///                                                                    │  └───┘             │
+    ///            ┏━━━┓                                                   │                    │
+    ///            ┃ z ┃                                                   │  ┏━━━┓             │
+    ///            ┗━━━┛                                                   │  ┃   ┃ Black node  │
+    ///             ╱ ╲                                                    │  ┗━━━┛             │
+    ///        ┌───┐   d                                                   ╰────────────────────╯
+    ///        │ y │                      Case 1
+    ///        └───┘           ╭──────────────────────────────────────────────────╮
+    ///         ╱ ╲            ╰────────────────────────────────────────────────╮ │
+    ///     ┌───┐  c                                                            │ │
+    ///     │ x │                                                               │ │
+    ///     └───┘                                                               │ │
+    ///      ╱ ╲                                                                │ │
+    ///     a   b                                                               │ │
+    ///                                                                         │ │
+    ///                                                                         │ │
+    ///                                                                         │ │
+    ///            ┏━━━┓                                                        │ │
+    ///            ┃ z ┃                                                        │ │
+    ///            ┗━━━┛                                                        │ │
+    ///             ╱ ╲                                                         │ │
+    ///        ┌───┐   d                  Case 2                                │ │
+    ///        │ x │           ╭─────────────────────────────╲                  │ │
+    ///        └───┘           ╰────────────────────────────╲ ╲                 ╲ ╱
+    ///         ╱ ╲                                          ╲ ╲
+    ///        a  ┌───┐                                       ╲ ╲
+    ///           │ y │                                        ╲ ╲             ┌───┐
+    ///           └───┘                                         ╲ ╲            │ y │
+    ///            ╱ ╲                                           ╲  ┃          └───┘
+    ///           b   c                                          ───┘           ╱ ╲
+    ///                                                                        ╱   ╲
+    ///                                                                   ┏━━━┓     ┏━━━┓
+    ///                                                                   ┃ x ┃     ┃ z ┃
+    ///            ┏━━━┓                                                  ┗━━━┛     ┗━━━┛
+    ///            ┃ x ┃                                         ───┐      ╱ ╲       ╱ ╲
+    ///            ┗━━━┛                                         ╱  ┃     ╱   ╲     ╱   ╲
+    ///             ╱ ╲                                         ╱ ╱      a     b   c     d
+    ///            a  ┌───┐                                    ╱ ╱
+    ///               │ z │                                   ╱ ╱
+    ///               └───┘               Case 3             ╱ ╱                ╱ ╲
+    ///                ╱ ╲     ╭────────────────────────────╱ ╱                 │ │
+    ///            ┌───┐  d    ╰─────────────────────────────╱                  │ │
+    ///            │ y │                                                        │ │
+    ///            └───┘                                                        │ │
+    ///             ╱ ╲                                                         │ │
+    ///            b   c                                                        │ │
+    ///                                                                         │ │
+    ///                                                                         │ │
+    ///                                                                         │ │
+    ///            ┏━━━┓                                                        │ │
+    ///            ┃ x ┃                                                        │ │
+    ///            ┗━━━┛                                                        │ │
+    ///             ╱ ╲                                                         │ │
+    ///            a  ┌───┐               Case 4                                │ │
+    ///               │ y │    ╭────────────────────────────────────────────────┘ │
+    ///               └───┘    ╰──────────────────────────────────────────────────┘
+    ///                ╱ ╲
+    ///               b  ┌───┐
+    ///                  │ z │
+    ///                  └───┘
+    ///                   ╱ ╲
+    ///                  c   d
+    /// ```
+    fn balance(self) -> Node<K, V> {
+        use self::Color::Red as R;
+        use self::Color::Black as B;
+
+        match self.color {
+            B => {
+                let color_l:   Option<Color> = self.left_color();
+                let color_l_l: Option<Color> = self.left.as_ref().and_then(|l| l.left_color());
+                let color_l_r: Option<Color> = self.left.as_ref().and_then(|l| l.right_color());
+                let color_r:   Option<Color> = self.right_color();
+                let color_r_l: Option<Color> = self.right.as_ref().and_then(|r| r.left_color());
+                let color_r_r: Option<Color> = self.right.as_ref().and_then(|r| r.right_color());
+
+                match (color_l, color_l_l, color_l_r, color_r, color_r_l, color_r_r) {
+                    // Case 1
+                    (Some(R), Some(R), ..) => {
+                        let node_l:   Arc<Node<K, V>> = self.left.unwrap();
+                        let node_l_l: Arc<Node<K, V>> = node_l.left.clone().unwrap();
+
+                        let tree_l_l_l: Option<Arc<Node<K, V>>> = node_l_l.left.clone();
+                        let tree_l_l_r: Option<Arc<Node<K, V>>> = node_l_l.right.clone();
+                        let tree_l_r:   Option<Arc<Node<K, V>>> = node_l.right.clone();
+                        let tree_r:     Option<Arc<Node<K, V>>> = self.right;
+
+                        let new_left = Node {
+                            entry: Arc::clone(&node_l_l.entry),
+                            color: Color::Black,
+                            left:  tree_l_l_l,
+                            right: tree_l_l_r,
+                        };
+                        let new_right = Node {
+                            entry: self.entry,
+                            color: Color::Black,
+                            left:  tree_l_r,
+                            right: tree_r,
+                        };
+
+                        Node {
+                            entry: Arc::clone(&node_l.entry),
+                            color: Color::Red,
+                            left:  Some(Arc::new(new_left)),
+                            right: Some(Arc::new(new_right)),
+                        }
+                    },
+
+                    // Case 2
+                    (Some(R), _, Some(R), ..) => {
+                        let node_l:   Arc<Node<K, V>> = self.left.unwrap();
+                        let node_l_r: Arc<Node<K, V>> = node_l.right.clone().unwrap();
+
+                        let tree_l_l:   Option<Arc<Node<K, V>>> = node_l.left.clone();
+                        let tree_l_r_l: Option<Arc<Node<K, V>>> = node_l_r.left.clone();
+                        let tree_l_r_r: Option<Arc<Node<K, V>>> = node_l_r.right.clone();
+                        let tree_r:     Option<Arc<Node<K, V>>> = self.right;
+
+                        let new_left = Node {
+                            entry: Arc::clone(&node_l.entry),
+                            color: Color::Black,
+                            left:  tree_l_l,
+                            right: tree_l_r_l,
+                        };
+                        let new_right = Node {
+                            entry: self.entry,
+                            color: Color::Black,
+                            left:  tree_l_r_r,
+                            right: tree_r,
+                        };
+
+                        Node {
+                            entry: Arc::clone(&node_l_r.entry),
+                            color: Color::Red,
+                            left:  Some(Arc::new(new_left)),
+                            right: Some(Arc::new(new_right)),
+                        }
+                    },
+
+                    // Case 3
+                    (.., Some(R), Some(R), _) => {
+                        let node_r:   Arc<Node<K, V>> = self.right.unwrap();
+                        let node_r_l: Arc<Node<K, V>> = node_r.left.clone().unwrap();
+
+                        let tree_l:     Option<Arc<Node<K, V>>> = self.left;
+                        let tree_r_l_l: Option<Arc<Node<K, V>>> = node_r_l.left.clone();
+                        let tree_r_l_r: Option<Arc<Node<K, V>>> = node_r_l.right.clone();
+                        let tree_r_r:   Option<Arc<Node<K, V>>> = node_r.right.clone();
+
+                        let new_left = Node {
+                            entry: self.entry,
+                            color: Color::Black,
+                            left:  tree_l,
+                            right: tree_r_l_l,
+                        };
+                        let new_right = Node {
+                            entry: Arc::clone(&node_r.entry),
+                            color: Color::Black,
+                            left:  tree_r_l_r,
+                            right: tree_r_r,
+                        };
+
+                        Node {
+                            entry: Arc::clone(&node_r_l.entry),
+                            color: Color::Red,
+                            left:  Some(Arc::new(new_left)),
+                            right: Some(Arc::new(new_right)),
+                        }
+                    },
+
+                    // Case 4
+                    (.., Some(R), _, Some(R)) => {
+                        let node_r:   Arc<Node<K, V>> = self.right.unwrap();
+                        let node_r_r: Arc<Node<K, V>> = node_r.right.clone().unwrap();
+
+                        let tree_l:     Option<Arc<Node<K, V>>> = self.left;
+                        let tree_r_l:   Option<Arc<Node<K, V>>> = node_r.left.clone();
+                        let tree_r_r_l: Option<Arc<Node<K, V>>> = node_r_r.left.clone();
+                        let tree_r_r_r: Option<Arc<Node<K, V>>> = node_r_r.right.clone();
+
+                        let new_left = Node {
+                            entry: self.entry,
+                            color: Color::Black,
+                            left:  tree_l,
+                            right: tree_r_l,
+                        };
+                        let new_right = Node {
+                            entry: Arc::clone(&node_r_r.entry),
+                            color: Color::Black,
+                            left:  tree_r_r_l,
+                            right: tree_r_r_r,
+                        };
+
+                        Node {
+                            entry: Arc::clone(&node_r.entry),
+                            color: Color::Red,
+                            left:  Some(Arc::new(new_left)),
+                            right: Some(Arc::new(new_right)),
+                        }
+                    },
+
+                    _ => self,
+                }
+            },
+            R => self,
+        }
+    }
+
+    /// Returns a pair with the node with the new entry and whether the key is new.
+    fn insert(root: Option<&Node<K, V>>, key: K, value: V) -> (Node<K, V>, bool) {
+        fn ins<K: Ord, V>(node: Option<&Node<K, V>>, k: K, v: V) -> (Node<K, V>, bool) {
+            match node {
+                Some(ref node) => {
+                    match k.cmp(&node.entry.key) {
+                        Ordering::Less => {
+                            let left = Node::borrow(&node.left);
+                            let (new_left, is_new_key) = ins(left, k, v);
+                            let unbalanced_new_node = node.with_left(new_left);
+
+                            // Small optimization: avoid unnecessary calls to balance.
+                            let new_node = match is_new_key {
+                                true  => unbalanced_new_node.balance(),
+                                false => unbalanced_new_node,
+                            };
+
+                            (new_node, is_new_key)
+                        },
+                        Ordering::Equal => {
+                            let new_node = node.with_entry(Entry::new(k, v));
+
+                            (new_node, false)
+                        },
+                        Ordering::Greater => {
+                            let right = Node::borrow(&node.right);
+                            let (new_right, is_new_key) = ins(right, k, v);
+                            let unbalanced_new_node = node.with_right(new_right);
+
+                            // Small optimization: avoid unnecessary calls to balance.
+                            let new_node = match is_new_key {
+                                true  => unbalanced_new_node.balance(),
+                                false => unbalanced_new_node,
+                            };
+
+                            (new_node, is_new_key)
+                        },
+                    }
+                },
+                None => {
+                    let new_node = Node::new_red(Entry::new(k, v));
+
+                    (new_node, true)
+                },
+            }
+        }
+
+        let (mut new_root, is_new_key) = ins(root, key, value);
+
+        new_root.color = Color::Black;
+
+        (new_root, is_new_key)
+    }
+}
+
+impl<K, V> RedBlackTreeMap<K, V>
+    where K: Ord {
+    pub fn new() -> RedBlackTreeMap<K, V> {
+        RedBlackTreeMap {
+            root: None,
+            size: 0,
+        }
+    }
+
+    pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
+        where K: Borrow<Q>,
+              Q: Ord {
+        self.root.as_ref()
+            .and_then(|r| r.get(key))
+            .map(|e| &e.value)
+    }
+
+    pub fn first(&self) -> Option<(&K, &V)> {
+        self.root.as_ref()
+            .map(|r| r.first())
+            .map(|e| (&e.key, &e.value))
+    }
+
+    pub fn last(&self) -> Option<(&K, &V)> {
+        self.root.as_ref()
+            .map(|r| r.last())
+            .map(|e| (&e.key, &e.value))
+    }
+
+    pub fn insert(&self, key: K, value: V) -> RedBlackTreeMap<K, V> {
+        let root = Node::borrow(&self.root);
+        let (new_root, is_new_key) = Node::insert(root, key, value);
+
+        RedBlackTreeMap {
+            root: Some(Arc::new(new_root)),
+            size: self.size + if is_new_key { 1 } else { 0 },
+        }
+    }
+
+    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+        where K: Borrow<Q>,
+              Q: Ord {
+        self.get(key).is_some()
+    }
+
+    #[inline]
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.size() == 0
+    }
+
+    pub fn iter(&self) -> Iter<K, V> {
+        Iter::new(self)
+    }
+
+    pub fn keys(&self) -> IterKeys<K, V> {
+        self.iter().map(|(k, _)| k)
+    }
+
+    pub fn values(&self) -> IterValues<K, V> {
+        self.iter().map(|(_, v)| v)
+    }
+}
+
+impl<'a, K, Q: ?Sized, V> Index<&'a Q> for RedBlackTreeMap<K, V>
+    where K: Ord + Borrow<Q>,
+          Q: Ord {
+    type Output = V;
+
+    fn index(&self, key: &Q) -> &V {
+        self.get(key)
+            .expect("no entry found for key")
+    }
+}
+
+impl<K, V> Clone for RedBlackTreeMap<K, V>
+    where K: Ord {
+    fn clone(&self) -> RedBlackTreeMap<K, V> {
+        RedBlackTreeMap {
+            root: self.root.clone(),
+            size: self.size,
+        }
+    }
+}
+
+impl<K, V> Default for RedBlackTreeMap<K, V>
+    where K: Ord {
+    fn default() -> RedBlackTreeMap<K, V> {
+        RedBlackTreeMap::new()
+    }
+}
+
+impl<K, V: PartialEq> PartialEq for RedBlackTreeMap<K, V>
+    where K: Ord {
+    fn eq(&self, other: &RedBlackTreeMap<K, V>) -> bool {
+        self.size() == other.size() && self.iter().all(|(key, value)|
+            other.get(key).map_or(false, |v| *value == *v)
+        )
+    }
+}
+
+impl<K, V: Eq> Eq for RedBlackTreeMap<K, V>
+    where K: Ord {}
+
+impl<K: Ord, V: PartialOrd> PartialOrd for RedBlackTreeMap<K, V> {
+    fn partial_cmp(&self, other: &RedBlackTreeMap<K, V>) -> Option<Ordering> {
+        self.iter().partial_cmp(other.iter())
+    }
+}
+
+impl<K: Ord, V: Ord> Ord for RedBlackTreeMap<K, V> {
+    fn cmp(&self, other: &RedBlackTreeMap<K, V>) -> Ordering {
+        self.iter().cmp(other.iter())
+    }
+}
+
+impl<K: Hash, V: Hash> Hash for RedBlackTreeMap<K, V>
+    where K: Ord {
+    fn hash<H: Hasher>(&self, state: &mut H) -> () {
+        // Add the hash of length so that if two collections are added one after the other it doesn't
+        // hash to the same thing as a single collection with the same elements in the same order.
+        self.size().hash(state);
+
+        for e in self {
+            e.hash(state);
+        }
+    }
+}
+
+impl<K, V> Display for RedBlackTreeMap<K, V>
+    where K: Ord + Display,
+          V: Display {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        let mut first = true;
+
+        fmt.write_str("{")?;
+
+        for (k, v) in self.iter() {
+            if !first {
+                fmt.write_str(", ")?;
+            }
+            k.fmt(fmt)?;
+            fmt.write_str(": ")?;
+            v.fmt(fmt)?;
+            first = false;
+        }
+
+        fmt.write_str("}")
+    }
+}
+
+impl<'a, K, V> IntoIterator for &'a RedBlackTreeMap<K, V>
+    where K: Ord {
+    type Item = (&'a K, &'a V);
+    type IntoIter = Iter<'a, K, V>;
+
+    fn into_iter(self) -> Iter<'a, K, V> {
+        self.iter()
+    }
+}
+
+// TODO This can be improved to create a perfectly balanced tree.
+impl<K, V> FromIterator<(K, V)> for RedBlackTreeMap<K, V> where
+    K: Ord {
+    fn from_iter<I: IntoIterator<Item = (K, V)>>(into_iter: I) -> RedBlackTreeMap<K, V> {
+        let mut map = RedBlackTreeMap::new();
+
+        for (k, v) in into_iter {
+            map = map.insert(k, v);
+        }
+
+        map
+    }
+}
+
+#[derive(Debug)]
+pub struct Iter<'a, K: 'a, V: 'a> {
+    map: &'a RedBlackTreeMap<K, V>,
+
+    stack_forward:  Option<Vec<&'a Node<K, V>>>,
+    stack_backward: Option<Vec<&'a Node<K, V>>>,
+
+    left_index:  usize, // inclusive
+    right_index: usize, // exclusive
+}
+
+mod iter_utils {
+    use std::mem::size_of;
+
+    pub fn lg_floor(size: usize) -> usize {
+        debug_assert!(size > 0);
+
+        let c: usize = 8 * size_of::<usize>() - size.leading_zeros() as usize;
+
+        c - 1
+    }
+
+    pub fn pessimistic_height(size: usize) -> usize {
+        if size > 0 {
+            2 * lg_floor(size + 1)
+        } else {
+            0
+        }
+    }
+}
+
+impl<'a, K, V> Iter<'a, K, V>
+    where K: Ord {
+    fn new(map: &RedBlackTreeMap<K, V>) -> Iter<K, V> {
+        Iter {
+            map,
+
+            stack_forward:  None,
+            stack_backward: None,
+
+            left_index: 0,
+            right_index: map.size(),
+        }
+    }
+
+    fn dig(stack: &mut Vec<&Node<K, V>>, backwards: bool) -> () {
+        let child =
+            stack
+                .last()
+                .and_then(|node| {
+                    let c = if backwards { &node.right } else { &node.left };
+                    Node::borrow(c)
+                });
+
+        if let Some(ref c) = child {
+            stack.push(c);
+            Iter::dig(stack, backwards);
+        }
+    }
+
+    fn init_if_needed(&mut self, backwards: bool) -> () {
+        let stack_field = if backwards {
+            &mut self.stack_backward
+        } else {
+            &mut self.stack_forward
+        };
+
+        if stack_field.is_none() {
+            let mut stack =
+                Vec::with_capacity(iter_utils::pessimistic_height(self.map.size()) + 1);
+
+            // TODO Use foreach when stable.
+            Node::borrow(&self.map.root).map(|r| stack.push(r));
+
+            Iter::dig(&mut stack, backwards);
+
+            *stack_field = Some(stack);
+        }
+    }
+
+    #[inline]
+    fn non_empty(&self) -> bool {
+        self.left_index < self.right_index
+    }
+
+    fn advance(stack: &mut Vec<&Node<K, V>>, backwards: bool) -> () {
+        match stack.pop() {
+            Some(node) => {
+                let child = if backwards { &node.left } else { &node.right };
+
+                if let Some(c) = Node::borrow(child) {
+                    stack.push(c);
+                    Iter::dig(stack, backwards);
+                }
+            },
+            None => (), // Reached the end.  Nothing to do.
+        }
+    }
+
+    #[inline]
+    fn current(stack: &Vec<&'a Node<K, V>>) -> Option<(&'a K, &'a V)> {
+        stack.last().map(|node| (&node.entry.key, &node.entry.value))
+    }
+
+    fn advance_forward(&mut self) -> () {
+        if self.non_empty() {
+            Iter::advance(&mut self.stack_forward.as_mut().unwrap(), false);
+
+            self.left_index += 1;
+        }
+    }
+
+    fn current_forward(&mut self) -> Option<(&'a K, &'a V)> {
+        if self.non_empty() {
+            Iter::current(&self.stack_forward.as_ref().unwrap())
+        } else {
+            None
+        }
+    }
+
+    fn advance_backward(&mut self) -> () {
+        if self.non_empty() {
+            Iter::advance(&mut self.stack_backward.as_mut().unwrap(), true);
+
+            self.right_index -= 1;
+        }
+    }
+
+    fn current_backward(&mut self) -> Option<(&'a K, &'a V)> {
+        if self.non_empty() {
+            Iter::current(&self.stack_backward.as_ref().unwrap())
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a, K, V> Iterator for Iter<'a, K, V>
+    where K: Ord {
+    type Item = (&'a K, &'a V);
+
+    fn next(&mut self) -> Option<(&'a K, &'a V)> {
+        self.init_if_needed(false);
+
+        let current = self.current_forward();
+
+        self.advance_forward();
+
+        current
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.right_index - self.left_index;
+
+        (len, Some(len))
+    }
+}
+
+impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V>
+    where K: Ord {
+    fn next_back(&mut self) -> Option<(&'a K, &'a V)> {
+        self.init_if_needed(true);
+
+        let current = self.current_backward();
+
+        self.advance_backward();
+
+        current
+    }
+}
+
+impl<'a, K: Ord, V> ExactSizeIterator for Iter<'a, K, V> {}
+
+#[cfg(test)]
+mod test;

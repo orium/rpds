@@ -12,9 +12,9 @@ build=$(cargo test --no-run --message-format=json 2>/dev/null | \
     rev | cut -d'/' -f 1 | rev)
 
 kcov --verify target/cov \
-    --exclude-pattern='test' \
+    --exclude-pattern='cargo/registry/,test' \
     --exclude-region='#[cfg(test)]' \
     --exclude-line='unreachable!' \
-    target/debug/$build 2>&1 >/dev/null
+    target/debug/$build $@ 2>&1 >/dev/null
 
 echo "You can find the test coverage results at file://$(pwd)/target/cov/$build/index.html"

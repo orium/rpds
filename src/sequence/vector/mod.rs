@@ -518,10 +518,10 @@ impl<T> FromIterator<T> for Vector<T> {
 pub struct Iter<'a, T: 'a> {
     vector: &'a Vector<T>,
 
-    stack_forward: Option<Vec<IterStackElement<'a, T>>>,
+    stack_forward:  Option<Vec<IterStackElement<'a, T>>>,
     stack_backward: Option<Vec<IterStackElement<'a, T>>>,
 
-    left_index: usize,  // inclusive
+    left_index:  usize, // inclusive
     right_index: usize, // exclusive
 }
 
@@ -612,11 +612,6 @@ impl<'a, T> Iter<'a, T> {
         }
     }
 
-    #[inline]
-    fn current(stack: &Vec<IterStackElement<'a, T>>) -> Option<&'a T> {
-        stack.last().map(|e| e.current_elem())
-    }
-
     fn advance(stack: &mut Vec<IterStackElement<T>>, backwards: bool) -> () {
         match stack.pop() {
             Some(mut stack_element) => {
@@ -632,6 +627,11 @@ impl<'a, T> Iter<'a, T> {
             },
             None => (), // Reached the end.  Nothing to do.
         }
+    }
+
+    #[inline]
+    fn current(stack: &Vec<IterStackElement<'a, T>>) -> Option<&'a T> {
+        stack.last().map(|e| e.current_elem())
     }
 
     #[inline]
