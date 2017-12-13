@@ -43,5 +43,5 @@ after_success:
   && sudo make install
   && cd ../../
   && rm -rf kcov-34 v34.tar.gz
-  && ./tools/codecov.sh
+  && travis_wait ./tools/codecov.sh
   && bash <(curl -s https://codecov.io/bash)
