@@ -494,7 +494,7 @@ mod internal {
         use self::rand::SeedableRng;
 
         let limit = 50_000;
-        let seed: [u32; 4] = rand::random();
+        let seed: [u32; 4] = [24573, 23355, 3457, 25346746];
         let mut rng = rand::ChaChaRng::from_seed(&seed);
         let mut permutation: [u32; 64] = {
             let mut p: [u32; 64] = [0; 64];
@@ -510,6 +510,60 @@ mod internal {
             rng.shuffle(&mut permutation);
 
             insert_test(&permutation);
+        }
+    }
+
+    fn remove_test(values_insert: &[u32], values_remove: &[u32]) -> () {
+        let mut map = RedBlackTreeMap::new();
+
+        for &v in values_insert.iter() {
+            map = map.insert(v, 2*v);
+        }
+
+        for (i, v) in values_remove.iter().enumerate() {
+            map = map.remove(v);
+
+            if let Err(error) = map.check_consistent() {
+                panic!(format!("Consistency error in red-black tree ({:?}).  Insertions: {:?}.  Removals: {:?}",
+                               error, &values_insert, &values_remove[0..(i + 1)]));
+            }
+
+            assert!(!map.contains_key(v));
+        }
+    }
+
+    #[test]
+    fn test_remove_sorted() {
+        let vec: Vec<u32> = (0..4092).collect();
+        let vec_rev: Vec<u32> = (0..4092).rev().collect();
+        remove_test(&vec, &vec);
+        remove_test(&vec, &vec_rev);
+    }
+
+    #[test]
+    fn test_remove() {
+        use self::rand::Rng;
+        use self::rand::SeedableRng;
+
+        let limit = 50_000;
+        let seed: [u32; 4] = [24573, 23355, 3457, 25346746];
+        let mut rng = rand::ChaChaRng::from_seed(&seed);
+        let mut permutation_insert: [u32; 64] = {
+            let mut p: [u32; 64] = [0; 64];
+
+            for i in 0..64 {
+                p[i as usize] = i;
+            }
+
+            p
+        };
+        let mut permutation_remove: [u32; 64] = permutation_insert;
+
+        for _ in 0..limit {
+            rng.shuffle(&mut permutation_insert);
+            rng.shuffle(&mut permutation_remove);
+
+            remove_test(&permutation_insert, &permutation_remove);
         }
     }
 }
@@ -738,14 +792,6 @@ fn test_insert_simple() -> () {
 }
 
 #[test]
-fn test_contains_key() -> () {
-    let map = RedBlackTreeMap::new().insert("foo", 7);
-
-    assert!(map.contains_key("foo"));
-    assert!(!map.contains_key("baz"));
-}
-
-#[test]
 fn test_insert() -> () {
     let mut map = RedBlackTreeMap::new();
     let limit = 50_000;
@@ -771,6 +817,85 @@ fn test_insert() -> () {
 
         assert_eq!(map.size(), limit as usize);
         assert_eq!(map.get(&i), Some(&(2 * i as i32)));
+    }
+}
+
+#[test]
+fn test_contains_key() -> () {
+    let map = RedBlackTreeMap::new().insert("foo", 7);
+
+    assert!(map.contains_key("foo"));
+    assert!(!map.contains_key("baz"));
+}
+
+#[test]
+fn test_remove_simple() -> () {
+    let mut map = RedBlackTreeMap::new()
+        .insert("foo", 4)
+        .insert("bar", 12)
+        .insert("mumble", 13)
+        .insert("baz", 42);
+    let empty_map: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::new();
+
+    assert_eq!(empty_map.remove(&3), empty_map);
+
+    assert_eq!(map.size(), 4);
+
+    map = map.remove("not-there");
+    assert_eq!(map.size(), 4);
+
+    assert_eq!(map.get("foo"), Some(&4));
+    assert_eq!(map.get("bar"), Some(&12));
+    assert_eq!(map.get("mumble"), Some(&13));
+    assert_eq!(map.get("baz"), Some(&42));
+
+    map = map.remove("mumble");
+    assert_eq!(map.size(), 3);
+
+    assert_eq!(map.get("foo"), Some(&4));
+    assert_eq!(map.get("bar"), Some(&12));
+    assert_eq!(map.get("mumble"), None);
+    assert_eq!(map.get("baz"), Some(&42));
+
+    map = map.remove("foo");
+    assert_eq!(map.size(), 2);
+
+    assert_eq!(map.get("foo"), None);
+
+    map = map.remove("baz");
+    assert_eq!(map.size(), 1);
+
+    assert_eq!(map.get("baz"), None);
+
+    map = map.remove("bar");
+    assert_eq!(map.size(), 0);
+
+    assert_eq!(map.get("bar"), None);
+}
+
+#[test]
+fn test_remove() -> () {
+    let mut map = RedBlackTreeMap::new();
+    let limit = 50_000;
+
+    for i in 0..limit {
+        map = map.insert(i, -(i as i32));
+    }
+
+    // Now lets remove half of it.
+
+    for i in (0..limit / 2).map(|i| 2 * i) {
+        assert_eq!(map.get(&i), Some(&-(i as i32)));
+
+        map = map.remove(&i);
+
+        assert!(!map.contains_key(&i));
+        assert_eq!(map.size(), (limit - i / 2 - 1) as usize);
+
+        // Also check than the previous one is ok.
+        if i > 0 {
+            assert_eq!(map.get(&(i - 1)), Some(&-((i - 1) as i32)));
+        }
     }
 }
 

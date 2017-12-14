@@ -30,6 +30,25 @@ fn red_black_tree_map_insert(bench: &mut Bencher) -> () {
     });
 }
 
+fn red_black_tree_map_remove(bench: &mut Bencher) -> () {
+    let limit = iterations(100_000);
+    let mut full_map = RedBlackTreeMap::new();
+
+    for i in 0..limit {
+        full_map = full_map.insert(i, -(i as isize));
+    }
+
+    bench.iter_no_drop(|| {
+        let mut map = full_map.clone();
+
+        for i in 0..limit {
+            map = map.remove(&i);
+        }
+
+        map
+    });
+}
+
 fn red_black_tree_map_get(bench: &mut Bencher) -> () {
     let limit = iterations(100_000);
     let mut map = RedBlackTreeMap::new();
@@ -62,6 +81,6 @@ fn red_black_tree_map_iterate(bench: &mut Bencher) -> () {
 
 benchmark_group!(
     benches,
-    red_black_tree_map_insert, red_black_tree_map_get, red_black_tree_map_iterate
+    red_black_tree_map_insert, red_black_tree_map_remove, red_black_tree_map_get, red_black_tree_map_iterate
 );
 benchmark_main!(benches);
