@@ -5,7 +5,7 @@
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
-// Note: Keep this in sync with `README.md`.  Note that the doc links must be removed.
+// Note: Keep this in sync with `README.md`.  To do so run `./tools/update-readme.sh`.
 //! # Rust Persistent Data Structures
 //!
 //! Rust Persistent Data Structures provides [fully persistent data structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
@@ -21,6 +21,8 @@
 //!   4. [`Queue`](#queue)
 //!   5. [`HashTrieMap`](#hashtriemap)
 //!   6. [`HashTrieSet`](#hashtrieset)
+//!   7. [`RedBlackTreeMap`](#redblacktreemap)
+//!   8. [`RedBlackTreeSet`](#redblacktreeset)
 //!
 //! ## `List`
 //! [![List documentation](https://img.shields.io/badge/doc-List-303070.svg)](sequence/list/struct.List.html)
@@ -168,6 +170,62 @@
 //! let set_positive = set_extended.remove(&"zero");
 //!
 //! assert!(!set_positive.contains(&"zero"));
+//! ```
+//!
+//! ## `RedBlackTreeMap`
+//! [![RedBlackTreeMap documentation](https://img.shields.io/badge/doc-RedBlackTreeMap-303070.svg)](map/red_black_tree_map/struct.RedBlackTreeMap.html)
+//!
+//! A map implemented with a [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree).
+//!
+//! ### Example
+//!
+//! ```rust
+//! use rpds::RedBlackTreeMap;
+//!
+//! let map_en = RedBlackTreeMap::new()
+//!     .insert(0, "zero")
+//!     .insert(1, "one");
+//!
+//! assert_eq!(map_en.get(&1), Some(&"one"));
+//!
+//! let map_pt = map_en
+//!     .insert(1, "um")
+//!     .insert(2, "dois");
+//!
+//! assert_eq!(map_pt.get(&2), Some(&"dois"));
+//!
+//! let map_pt_binary = map_pt.remove(&2);
+//!
+//! assert_eq!(map_pt_binary.get(&2), None);
+//!
+//! assert_eq!(map_pt_binary.first(), Some((&0, &"zero")));
+//! ```
+//!
+//! ## `RedBlackTreeSet`
+//! [![RedBlackTreeSet documentation](https://img.shields.io/badge/doc-RedBlackTreeSet-303070.svg)](set/red_black_tree_set/struct.RedBlackTreeSet.html)
+//!
+//! A set implemented with a [`RedBlackTreeMap`](#redblacktreemap).
+//!
+//! ### Example
+//!
+//! ```rust
+//! use rpds::RedBlackTreeSet;
+//!
+//! let set = RedBlackTreeSet::new()
+//!     .insert("zero")
+//!     .insert("one");
+//!
+//! assert!(set.contains(&"one"));
+//!
+//! let set_extended = set.insert("two");
+//!
+//! assert!(set_extended.contains(&"two"));
+//!
+//! let set_positive = set_extended.remove(&"zero");
+//!
+//! assert!(!set_positive.contains(&"zero"));
+//!
+//! assert_eq!(set_positive.first(), Some(&"one"));
 //! ```
 
 pub mod sequence;

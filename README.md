@@ -2,7 +2,7 @@
 [![Code Coverage (master)](https://codecov.io/gh/orium/rpds/branch/master/graph/badge.svg)](https://codecov.io/gh/orium/rpds)
 [![crates.io](http://meritbadge.herokuapp.com/rpds)](https://crates.io/crates/rpds)
 [![Documentation (latest)](https://docs.rs/rpds/badge.svg)](https://docs.rs/rpds/)
-[![MPLv2.0 licensed](https://img.shields.io/badge/license-MPLv2.0-blue.svg)](./LICENSE)
+[![Licensed](https://img.shields.io/crates/l/rpds.svg)](./LICENSE)
 
 # Rust Persistent Data Structures
 
@@ -19,6 +19,8 @@ This crate implements the following data structures:
   4. [`Queue`](#queue)
   5. [`HashTrieMap`](#hashtriemap)
   6. [`HashTrieSet`](#hashtrieset)
+  7. [`RedBlackTreeMap`](#redblacktreemap)
+  8. [`RedBlackTreeSet`](#redblacktreeset)
 
 ## `List`
 
@@ -160,4 +162,58 @@ assert!(set_extended.contains(&"two"));
 let set_positive = set_extended.remove(&"zero");
 
 assert!(!set_positive.contains(&"zero"));
+```
+
+## `RedBlackTreeMap`
+
+A map implemented with a [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree).
+
+### Example
+
+```rust
+use rpds::RedBlackTreeMap;
+
+let map_en = RedBlackTreeMap::new()
+    .insert(0, "zero")
+    .insert(1, "one");
+
+assert_eq!(map_en.get(&1), Some(&"one"));
+
+let map_pt = map_en
+    .insert(1, "um")
+    .insert(2, "dois");
+
+assert_eq!(map_pt.get(&2), Some(&"dois"));
+
+let map_pt_binary = map_pt.remove(&2);
+
+assert_eq!(map_pt_binary.get(&2), None);
+
+assert_eq!(map_pt_binary.first(), Some((&0, &"zero")));
+```
+
+## `RedBlackTreeSet`
+
+A set implemented with a [`RedBlackTreeMap`](#redblacktreemap).
+
+### Example
+
+```rust
+use rpds::RedBlackTreeSet;
+
+let set = RedBlackTreeSet::new()
+    .insert("zero")
+    .insert("one");
+
+assert!(set.contains(&"one"));
+
+let set_extended = set.insert("two");
+
+assert!(set_extended.contains(&"two"));
+
+let set_positive = set_extended.remove(&"zero");
+
+assert!(!set_positive.contains(&"zero"));
+
+assert_eq!(set_positive.first(), Some(&"one"));
 ```
