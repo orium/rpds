@@ -56,10 +56,6 @@ fn default_degree() -> u8 {
 /// | iterator step              |      Θ(1) |      Θ(1) |        Θ(1) |
 /// | iterator full              |      Θ(n) |      Θ(n) |        Θ(n) |
 ///
-/// ## Space complexity
-///
-/// The space complexity is *Θ(n)*.
-///
 /// # Implementation details
 ///
 /// This implementation uses a [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie).

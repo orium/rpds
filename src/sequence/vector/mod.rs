@@ -71,10 +71,6 @@ impl<T: Clone> CloneWithCapacity for Vec<T> {
 ///    = Θ(n)                       (by 1.)
 /// ```
 ///
-/// ## Space complexity
-///
-/// The space complexity is *Θ(n)*.
-///
 /// # Implementation details
 ///
 /// This vector is implemented as described in

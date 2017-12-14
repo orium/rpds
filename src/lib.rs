@@ -74,7 +74,7 @@
 //! ## `Stack`
 //! [![Stack documentation](https://img.shields.io/badge/doc-Stack-303070.svg)](stack/struct.Stack.html)
 //!
-//! A LIFO (last in, first out) data structure.  This is just a [`List`](#list) on disguise.
+//! A LIFO (last in, first out) data structure.  This is just a [`List`](#list) in disguise.
 //!
 //! ### Example
 //!
@@ -183,3 +183,4 @@ pub use queue::Queue;
 pub use map::hash_trie_map::HashTrieMap;
 pub use set::hash_trie_set::HashTrieSet;
 pub use map::red_black_tree_map::RedBlackTreeMap;
+pub use set::red_black_tree_set::RedBlackTreeSet;

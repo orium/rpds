@@ -36,10 +36,6 @@ pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
 /// | iterator step     |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator full     |      Θ(n) |    Θ(n) |        Θ(n) |
 ///
-/// ## Space complexity
-///
-/// The space complexity is *Θ(n)*.
-///
 /// # Implementation details
 ///
 /// This is your classic functional list with "cons" and "nil" nodes, with a little extra sauce to

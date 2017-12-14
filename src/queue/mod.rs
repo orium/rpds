@@ -38,10 +38,6 @@ pub type Iter<'a, T> =
 /// | iterator step         |      Θ(1) |    Θ(1) |        Θ(n) |
 /// | iterator full         |      Θ(n) |    Θ(n) |        Θ(n) |
 ///
-/// ## Space complexity
-///
-/// The space complexity is *Θ(n)*.
-///
 /// # Implementation details
 ///
 /// This queue is implemented as described in

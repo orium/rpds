@@ -17,7 +17,7 @@ pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V))
 
 /// A persistent map with structural sharing.  This implementation uses a
 /// [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree)
-/// and supports fast `insert()`, and `get()`.
+/// and supports fast `insert()`, `remove()`, and `get()`.
 ///
 /// # Complexity
 ///
@@ -37,10 +37,6 @@ pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V))
 /// | iterator creation          |      Θ(1) |      Θ(1) |        Θ(1) |
 /// | iterator step              |      Θ(1) |      Θ(1) |   Θ(log(n)) |
 /// | iterator full              |      Θ(n) |      Θ(n) |        Θ(n) |
-///
-/// ## Space complexity
-///
-/// The space complexity is *Θ(n)*.
 ///
 /// # Implementation details
 ///

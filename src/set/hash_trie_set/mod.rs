@@ -37,10 +37,6 @@ pub type Iter<'a, T> = hash_trie_map::IterKeys<'a, T, ()>;
 /// | iterator step     |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator full     |      Θ(n) |    Θ(n) |        Θ(n) |
 ///
-/// ## Space complexity
-///
-/// The space complexity is *Θ(n)*.
-///
 /// # Implementation details
 ///
 /// This is a thin wrapper around a [HashTrieMap](../../map/hash_trie_map/struct.HashTrieMap.html).
@@ -109,8 +105,7 @@ impl<T, H: BuildHasher> HashTrieSet<T, H>
         self.size() == 0
     }
 
-    // TODO Use impl trait for return value when available
-    pub fn iter(&self) -> hash_trie_map::IterKeys<T, ()> {
+    pub fn iter(&self) -> Iter<T> {
         self.map.keys()
     }
 }

@@ -34,10 +34,6 @@ pub type Iter<'a, T> = list::Iter<'a, T>;
 /// | iterator step     |      Θ(1) |    Θ(1) |        Θ(1) |
 /// | iterator full     |      Θ(n) |    Θ(n) |        Θ(n) |
 ///
-/// ## Space complexity
-///
-/// The space complexity is *Θ(n)*.
-///
 /// # Implementation details
 ///
 /// This is a thin wrapper around a [List](../sequence/list/struct.List.html).
