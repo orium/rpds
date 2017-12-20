@@ -3,19 +3,14 @@
 * Trait for all collections/iterators factoring everything common there?
 * Unit tests
   * Use property based tests with [quickcheck](https://github.com/BurntSushi/quickcheck)?
-* Docs
-  * list
-  * vector
-  * hash_trie_map
-  * stack
-  * queue
+* Rustdocs
+  * all data structures
 * HashMap
   * extend
 * HashSet
   * union
   * difference
   * intersection
-* RedBlackTreeMap/Set
 * Queue
   * benchmark
 * Stack

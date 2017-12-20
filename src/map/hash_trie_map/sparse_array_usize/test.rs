@@ -118,32 +118,3 @@ fn test_map_index() -> () {
 
     assert_eq!(sparse_array_usize_utils::map_index(bitmap, 12), None);
 }
-
-#[test]
-fn test_vec_insert_cloned() -> () {
-    let empty: Vec<&str> = Vec::new();
-    let vec: Vec<&str> = vec!["a", "b", "c", "d"];
-
-    assert_eq!(SparseArrayUsize::vec_insert_cloned(&empty, "x", 0), vec!["x"]);
-    assert_eq!(SparseArrayUsize::vec_insert_cloned(&vec, "x", 0), vec!["x", "a", "b", "c", "d"]);
-    assert_eq!(SparseArrayUsize::vec_insert_cloned(&vec, "x", 2), vec!["a", "b", "x", "c", "d"]);
-    assert_eq!(SparseArrayUsize::vec_insert_cloned(&vec, "x", 4), vec!["a", "b", "c", "d", "x"]);
-}
-
-#[test]
-fn test_vec_replace_cloned() -> () {
-    let vec: Vec<&str> = vec!["a", "b", "c", "d"];
-
-    assert_eq!(SparseArrayUsize::vec_replace_cloned(&vec, "x", 0), vec!["x", "b", "c", "d"]);
-    assert_eq!(SparseArrayUsize::vec_replace_cloned(&vec, "x", 2), vec!["a", "b", "x", "d"]);
-    assert_eq!(SparseArrayUsize::vec_replace_cloned(&vec, "x", 3), vec!["a", "b", "c", "x"]);
-}
-
-#[test]
-fn test_vec_remove_cloned() -> () {
-    let vec: Vec<&str> = vec!["a", "b", "c", "d"];
-
-    assert_eq!(SparseArrayUsize::vec_remove_cloned(&vec, 0), vec!["b", "c", "d"]);
-    assert_eq!(SparseArrayUsize::vec_remove_cloned(&vec, 2), vec!["a", "b", "d"]);
-    assert_eq!(SparseArrayUsize::vec_remove_cloned(&vec, 3), vec!["a", "b", "c"]);
-}

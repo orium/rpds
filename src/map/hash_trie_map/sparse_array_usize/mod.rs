@@ -7,6 +7,8 @@ use std::vec::Vec;
 use std::slice;
 use std::mem::size_of_val;
 
+use utils::vec_utils::VecUtils;
+
 /// Sparse array of size `8⋅size_of::<usize>()`.  The space used is proportional to the number of
 /// elements set.
 #[derive(Debug, PartialEq, Eq)]
@@ -52,41 +54,6 @@ impl<T: Clone> SparseArrayUsize<T> {
         }
     }
 
-    fn vec_insert_cloned(vec: &Vec<T>, value: T, index: usize) -> Vec<T> {
-        let mut cloned_vec = Vec::with_capacity(vec.len() + 1);
-
-        debug_assert!(index <= vec.len());
-
-        cloned_vec.extend_from_slice(&vec[0..index]);
-        cloned_vec.push(value);
-        cloned_vec.extend_from_slice(&vec[index..vec.len()]);
-
-        cloned_vec
-    }
-
-    fn vec_replace_cloned(vec: &Vec<T>, value: T, index: usize) -> Vec<T> {
-        let mut cloned_vec = Vec::with_capacity(vec.len());
-
-        debug_assert!(index < vec.len());
-
-        cloned_vec.extend_from_slice(&vec[0..index]);
-        cloned_vec.push(value);
-        cloned_vec.extend_from_slice(&vec[(index + 1)..vec.len()]);
-
-        cloned_vec
-    }
-
-    fn vec_remove_cloned(vec: &Vec<T>, index: usize) -> Vec<T> {
-        let mut cloned_vec = Vec::with_capacity(vec.len() - 1);
-
-        debug_assert!(index < vec.len());
-
-        cloned_vec.extend_from_slice(&vec[0..index]);
-        cloned_vec.extend_from_slice(&vec[(index + 1)..vec.len()]);
-
-        cloned_vec
-    }
-
     pub fn set(&self, index: usize, value: T) -> SparseArrayUsize<T> {
         debug_assert!(index < 8 * size_of_val(&self.bitmap));
 
@@ -94,7 +61,7 @@ impl<T: Clone> SparseArrayUsize<T> {
             Some(i) =>
                 SparseArrayUsize {
                     bitmap: self.bitmap,
-                    array: SparseArrayUsize::vec_replace_cloned(&self.array, value, i),
+                    array:  self.array.cloned_set(i, value),
                 },
             None => {
                 let new_bitmap = self.bitmap | (1 << index);
@@ -102,7 +69,7 @@ impl<T: Clone> SparseArrayUsize<T> {
 
                 SparseArrayUsize {
                     bitmap: new_bitmap,
-                    array:  SparseArrayUsize::vec_insert_cloned(&self.array, value, i),
+                    array:  self.array.cloned_insert(i, value),
                 }
             },
         }
@@ -113,7 +80,7 @@ impl<T: Clone> SparseArrayUsize<T> {
             Some(i) =>
                 SparseArrayUsize {
                     bitmap: self.bitmap ^ (1 << index),
-                    array: SparseArrayUsize::vec_remove_cloned(&self.array, i),
+                    array:  self.array.cloned_remove(i),
                 },
             None => self.clone(),
         }

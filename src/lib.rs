@@ -228,6 +228,8 @@
 //! assert_eq!(set_positive.first(), Some(&"one"));
 //! ```
 
+mod utils;
+
 pub mod sequence;
 pub mod stack;
 pub mod queue;

@@ -13,21 +13,9 @@ use std::ops::Index;
 use std::iter::FromIterator;
 use std::mem::size_of;
 
+use utils::vec_utils::VecUtils;
+
 const DEFAULT_BITS: u8 = 5;
-
-trait CloneWithCapacity {
-    fn clone_with_capacity(&self, capacity: usize) -> Self;
-}
-
-impl<T: Clone> CloneWithCapacity for Vec<T> {
-    fn clone_with_capacity(&self, capacity: usize) -> Self {
-        let mut vec: Vec<T> = Vec::with_capacity(capacity.max(self.len()));
-
-        vec.extend_from_slice(self);
-
-        vec
-    }
-}
 
 /// A persistent vector with structural sharing.  This data structure supports fast `push_back()`, `set()`,
 /// `drop_last()`, and `get()`.
@@ -119,33 +107,19 @@ impl<T> Node<T> {
         bucket: F,
         degree: usize
     ) -> Node<T> {
-        fn set_array<V>(array: &mut Vec<V>, index: usize, value: V) -> () {
-            if index < array.len() {
-                array[index] = value;
-            } else if index == array.len() {
-                array.push(value);
-            } else {
-                unreachable!();
-            }
-        }
-
         let b = bucket(index, height);
 
         match *self {
             Node::Leaf(ref a) => {
                 debug_assert_eq!(height, 0, "cannot have a leaf at this height");
 
-                let mut a = Vec::clone_with_capacity(a, b + 1);
+                let new_a = a.cloned_set(b, Arc::new(value));
 
-                set_array(&mut a, b, Arc::new(value));
-
-                Node::Leaf(a)
+                Node::Leaf(new_a)
             },
 
             Node::Branch(ref a) => {
                 debug_assert!(height > 0, "cannot have a branch at this height");
-
-                let mut a = Vec::clone_with_capacity(a, b + 1);
 
                 let subtree: Node<T> = match a.get(b) {
                     Some(s) => Node::clone(s),
@@ -157,9 +131,9 @@ impl<T> Node<T> {
                         },
                 };
 
-                set_array(&mut a, b, Arc::new(subtree.assoc(index, value, height - 1, bucket, degree)));
+                let new_a = a.cloned_set(b, Arc::new(subtree.assoc(index, value, height - 1, bucket, degree)));
 
-                Node::Branch(a)
+                Node::Branch(new_a)
             },
         }
     }
@@ -295,7 +269,7 @@ impl<T> Vector<T> {
         }
     }
 
-    /// Sets the given index to v.  This method does not guarantee that that vector is continuous.
+    /// Sets the given index to v.
     ///
     /// # Panics
     ///
