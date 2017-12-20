@@ -34,3 +34,10 @@ fn test_cloned_remove() -> () {
     assert_eq!(vec.cloned_remove(2), vec!["a", "b", "d"]);
     assert_eq!(vec.cloned_remove(3), vec!["a", "b", "c"]);
 }
+
+#[test]
+fn test_cloned_remove_last() -> () {
+    let vec: Vec<&str> = vec!["a", "b", "c", "d"];
+
+    assert_eq!(vec.cloned_remove_last(), vec!["a", "b", "c"]);
+}

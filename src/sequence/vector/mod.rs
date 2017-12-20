@@ -171,19 +171,18 @@ impl<T> Node<T> {
 
         let new_node: Node<T> = match *self {
             Node::Leaf(ref a) => {
-                let new_a = a[0..(a.len() - 1)].to_vec();
+                let new_a = a.cloned_remove_last();
 
                 Node::Leaf(new_a)
             },
 
             Node::Branch(ref a) => {
-                let mut new_a = Vec::clone(a);
-                let new_child: Option<Node<T>> =
-                    new_a.pop().unwrap().drop_last();
+                let last = a.last().unwrap();
 
-                if let Some(child_node) = new_child {
-                    new_a.push(Arc::new(child_node));
-                }
+                let new_a = match last.drop_last() {
+                    Some(subtree) => a.cloned_set(a.len() - 1, Arc::new(subtree)),
+                    None => a.cloned_remove_last(),
+                };
 
                 Node::Branch(new_a)
             },
