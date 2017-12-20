@@ -121,17 +121,21 @@ impl<T> Node<T> {
             Node::Branch(ref a) => {
                 debug_assert!(height > 0, "cannot have a branch at this height");
 
-                let subtree: Node<T> = match a.get(b) {
-                    Some(s) => Node::clone(s),
-                    None =>
-                        if height > 1 {
+                let new_subtree = match a.get(b) {
+                    Some(subtree) =>
+                        subtree.assoc(index, value, height - 1, bucket, degree),
+                    None => {
+                        let subtree = if height > 1 {
                             Node::new_empty_branch()
                         } else {
                             Node::new_empty_leaf()
-                        },
+                        };
+
+                        subtree.assoc(index, value, height - 1, bucket, degree)
+                    },
                 };
 
-                let new_a = a.cloned_set(b, Arc::new(subtree.assoc(index, value, height - 1, bucket, degree)));
+                let new_a = a.cloned_set(b, Arc::new(new_subtree));
 
                 Node::Branch(new_a)
             },
