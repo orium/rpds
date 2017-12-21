@@ -20,12 +20,10 @@ fn test_set() -> () {
     let mut array = SparseArrayUsize::new();
 
     assert_eq!(array.size(), 0);
-    assert!(array.is_empty());
     assert_eq!(array.get(0), None);
     assert_eq!(array.get(63), None);
 
     array = array.set(3, 'a');
-    assert!(!array.is_empty());
     assert_eq!(array.size(), 1);
 
     assert_eq!(array.get(2), None);
@@ -71,26 +69,35 @@ fn test_remove() -> () {
     assert_eq!(array.get(3), None);
     assert_eq!(array.get(60), None);
     assert_eq!(array.size(), 0);
-    assert!(array.is_empty());
 }
 
 #[test]
-fn test_first_index() -> () {
+fn test_first() -> () {
     let mut array = SparseArrayUsize::new();
 
-    assert_eq!(array.first_index(), None);
+    assert_eq!(array.first(), None);
 
     array = array.set(31, 'a');
-    assert_eq!(array.first_index(), Some(31));
+    assert_eq!(array.first(), Some(&'a'));
 
     array = array.set(60, 'b');
-    assert_eq!(array.first_index(), Some(31));
+    assert_eq!(array.first(), Some(&'a'));
 
     array = array.set(2, 'c');
-    assert_eq!(array.first_index(), Some(2));
+    assert_eq!(array.first(), Some(&'c'));
 
     array = array.set(0, 'c');
-    assert_eq!(array.first_index(), Some(0));
+    assert_eq!(array.first(), Some(&'c'));
+}
+
+#[test]
+fn test_move_first() -> () {
+    let mut array = SparseArrayUsize::new();
+
+    array = array.set(60, 'b');
+    array = array.set(31, 'a');
+
+    assert_eq!(array.move_first(), Some('a'));
 }
 
 #[test]

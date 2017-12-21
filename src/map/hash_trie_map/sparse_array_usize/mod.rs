@@ -46,11 +46,16 @@ impl<T: Clone> SparseArrayUsize<T> {
     }
 
     #[inline]
-    pub fn first_index(&self) -> Option<usize> {
-        if self.is_empty() {
-            None
+    pub fn first(&self) -> Option<&T> {
+        self.array.first()
+    }
+
+    #[inline]
+    pub fn move_first(mut self) -> Option<T> {
+        if self.array.len() > 0 {
+            Some(self.array.swap_remove(0))
         } else {
-            Some(self.bitmap.trailing_zeros() as usize)
+            None
         }
     }
 
@@ -91,11 +96,6 @@ impl<T: Clone> SparseArrayUsize<T> {
         self.bitmap.count_ones() as usize
     }
 
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.bitmap == 0
-    }
-
     pub fn iter(&self) -> slice::Iter<T> {
         self.array.iter()
     }
@@ -105,7 +105,7 @@ impl<T: Clone> Clone for SparseArrayUsize<T> {
     fn clone(&self) -> SparseArrayUsize<T> {
         SparseArrayUsize {
             bitmap: self.bitmap,
-            array: Vec::clone(&self.array),
+            array:  Vec::clone(&self.array),
         }
     }
 }

@@ -435,7 +435,7 @@ mod node {
                 SparseArrayUsize::new()
                     .set(4, Arc::new(Node::Leaf(bucket_a_b.clone())));
 
-            Node::Branch(array)
+            Arc::new(Node::Branch(array))
         };
         let branch_with_two_subtrees = {
             let array =
@@ -443,7 +443,7 @@ mod node {
                     .set(4, Arc::new(Node::Leaf(bucket_a.clone())))
                     .set(7, Arc::new(Node::Leaf(bucket_b.clone())));
 
-            Node::Branch(array)
+            Arc::new(Node::Branch(array))
         };
         let branch_with_single_bucket = {
             let array =
@@ -457,21 +457,21 @@ mod node {
                 SparseArrayUsize::new()
                     .set(4, Arc::new(Node::<u8, i32>::new_empty_branch()));
 
-            Node::Branch(array)
+            Arc::new(Node::Branch(array))
         };
-        let leaf_with_single_bucket =
-            Node::Leaf(bucket_a.clone());
-        let leaf_with_collision_bucket =
-            Node::Leaf(bucket_a_b.clone());
+        let leaf_with_single_bucket_a =
+            Arc::new(Node::Leaf(bucket_a.clone()));
+        let leaf_with_collision_bucket_a_b =
+            Arc::new(Node::Leaf(bucket_a_b.clone()));
 
-        assert_eq!(empty_branch.clone().compress(), None);
-        assert_eq!(branch_with_collision.clone().compress(), Some(branch_with_collision));
-        assert_eq!(branch_with_two_subtrees.clone().compress(), Some(branch_with_two_subtrees));
-        assert_eq!(branch_with_single_bucket.clone().compress(), Some(Node::Leaf(bucket_a.clone())));
-        assert_eq!(branch_with_branch.clone().compress(), Some(branch_with_branch));
+        assert_eq!(Node::clone(&empty_branch).compress(), None);
+        assert_eq!(Node::clone(&branch_with_collision).compress(), Some(branch_with_collision));
+        assert_eq!(Node::clone(&branch_with_two_subtrees).compress(), Some(branch_with_two_subtrees));
+        assert_eq!(Node::clone(&branch_with_single_bucket).compress(), Some(leaf_with_single_bucket_a.clone()));
+        assert_eq!(Node::clone(&branch_with_branch).compress(), Some(branch_with_branch));
 
-        assert_eq!(leaf_with_single_bucket.clone().compress(), Some(leaf_with_single_bucket));
-        assert_eq!(leaf_with_collision_bucket.clone().compress(), Some(leaf_with_collision_bucket));
+        assert_eq!(Node::clone(&leaf_with_single_bucket_a).compress(), Some(leaf_with_single_bucket_a));
+        assert_eq!(Node::clone(&leaf_with_collision_bucket_a_b).compress(), Some(leaf_with_collision_bucket_a_b));
     }
 
     #[test]

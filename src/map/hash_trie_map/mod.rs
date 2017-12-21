@@ -157,10 +157,10 @@ mod node_utils {
     pub fn index_from_hash(hash: HashValue, depth: usize, degree: u8) -> Option<usize> {
         debug_assert!(degree.is_power_of_two());
 
-        let mask = degree as HashValue - 1;
         let shift = depth as u32 * degree.trailing_zeros();
 
         if (shift as usize) < 8 * size_of_val(&hash) {
+            let mask = degree as HashValue - 1;
             Some(((hash >> shift) & mask) as usize)
         } else {
             None
@@ -245,7 +245,7 @@ impl<K, V> Node<K, V>
                     // create a `Node::Branch` and insert the elements of the bucket there, as well
                     // as the new element.
                     false => {
-                        let old_entry = match *bucket {
+                        let old_entry: Arc<Entry<K, V>> = match *bucket {
                             Bucket::Single(ref e) => Arc::clone(e),
                             Bucket::Collision(_) =>
                                 unreachable!("hash is not exhausted, so there cannot be a collision here"),
@@ -275,62 +275,86 @@ impl<K, V> Node<K, V>
     ///
     /// For branches with a single entry this will return a leaf with it.  For branches with no
     /// entries this returns `None.`
-    fn compress(self) -> Option<Node<K, V>> {
+    fn compress(self) -> Option<Arc<Node<K, V>>> {
         match self {
-            Node::Branch(ref subtrees) =>
+            Node::Branch(subtrees) =>
                 match subtrees.size() {
                     0 => None,
 
                     1 => {
-                        let first_index = subtrees.first_index().unwrap();
+                        let compress: bool = {
+                            let subtree = subtrees.first().unwrap();
 
-                        // Keep collision at the bottom of the tree.
-                        match **subtrees.get(first_index).unwrap() {
-                            ref node@Node::Leaf(Bucket::Single(_)) => Some(node.clone()),
-                            // TODO Once non-lexical lifetimes are stable we can probably avoid the
-                            //      clone below.
-                            _ => Some(self.clone()),
+                            // Keep collision at the bottom of the tree.
+                            match *subtree.borrow() {
+                                Node::Leaf(Bucket::Single(_)) => true,
+                                _ => false,
+                            }
+                        };
+
+                        match compress {
+                            true  => subtrees.move_first(),
+                            false => Some(Arc::new(Node::Branch(subtrees))),
                         }
                     },
 
-                    // TODO Once non-lexical lifetimes are stable we can probably avoid the clone below.
-                    _ => Some(Node::Branch(subtrees.clone()))
+                    _ => Some(Arc::new(Node::Branch(subtrees))),
                 },
-            Node::Leaf(_) => Some(self),
+            Node::Leaf(_) => Some(Arc::new(self)),
         }
     }
 
     /// Returns a pair with the node without the entry matching `key` and whether the key was present.
     ///
     /// If the node becomes empty it will return `None` in the first component of the pair.
-    fn remove<Q: ?Sized>(&self, key: &Q, key_hash: HashValue, depth: usize, degree: u8) -> (Option<Node<K, V>>, bool)
+    fn remove<Q: ?Sized>(
+        node: &Arc<Node<K, V>>,
+        key: &Q,
+        key_hash: HashValue,
+        depth: usize,
+        degree: u8
+    ) -> (Option<Arc<Node<K, V>>>, bool)
         where K: Borrow<Q>,
               Q: Hash + Eq {
-        match *self {
+        match **node {
             Node::Branch(ref subtrees) => {
                 let index: usize = node_utils::index_from_hash(key_hash, depth, degree)
                     .expect("hash cannot be exhausted if we are on a branch");
 
                 match subtrees.get(index) {
                     Some(subtree) => {
-                        let (new_subtree, removed) =
-                            subtree.remove(key, key_hash, depth + 1, degree);
-                        let new_subtrees = match new_subtree {
-                            Some(st) => subtrees.set(index, Arc::new(st)),
-                            None     => subtrees.remove(index),
-                        };
+                        match Node::remove(subtree, key, key_hash, depth + 1, degree) {
+                            (_, false) =>
+                                (Some(Arc::clone(node)), false),
+                            (Some(new_subtree), true) => {
+                                let new_subtrees = subtrees.set(index, new_subtree);
 
-                        (Node::Branch(new_subtrees).compress(), removed)
+                                // Note that we still must call compress because it is possible that
+                                // we had a node with just one entry, which was not compressed because
+                                // it had a collision.  Maybe now we do not have a collision and we
+                                // can compress it.
+                                (Node::Branch(new_subtrees).compress(), true)
+                            },
+                            (None, true) => {
+                                let new_subtrees: SparseArrayUsize<Arc<Node<K, V>>> = subtrees.remove(index);
+
+                                (Node::Branch(new_subtrees).compress(), true)
+                            },
+                        }
                     },
 
                     None =>
-                        (Some(self.clone()), false),
+                        (Some(Arc::clone(node)), false),
                 }
             },
             Node::Leaf(ref bucket) => {
-                let (new_bucket, removed) = bucket.remove(key, key_hash);
-
-                (new_bucket.map(|b| Node::Leaf(b)), removed)
+                match bucket.remove(key, key_hash) {
+                    (_, false) => (Some(Arc::clone(node)), false),
+                    (Some(new_bucket), true) =>
+                        (Some(Arc::new(Node::Leaf(new_bucket))), true),
+                    (None, true) =>
+                        (None, true),
+                }
             },
         }
     }
@@ -547,19 +571,13 @@ impl<K, V, H: BuildHasher> HashTrieMap<K, V, H>
         where K: Borrow<Q>,
               Q: Hash + Eq {
         let key_hash = node_utils::hash(key, &self.hasher_builder);
-        let (new_root, removed) =
-            self.root.remove(key, key_hash, 0, self.degree);
+        let (new_root, removed) = Node::remove(&self.root, key, key_hash, 0, self.degree);
 
-        // We want to keep maximum sharing so in case of no change we just `clone()` ourselves.
-        if removed {
-            HashTrieMap {
-                root: Arc::new(new_root.unwrap_or_else(|| Node::new_empty_branch())),
-                size: self.size - 1,
-                hasher_builder: self.hasher_builder.clone(),
-                degree: self.degree,
-            }
-        } else {
-            self.clone()
+        HashTrieMap {
+            root: new_root.unwrap_or_else(|| Arc::new(Node::new_empty_branch())),
+            size: self.size - if removed { 1 } else { 0 },
+            hasher_builder: self.hasher_builder.clone(),
+            degree: self.degree,
         }
     }
 
@@ -763,7 +781,7 @@ impl<'a, K, V> Iter<'a, K, V>
         }
 
         let mut iter = Iter {
-            stack: stack,
+            stack,
             size: map.size(),
         };
 
