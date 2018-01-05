@@ -231,6 +231,10 @@
 #[cfg(feature = "serde")]
 extern crate serde;
 
+#[cfg(test)]
+#[cfg(feature = "serde")]
+extern crate bincode;
+
 mod utils;
 
 pub mod sequence;
