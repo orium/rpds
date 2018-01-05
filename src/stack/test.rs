@@ -243,3 +243,13 @@ fn test_clone() -> () {
     assert!(clone.iter().eq(stack.iter()));
     assert_eq!(clone.size(), stack.size());
 }
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_serde() {
+    use bincode::{serialize, deserialize, Bounded};
+    let stack: Stack<i32> = Stack::from_iter(vec![5,6,7,8].into_iter());
+    let encoded = serialize(&stack, Bounded(100)).unwrap();
+    let decoded: Stack<i32> = deserialize(&encoded).unwrap();
+    assert_eq!(stack, decoded);
+}
