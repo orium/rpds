@@ -12,6 +12,15 @@ use std::iter::FromIterator;
 use map::hash_trie_map;
 use HashTrieMap;
 
+#[cfg(feature = "serde")]
+use serde::ser::{Serialize, Serializer, SerializeSeq};
+#[cfg(feature = "serde")]
+use serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
+#[cfg(feature = "serde")]
+use std::marker::PhantomData;
+#[cfg(feature = "serde")]
+use std::fmt;
+
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = hash_trie_map::IterKeys<'a, T, ()>;
 
@@ -182,6 +191,57 @@ impl<T, H> FromIterator<T> for HashTrieSet<T, H> where
         }
 
         map
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<T, H> Serialize for HashTrieSet<T, H> where
+    T: Eq + Hash + Serialize,
+    H: BuildHasher + Clone + Default {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut state = serializer.serialize_seq(Some(self.size()))?;
+        for item in self {
+            state.serialize_element(&item)?;
+        }
+        state.end()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T, H> Deserialize<'de> for HashTrieSet<T, H> where
+    T: Eq + Hash + Deserialize<'de>,
+    H: BuildHasher + Clone + Default {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer.deserialize_seq(HashTrieSetVisitor{phantom: PhantomData})
+    }
+}
+
+#[cfg(feature = "serde")]
+struct HashTrieSetVisitor<T, H> {
+    phantom: PhantomData<(T, H)>
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T, H> Visitor<'de> for HashTrieSetVisitor<T, H> where
+    T: Eq + Hash + Deserialize<'de>,
+    H: BuildHasher + Clone + Default {
+    type Value = HashTrieSet<T, H>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a sequence")
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: SeqAccess<'de>,
+    {
+        let mut hashtrieset = HashTrieSet::new_with_hasher(Default::default());
+
+        while let Some(value) = seq.next_element()? {
+            hashtrieset = hashtrieset.insert(value);
+        }
+
+        Ok(hashtrieset)
     }
 }
 
