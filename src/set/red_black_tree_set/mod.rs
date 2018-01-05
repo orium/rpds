@@ -9,6 +9,15 @@ use std::iter::FromIterator;
 use map::red_black_tree_map;
 use RedBlackTreeMap;
 
+#[cfg(feature = "serde")]
+use serde::ser::{Serialize, Serializer, SerializeSeq};
+#[cfg(feature = "serde")]
+use serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
+#[cfg(feature = "serde")]
+use std::marker::PhantomData;
+#[cfg(feature = "serde")]
+use std::fmt;
+
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = red_black_tree_map::IterKeys<'a, T, ()>;
 
@@ -161,6 +170,54 @@ impl<T> FromIterator<T> for RedBlackTreeSet<T> where
         }
 
         map
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<T> Serialize for RedBlackTreeSet<T> where
+    T: Ord + Serialize {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut state = serializer.serialize_seq(Some(self.size()))?;
+        for item in self {
+            state.serialize_element(&item)?;
+        }
+        state.end()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T> Deserialize<'de> for RedBlackTreeSet<T> where
+    T: Ord + Deserialize<'de> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer.deserialize_seq(RedBlackTreeSetVisitor{phantom: PhantomData})
+    }
+}
+
+#[cfg(feature = "serde")]
+struct RedBlackTreeSetVisitor<T> {
+    phantom: PhantomData<T>
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T> Visitor<'de> for RedBlackTreeSetVisitor<T> where
+    T: Ord + Deserialize<'de> {
+    type Value = RedBlackTreeSet<T>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a sequence")
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: SeqAccess<'de>,
+    {
+        let mut rbtreeset = RedBlackTreeSet::new();
+
+        while let Some(value) = seq.next_element()? {
+            rbtreeset = rbtreeset.insert(value);
+        }
+
+        Ok(rbtreeset)
     }
 }
 

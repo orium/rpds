@@ -254,3 +254,13 @@ fn test_clone() -> () {
     assert!(clone.contains("hello"));
     assert!(clone.contains("there"));
 }
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_serde() {
+    use bincode::{serialize, deserialize, Bounded};
+    let rbtreeset: RedBlackTreeSet<i32> = RedBlackTreeSet::from_iter(vec![5,6,7,8].into_iter());
+    let encoded = serialize(&rbtreeset, Bounded(100)).unwrap();
+    let decoded: RedBlackTreeSet<i32> = deserialize(&encoded).unwrap();
+    assert_eq!(rbtreeset, decoded);
+}

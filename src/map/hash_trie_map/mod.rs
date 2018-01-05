@@ -21,6 +21,15 @@ use sequence::list;
 use List;
 use self::sparse_array_usize::SparseArrayUsize;
 
+#[cfg(feature = "serde")]
+use serde::ser::{Serialize, Serializer, SerializeMap};
+#[cfg(feature = "serde")]
+use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
+#[cfg(feature = "serde")]
+use std::marker::PhantomData;
+#[cfg(feature = "serde")]
+use std::fmt;
+
 type HashValue = u64;
 
 // TODO Use impl trait instead of this when available.
@@ -855,6 +864,61 @@ impl<'a, K, V> Iterator for Iter<'a, K, V>
 }
 
 impl<'a, K: Eq + Hash, V> ExactSizeIterator for Iter<'a, K, V> {}
+
+#[cfg(feature = "serde")]
+impl<K, V, H> Serialize for HashTrieMap<K, V, H> where
+    K: Eq + Hash + Serialize,
+    V: Serialize,
+    H: BuildHasher + Clone + Default {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut state = serializer.serialize_map(Some(self.size()))?;
+        for (k, v) in self {
+            state.serialize_entry(&k, &v)?;
+        }
+        state.end()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, K, V, H> Deserialize<'de> for HashTrieMap<K, V, H> where
+    K: Eq + Hash + Deserialize<'de>,
+    V: Deserialize<'de>,
+    H: BuildHasher + Clone + Default {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer.deserialize_map(HashTrieMapVisitor{phantom: PhantomData})
+    }
+}
+
+#[cfg(feature = "serde")]
+struct HashTrieMapVisitor<K, V, H> {
+    phantom: PhantomData<(K, V, H)>
+}
+
+#[cfg(feature = "serde")]
+impl<'de, K, V, H> Visitor<'de> for HashTrieMapVisitor<K, V, H> where
+    K: Eq + Hash + Deserialize<'de>,
+    V: Deserialize<'de>,
+    H: BuildHasher + Clone + Default {
+    type Value = HashTrieMap<K, V, H>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a map")
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+        where
+            A: MapAccess<'de>,
+    {
+        let mut hashtriemap = HashTrieMap::new_with_hasher(Default::default());
+
+        while let Some((k, v)) = map.next_entry()? {
+            hashtriemap = hashtriemap.insert(k, v);
+        }
+
+        Ok(hashtriemap)
+    }
+}
+
 
 #[cfg(test)]
 mod test;

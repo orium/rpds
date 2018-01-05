@@ -10,6 +10,11 @@ use std::iter::FromIterator;
 use sequence::list;
 use List;
 
+#[cfg(feature = "serde")]
+use serde::ser::{Serialize, Serializer, SerializeSeq};
+#[cfg(feature = "serde")]
+use serde::de::{Deserialize, Deserializer};
+
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> =
     ::std::iter::Chain<::std::iter::Map<list::IterArc<'a, T>, fn(&::std::sync::Arc<T>) -> &T>, LazilyReversedListIter<'a, T>>;
@@ -247,6 +252,29 @@ impl<'a, T> Iterator for LazilyReversedListIter<'a, T> {
 }
 
 impl<'a, T> ExactSizeIterator for LazilyReversedListIter<'a, T> {}
+
+#[cfg(feature = "serde")]
+impl<T> Serialize for Queue<T> where T: Serialize {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut state = serializer.serialize_seq(Some(self.len()))?;
+        for item in self {
+            state.serialize_element(&item)?;
+        }
+        state.end()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T> Deserialize<'de> for Queue<T> where T: Deserialize<'de> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let list: List<T> = Deserialize::deserialize(deserializer)?;
+        Ok(Queue {
+            out_list: list,
+            in_list:  List::new(),
+        })
+    }
+}
+
 
 #[cfg(test)]
 mod test;

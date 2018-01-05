@@ -234,3 +234,13 @@ fn test_clone() -> () {
     assert!(clone.contains("hello"));
     assert!(clone.contains("there"));
 }
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_serde() {
+    use bincode::{serialize, deserialize, Bounded};
+    let hashtrieset: HashTrieSet<i32> = HashTrieSet::from_iter(vec![5,6,7,8].into_iter());
+    let encoded = serialize(&hashtrieset, Bounded(100)).unwrap();
+    let decoded: HashTrieSet<i32> = deserialize(&encoded).unwrap();
+    assert_eq!(hashtrieset, decoded);
+}
