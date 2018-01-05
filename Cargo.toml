@@ -31,6 +31,9 @@ include = [
 travis-ci = { repository = "orium/rpds", branch = "master" }
 codecov = { repository = "orium/rpds", branch = "master", service = "github" }
 
+[dependencies]
+serde = { version = "1", optional = true }
+
 [dev-dependencies]
 # TODO This will probably be part of rust in the future (see https://github.com/rust-lang/rust/issues/29553)
 bencher = "0.1"
