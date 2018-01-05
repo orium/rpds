@@ -368,3 +368,13 @@ fn test_clone() -> () {
     assert!(clone.iter().eq(queue.iter()));
     assert_eq!(clone.len(), queue.len());
 }
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_serde() {
+    use bincode::{serialize, deserialize, Bounded};
+    let queue: Queue<i32> = Queue::from_iter(vec![5,6,7,8].into_iter());
+    let encoded = serialize(&queue, Bounded(100)).unwrap();
+    let decoded: Queue<i32> = deserialize(&encoded).unwrap();
+    assert_eq!(queue, decoded);
+}
