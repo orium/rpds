@@ -228,6 +228,9 @@
 //! assert_eq!(set_positive.first(), Some(&"one"));
 //! ```
 
+#[cfg(feature = "serde")]
+extern crate serde;
+
 mod utils;
 
 pub mod sequence;
