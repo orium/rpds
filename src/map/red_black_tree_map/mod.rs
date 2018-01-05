@@ -11,6 +11,15 @@ use std::ops::Index;
 use std::fmt::Display;
 use std::hash::{Hasher, Hash};
 
+#[cfg(feature = "serde")]
+use serde::ser::{Serialize, Serializer, SerializeMap};
+#[cfg(feature = "serde")]
+use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
+#[cfg(feature = "serde")]
+use std::marker::PhantomData;
+#[cfg(feature = "serde")]
+use std::fmt;
+
 // TODO Use impl trait instead of this when available.
 pub type IterKeys<'a, K, V>   = ::std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
 pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
@@ -1181,6 +1190,58 @@ impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V>
 }
 
 impl<'a, K: Ord, V> ExactSizeIterator for Iter<'a, K, V> {}
+
+#[cfg(feature = "serde")]
+impl<K, V> Serialize for RedBlackTreeMap<K, V> where
+    K: Ord + Serialize,
+    V: Serialize {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut state = serializer.serialize_map(Some(self.size()))?;
+        for (k, v) in self {
+            state.serialize_entry(&k, &v)?;
+        }
+        state.end()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, K, V> Deserialize<'de> for RedBlackTreeMap<K, V> where
+    K: Ord + Deserialize<'de>,
+    V: Deserialize<'de> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer.deserialize_map(RedBlackTreeMapVisitor{phantom: PhantomData})
+    }
+}
+
+#[cfg(feature = "serde")]
+struct RedBlackTreeMapVisitor<K, V> {
+    phantom: PhantomData<(K, V)>
+}
+
+#[cfg(feature = "serde")]
+impl<'de, K, V> Visitor<'de> for RedBlackTreeMapVisitor<K, V> where
+    K: Ord + Deserialize<'de>,
+    V: Deserialize<'de> {
+    type Value = RedBlackTreeMap<K, V>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a map")
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+        where
+            A: MapAccess<'de>,
+    {
+        let mut rbtreemap = RedBlackTreeMap::new();
+
+        while let Some((k, v)) = map.next_entry()? {
+            rbtreemap = rbtreemap.insert(k, v);
+        }
+
+        Ok(rbtreemap)
+    }
+}
+
 
 #[cfg(test)]
 mod test;

@@ -1062,3 +1062,13 @@ fn test_clone() -> () {
     assert_eq!(clone.get("hello"), Some(&4));
     assert_eq!(clone.get("there"), Some(&5));
 }
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_serde() {
+    use bincode::{serialize, deserialize, Bounded};
+    let rbtreemap: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::from_iter(vec![(5,6),(7,8),(9,10),(11,12)].into_iter());
+    let encoded = serialize(&rbtreemap, Bounded(100)).unwrap();
+    let decoded: RedBlackTreeMap<i32, i32> = deserialize(&encoded).unwrap();
+    assert_eq!(rbtreemap, decoded);
+}
