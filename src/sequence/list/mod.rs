@@ -267,5 +267,61 @@ impl<'a, T> Iterator for IterArc<'a, T> {
 
 impl<'a, T> ExactSizeIterator for IterArc<'a, T> {}
 
+#[cfg(feature = "serde")]
+mod serde_impl {
+    use super::*;
+    use serde::ser::{Serialize, Serializer};
+    use serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
+    use std::marker::PhantomData;
+    use std::fmt;
+
+    impl<T> Serialize for List<T>
+        where T: Serialize {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.collect_seq(self)
+        }
+    }
+
+    impl<'de, T> Deserialize<'de> for List<T> where T: Deserialize<'de> {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<List<T>, D::Error> {
+            deserializer.deserialize_seq(ListVisitor { phantom: PhantomData } )
+        }
+    }
+
+    struct ListVisitor<T> {
+        phantom: PhantomData<T>
+    }
+
+    impl<'de, T> Visitor<'de> for ListVisitor<T>
+        where T: Deserialize<'de> {
+        type Value = List<T>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a sequence")
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<List<T>, A::Error>
+            where A: SeqAccess<'de> {
+            let mut vec: Vec<T> = if let Some(capacity) = seq.size_hint() {
+                    Vec::with_capacity(capacity)
+                } else {
+                    Vec::new()
+                };
+
+            while let Some(value) = seq.next_element()? {
+                vec.push(value);
+            }
+
+            let mut list: List<T> = List::new();
+
+            for value in vec.into_iter().rev() {
+                list = list.push_front(value);
+            }
+
+            Ok(list)
+        }
+    }
+}
+
 #[cfg(test)]
 mod test;
