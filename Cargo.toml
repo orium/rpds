@@ -38,6 +38,8 @@ serde = { version = "1", optional = true }
 # TODO This will probably be part of rust in the future (see https://github.com/rust-lang/rust/issues/29553)
 bencher = "0.1"
 rand = "0.3"
+# needed to test serde
+bincode = "0.9"
 
 [features]
 fatal-warnings = []
