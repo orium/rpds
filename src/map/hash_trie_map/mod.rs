@@ -856,5 +856,58 @@ impl<'a, K, V> Iterator for Iter<'a, K, V>
 
 impl<'a, K: Eq + Hash, V> ExactSizeIterator for Iter<'a, K, V> {}
 
+#[cfg(feature = "serde")]
+mod serde_impl {
+    use super::*;
+    use serde::ser::{Serialize, Serializer};
+    use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
+    use std::marker::PhantomData;
+    use std::fmt;
+
+    impl<K, V, H> Serialize for HashTrieMap<K, V, H>
+        where K: Eq + Hash + Serialize,
+              V: Serialize,
+              H: BuildHasher + Clone + Default {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.collect_map(self)
+        }
+    }
+
+    impl<'de, K, V, H> Deserialize<'de> for HashTrieMap<K, V, H>
+        where K: Eq + Hash + Deserialize<'de>,
+              V: Deserialize<'de>,
+              H: BuildHasher + Clone + Default {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<HashTrieMap<K, V, H>, D::Error> {
+            deserializer.deserialize_map(HashTrieMapVisitor { phantom: PhantomData } )
+        }
+    }
+
+    struct HashTrieMapVisitor<K, V, H> {
+        phantom: PhantomData<(K, V, H)>
+    }
+
+    impl<'de, K, V, H> Visitor<'de> for HashTrieMapVisitor<K, V, H>
+        where K: Eq + Hash + Deserialize<'de>,
+              V: Deserialize<'de>,
+              H: BuildHasher + Clone + Default {
+        type Value = HashTrieMap<K, V, H>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a map")
+        }
+
+        fn visit_map<A>(self, mut map: A) -> Result<HashTrieMap<K, V, H>, A::Error>
+            where A: MapAccess<'de> {
+            let mut hashtriemap = HashTrieMap::new_with_hasher(Default::default());
+
+            while let Some((k, v)) = map.next_entry()? {
+                hashtriemap = hashtriemap.insert(k, v);
+            }
+
+            Ok(hashtriemap)
+        }
+    }
+}
+
 #[cfg(test)]
 mod test;

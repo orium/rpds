@@ -153,5 +153,29 @@ impl<T> FromIterator<T> for Stack<T> {
     }
 }
 
+#[cfg(feature = "serde")]
+mod serde_impl {
+    use super::*;
+    use serde::ser::{Serialize, Serializer};
+    use serde::de::{Deserialize, Deserializer};
+
+    impl<T> Serialize for Stack<T>
+        where T: Serialize {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.collect_seq(self)
+        }
+    }
+
+    impl<'de, T> Deserialize<'de> for Stack<T>
+        where T: Deserialize<'de> {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Stack<T>, D::Error> {
+            let list: List<T> = Deserialize::deserialize(deserializer)?;
+            Ok(Stack {
+                list: list,
+            })
+        }
+    }
+}
+
 #[cfg(test)]
 mod test;
