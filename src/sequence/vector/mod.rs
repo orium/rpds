@@ -679,5 +679,52 @@ impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
 
 impl<'a, T> ExactSizeIterator for Iter<'a, T> {}
 
+#[cfg(feature = "serde")]
+pub mod serde {
+    use super::*;
+    use serde::ser::{Serialize, Serializer};
+    use serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
+    use std::marker::PhantomData;
+    use std::fmt;
+
+    impl<T> Serialize for Vector<T>
+        where T: Serialize {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.collect_seq(self)
+        }
+    }
+
+    impl<'de, T> Deserialize<'de> for Vector<T>
+        where T: Deserialize<'de> {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Vector<T>, D::Error> {
+            deserializer.deserialize_seq(VectorVisitor { phantom: PhantomData } )
+        }
+    }
+
+    struct VectorVisitor<T> {
+        phantom: PhantomData<T>
+    }
+
+    impl<'de, T> Visitor<'de> for VectorVisitor<T>
+        where T: Deserialize<'de> {
+        type Value = Vector<T>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a sequence")
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<Vector<T>, A::Error>
+            where A: SeqAccess<'de> {
+            let mut vector = Vector::new();
+
+            while let Some(value) = seq.next_element()? {
+                vector = vector.push_back(value);
+            }
+
+            Ok(vector)
+        }
+    }
+}
+
 #[cfg(test)]
 mod test;
