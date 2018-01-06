@@ -185,5 +185,55 @@ impl<T, H> FromIterator<T> for HashTrieSet<T, H> where
     }
 }
 
+#[cfg(feature = "serde")]
+pub mod serde {
+    use super::*;
+    use serde::ser::{Serialize, Serializer};
+    use serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
+    use std::marker::PhantomData;
+    use std::fmt;
+
+    impl<T, H> Serialize for HashTrieSet<T, H>
+        where T: Eq + Hash + Serialize,
+              H: BuildHasher + Clone + Default {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.collect_seq(self)
+        }
+    }
+
+    impl<'de, T, H> Deserialize<'de> for HashTrieSet<T, H>
+        where T: Eq + Hash + Deserialize<'de>,
+              H: BuildHasher + Clone + Default {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<HashTrieSet<T, H>, D::Error> {
+            deserializer.deserialize_seq(HashTrieSetVisitor { phantom: PhantomData } )
+        }
+    }
+
+    struct HashTrieSetVisitor<T, H> {
+        phantom: PhantomData<(T, H)>
+    }
+
+    impl<'de, T, H> Visitor<'de> for HashTrieSetVisitor<T, H>
+        where T: Eq + Hash + Deserialize<'de>,
+              H: BuildHasher + Clone + Default {
+        type Value = HashTrieSet<T, H>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a sequence")
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<HashTrieSet<T, H>, A::Error>
+            where A: SeqAccess<'de> {
+            let mut hashtrieset = HashTrieSet::new_with_hasher(Default::default());
+
+            while let Some(value) = seq.next_element()? {
+                hashtrieset = hashtrieset.insert(value);
+            }
+
+            Ok(hashtrieset)
+        }
+    }
+}
+
 #[cfg(test)]
 mod test;
