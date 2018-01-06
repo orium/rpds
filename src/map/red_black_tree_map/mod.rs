@@ -1182,5 +1182,55 @@ impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V>
 
 impl<'a, K: Ord, V> ExactSizeIterator for Iter<'a, K, V> {}
 
+#[cfg(feature = "serde")]
+mod serde_impl {
+    use super::*;
+    use serde::ser::{Serialize, Serializer};
+    use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
+    use std::marker::PhantomData;
+    use std::fmt;
+
+    impl<K, V> Serialize for RedBlackTreeMap<K, V>
+        where K: Ord + Serialize,
+              V: Serialize {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.collect_map(self)
+        }
+    }
+
+    impl<'de, K, V> Deserialize<'de> for RedBlackTreeMap<K, V>
+        where K: Ord + Deserialize<'de>,
+              V: Deserialize<'de> {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<RedBlackTreeMap<K, V>, D::Error> {
+            deserializer.deserialize_map(RedBlackTreeMapVisitor { phantom: PhantomData } )
+        }
+    }
+
+    struct RedBlackTreeMapVisitor<K, V> {
+        phantom: PhantomData<(K, V)>
+    }
+
+    impl<'de, K, V> Visitor<'de> for RedBlackTreeMapVisitor<K, V>
+        where K: Ord + Deserialize<'de>,
+              V: Deserialize<'de> {
+        type Value = RedBlackTreeMap<K, V>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a map")
+        }
+
+        fn visit_map<A>(self, mut map: A) -> Result<RedBlackTreeMap<K, V>, A::Error>
+            where A: MapAccess<'de> {
+            let mut rbtreemap = RedBlackTreeMap::new();
+
+            while let Some((k, v)) = map.next_entry()? {
+                rbtreemap = rbtreemap.insert(k, v);
+            }
+
+            Ok(rbtreemap)
+        }
+    }
+}
+
 #[cfg(test)]
 mod test;
