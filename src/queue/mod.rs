@@ -248,5 +248,30 @@ impl<'a, T> Iterator for LazilyReversedListIter<'a, T> {
 
 impl<'a, T> ExactSizeIterator for LazilyReversedListIter<'a, T> {}
 
+#[cfg(feature = "serde")]
+pub mod serde {
+    use super::*;
+    use serde::ser::{Serialize, Serializer};
+    use serde::de::{Deserialize, Deserializer};
+
+    impl<T> Serialize for Queue<T>
+        where T: Serialize {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.collect_seq(self)
+        }
+    }
+
+    impl<'de, T> Deserialize<'de> for Queue<T>
+        where T: Deserialize<'de> {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Queue<T>, D::Error> {
+            let list: List<T> = Deserialize::deserialize(deserializer)?;
+            Ok(Queue {
+                out_list: list,
+                in_list:  List::new(),
+            })
+        }
+    }
+}
+
 #[cfg(test)]
 mod test;
