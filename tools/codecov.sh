@@ -10,7 +10,7 @@ cd $(dirname "$0")
 cd "$(git rev-parse --show-toplevel)"
 
 # TODO Maybe in the future there will be a better way.  See https://github.com/rust-lang/cargo/issues/1924.
-build=$(cargo test --no-run --message-format=json 2>/dev/null | \
+build=$(cargo test --no-run --message-format=json --features=serde 2>/dev/null | \
     jq -r "select(.profile.test == true) | .filenames[]" | \
     rev | cut -d'/' -f 1 | rev)
 
