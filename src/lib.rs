@@ -11,7 +11,32 @@
 //! Rust Persistent Data Structures provides [fully persistent data structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
 //! with structural sharing.
 //!
-//! # Data Structures
+//! ## Setup
+//!
+//! To use rpds add the following to your `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! rpds = "<version>"
+//! ```
+//!
+//! Additionally, add this to your crate root:
+//!
+//! ```rust
+//! extern crate rpds;
+//! ```
+//!
+//! ### Enable serialization
+//!
+//! To enable serialization (using [serde](https://crates.io/crates/serde)) you need to enable the
+//! `serde` feature in rpds.  To do so change the rpds dependency in `Cargo.toml` to
+//!
+//! ```toml
+//! [dependencies]
+//! rpds = { version = "<version>", features = ["serde"] }
+//! ```
+//!
+//! ## Data Structures
 //!
 //! This crate implements the following data structures:
 //!
@@ -24,12 +49,12 @@
 //!   7. [`RedBlackTreeMap`](#redblacktreemap)
 //!   8. [`RedBlackTreeSet`](#redblacktreeset)
 //!
-//! ## `List`
+//! ### `List`
 //! [![List documentation](https://img.shields.io/badge/doc-List-303070.svg)](sequence/list/struct.List.html)
 //!
 //! Your classic functional list.
 //!
-//! ### Example
+//! #### Example
 //!
 //! ```rust
 //! use rpds::List;
@@ -47,14 +72,14 @@
 //! assert_eq!(list_dropped, list);
 //! ```
 //!
-//! ## `Vector`
+//! ### `Vector`
 //! [![Vector documentation](https://img.shields.io/badge/doc-Vector-303070.svg)](sequence/vector/struct.Vector.html)
 //!
-//! An sequence that can be indexed.  The implementation is described in
+//! A sequence that can be indexed.  The implementation is described in
 //! [Understanding Persistent Vector Part 1](http://hypirion.com/musings/understanding-persistent-vector-pt-1)
 //! and [Understanding Persistent Vector Part 2](http://hypirion.com/musings/understanding-persistent-vector-pt-2).
 //!
-//! ### Example
+//! #### Example
 //!
 //! ```rust
 //! use rpds::Vector;
@@ -73,12 +98,12 @@
 //! assert_eq!(screaming_vector[2], "VECTOR!!!");
 //! ```
 //!
-//! ## `Stack`
+//! ### `Stack`
 //! [![Stack documentation](https://img.shields.io/badge/doc-Stack-303070.svg)](stack/struct.Stack.html)
 //!
 //! A LIFO (last in, first out) data structure.  This is just a [`List`](#list) in disguise.
 //!
-//! ### Example
+//! #### Example
 //!
 //! ```rust
 //! use rpds::Stack;
@@ -96,12 +121,12 @@
 //! assert_eq!(stack_popped, stack);
 //! ```
 //!
-//! ## `Queue`
+//! ### `Queue`
 //! [![Queue documentation](https://img.shields.io/badge/doc-Queue-303070.svg)](queue/struct.Queue.html)
 //!
 //! A FIFO (first in, first out) data structure.
 //!
-//! ### Example
+//! #### Example
 //!
 //! ```rust
 //! use rpds::Queue;
@@ -118,14 +143,14 @@
 //! assert_eq!(queue_dequeued.peek(), Some(&"dois"));
 //! ```
 //!
-//! ## `HashTrieMap`
+//! ### `HashTrieMap`
 //! [![HashTrieMap documentation](https://img.shields.io/badge/doc-HashTrieMap-303070.svg)](map/hash_trie_map/struct.HashTrieMap.html)
 //!
 //! A map implemented with a [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie).
 //! See [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf) for
 //! details.
 //!
-//! ### Example
+//! #### Example
 //!
 //! ```rust
 //! use rpds::HashTrieMap;
@@ -147,12 +172,12 @@
 //! assert_eq!(map_pt_binary.get(&2), None);
 //! ```
 //!
-//! ## `HashTrieSet`
+//! ### `HashTrieSet`
 //! [![HashTrieSet documentation](https://img.shields.io/badge/doc-HashTrieSet-303070.svg)](set/hash_trie_set/struct.HashTrieSet.html)
 //!
 //! A set implemented with a [`HashTrieMap`](#hashtriemap).
 //!
-//! ### Example
+//! #### Example
 //!
 //! ```rust
 //! use rpds::HashTrieSet;
@@ -172,12 +197,12 @@
 //! assert!(!set_positive.contains(&"zero"));
 //! ```
 //!
-//! ## `RedBlackTreeMap`
+//! ### `RedBlackTreeMap`
 //! [![RedBlackTreeMap documentation](https://img.shields.io/badge/doc-RedBlackTreeMap-303070.svg)](map/red_black_tree_map/struct.RedBlackTreeMap.html)
 //!
 //! A map implemented with a [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree).
 //!
-//! ### Example
+//! #### Example
 //!
 //! ```rust
 //! use rpds::RedBlackTreeMap;
@@ -201,12 +226,12 @@
 //! assert_eq!(map_pt_binary.first(), Some((&0, &"zero")));
 //! ```
 //!
-//! ## `RedBlackTreeSet`
+//! ### `RedBlackTreeSet`
 //! [![RedBlackTreeSet documentation](https://img.shields.io/badge/doc-RedBlackTreeSet-303070.svg)](set/red_black_tree_set/struct.RedBlackTreeSet.html)
 //!
 //! A set implemented with a [`RedBlackTreeMap`](#redblacktreemap).
 //!
-//! ### Example
+//! #### Example
 //!
 //! ```rust
 //! use rpds::RedBlackTreeSet;

@@ -9,7 +9,32 @@
 Rust Persistent Data Structures provides [fully persistent data structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
 with structural sharing.
 
-# Data Structures
+## Setup
+
+To use rpds add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+rpds = "<version>"
+```
+
+Additionally, add this to your crate root:
+
+```rust
+extern crate rpds;
+```
+
+### Enable serialization
+
+To enable serialization (using [serde](https://crates.io/crates/serde)) you need to enable the
+`serde` feature in rpds.  To do so change the rpds dependency in `Cargo.toml` to
+
+```toml
+[dependencies]
+rpds = { version = "<version>", features = ["serde"] }
+```
+
+## Data Structures
 
 This crate implements the following data structures:
 
@@ -22,11 +47,11 @@ This crate implements the following data structures:
   7. [`RedBlackTreeMap`](#redblacktreemap)
   8. [`RedBlackTreeSet`](#redblacktreeset)
 
-## `List`
+### `List`
 
 Your classic functional list.
 
-### Example
+#### Example
 
 ```rust
 use rpds::List;
@@ -44,13 +69,13 @@ let list_dropped = a_list.drop_first().unwrap();
 assert_eq!(list_dropped, list);
 ```
 
-## `Vector`
+### `Vector`
 
-An sequence that can be indexed.  The implementation is described in
+A sequence that can be indexed.  The implementation is described in
 [Understanding Persistent Vector Part 1](http://hypirion.com/musings/understanding-persistent-vector-pt-1)
 and [Understanding Persistent Vector Part 2](http://hypirion.com/musings/understanding-persistent-vector-pt-2).
 
-### Example
+#### Example
 
 ```rust
 use rpds::Vector;
@@ -69,11 +94,11 @@ let screaming_vector = vector
 assert_eq!(screaming_vector[2], "VECTOR!!!");
 ```
 
-## `Stack`
+### `Stack`
 
 A LIFO (last in, first out) data structure.  This is just a [`List`](#list) in disguise.
 
-### Example
+#### Example
 
 ```rust
 use rpds::Stack;
@@ -91,11 +116,11 @@ let stack_popped = a_stack.pop().unwrap();
 assert_eq!(stack_popped, stack);
 ```
 
-## `Queue`
+### `Queue`
 
 A FIFO (first in, first out) data structure.
 
-### Example
+#### Example
 
 ```rust
 use rpds::Queue;
@@ -112,13 +137,13 @@ let queue_dequeued = queue.dequeue().unwrap();
 assert_eq!(queue_dequeued.peek(), Some(&"dois"));
 ```
 
-## `HashTrieMap`
+### `HashTrieMap`
 
 A map implemented with a [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie).
 See [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf) for
 details.
 
-### Example
+#### Example
 
 ```rust
 use rpds::HashTrieMap;
@@ -140,11 +165,11 @@ let map_pt_binary = map_pt.remove(&2);
 assert_eq!(map_pt_binary.get(&2), None);
 ```
 
-## `HashTrieSet`
+### `HashTrieSet`
 
 A set implemented with a [`HashTrieMap`](#hashtriemap).
 
-### Example
+#### Example
 
 ```rust
 use rpds::HashTrieSet;
@@ -164,11 +189,11 @@ let set_positive = set_extended.remove(&"zero");
 assert!(!set_positive.contains(&"zero"));
 ```
 
-## `RedBlackTreeMap`
+### `RedBlackTreeMap`
 
 A map implemented with a [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree).
 
-### Example
+#### Example
 
 ```rust
 use rpds::RedBlackTreeMap;
@@ -192,11 +217,11 @@ assert_eq!(map_pt_binary.get(&2), None);
 assert_eq!(map_pt_binary.first(), Some((&0, &"zero")));
 ```
 
-## `RedBlackTreeSet`
+### `RedBlackTreeSet`
 
 A set implemented with a [`RedBlackTreeMap`](#redblacktreemap).
 
-### Example
+#### Example
 
 ```rust
 use rpds::RedBlackTreeSet;

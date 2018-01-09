@@ -22,9 +22,10 @@ categories = [
 license = "MPL-2.0"
 
 include = [
-    "src/**/*.rs",
-    "Cargo.toml",
-    "LICENSE",
+    "/src/**/*.rs",
+    "/Cargo.toml",
+    "/LICENSE",
+    "/README.md",
 ]
 
 [badges]
@@ -43,6 +44,9 @@ bincode = "0.9"
 
 [features]
 fatal-warnings = []
+
+[package.metadata.docs.rs]
+features = ["serde"]
 
 [[bench]]
 name = "rust_linked_list"

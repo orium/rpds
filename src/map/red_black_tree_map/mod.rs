@@ -587,7 +587,7 @@ impl<K, V> Node<K, V>
                     }
                 },
                 _ => {
-                    // Our `balance()` does nothing unless the color is rec, which the caller
+                    // Our `balance()` does nothing unless the color is red, which the caller
                     // must ensure.
                     debug_assert!(node.color == Color::Black);
                     node.balance()
