@@ -1,7 +1,7 @@
 [package]
 name = "rpds"
 description = "Persistent data structures with structural sharing"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Diogo Sousa <diogogsousa@gmail.com>"]
 
 homepage = "https://github.com/orium/rpds"
@@ -38,7 +38,7 @@ serde = { version = "1", optional = true }
 [dev-dependencies]
 # TODO This will probably be part of rust in the future (see https://github.com/rust-lang/rust/issues/29553)
 bencher = "0.1"
-rand = "0.3"
+rand = "0.4"
 # needed to test serde
 bincode = "0.9"
 
