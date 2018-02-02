@@ -15,6 +15,33 @@ use HashTrieMap;
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = hash_trie_map::IterKeys<'a, T, ()>;
 
+/// Creates a [`HashTrieSet`](set/hash_trie_set/struct.HashTrieSet.html) containing the given
+/// arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let s = HashTrieSet::new()
+///     .insert(1)
+///     .insert(2)
+///     .insert(3);
+///
+/// assert_eq!(ht_set![1, 2, 3], s);
+/// ```
+#[macro_export]
+macro_rules! ht_set {
+    ($($e:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut s = $crate::HashTrieSet::new();
+            $(
+                s = s.insert($e);
+            )*
+            s
+        }
+    };
+}
+
 /// A persistent set with structural sharing.  This implementation uses a
 /// [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie)
 /// and supports fast `insert()`, `remove()`, and `contains()`.

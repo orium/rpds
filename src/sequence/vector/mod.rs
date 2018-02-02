@@ -17,6 +17,32 @@ use utils::vec_utils::VecUtils;
 
 const DEFAULT_BITS: u8 = 5;
 
+/// Creates a [`Vector`](sequence/vector/struct.Vector.html) containing the given arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let v = Vector::new()
+///     .push_back(1)
+///     .push_back(2)
+///     .push_back(3);
+///
+/// assert_eq!(vector![1, 2, 3], v);
+/// ```
+#[macro_export]
+macro_rules! vector {
+    ($($e:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut v = $crate::Vector::new();
+            $(
+                v = v.push_back($e);
+            )*
+            v
+        }
+    };
+}
+
 /// A persistent vector with structural sharing.  This data structure supports fast `push_back()`, `set()`,
 /// `drop_last()`, and `get()`.
 ///

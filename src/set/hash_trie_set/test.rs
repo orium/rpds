@@ -91,6 +91,20 @@ mod compile_time {
 }
 
 #[test]
+fn test_macro_ht_set() -> () {
+    let set_1 = HashTrieSet::new()
+        .insert(1);
+    let set_1_2_3 = HashTrieSet::new()
+        .insert(1)
+        .insert(2)
+        .insert(3);
+
+    assert_eq!(HashTrieSet::<u32>::new(), ht_set![]);
+    assert_eq!(set_1, ht_set![1]);
+    assert_eq!(set_1_2_3, ht_set![1, 2, 3]);
+}
+
+#[test]
 fn test_insert() -> () {
     let mut set = HashTrieSet::new();
     assert_eq!(set.size(), 0);

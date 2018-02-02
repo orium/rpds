@@ -12,6 +12,33 @@ use RedBlackTreeMap;
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = red_black_tree_map::IterKeys<'a, T, ()>;
 
+/// Creates a [`RedBlackTreeSet`](set/red_black_tree_set/struct.RedBlackTreeSet.html) containing the
+/// given arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let s = RedBlackTreeSet::new()
+///     .insert(1)
+///     .insert(2)
+///     .insert(3);
+///
+/// assert_eq!(rbt_set![1, 2, 3], s);
+/// ```
+#[macro_export]
+macro_rules! rbt_set {
+    ($($e:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut s = $crate::RedBlackTreeSet::new();
+            $(
+                s = s.insert($e);
+            )*
+            s
+        }
+    };
+}
+
 /// A persistent set with structural sharing.  This implementation uses a
 /// [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree)
 /// and supports fast `insert()`, `remove()`, and `contains()`.
@@ -47,6 +74,8 @@ pub struct RedBlackTreeSet<T>
 impl<T> RedBlackTreeSet<T>
     where T: Ord {
     pub fn new() -> RedBlackTreeSet<T> {
+        vec![1,2,3];
+
         RedBlackTreeSet {
             map: RedBlackTreeMap::new(),
         }

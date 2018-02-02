@@ -100,6 +100,20 @@ fn test_new() -> () {
 }
 
 #[test]
+fn test_macro_list() -> () {
+    let list_1 = List::new()
+        .push_front(1);
+    let list_1_2_3 = List::new()
+        .push_front(3)
+        .push_front(2)
+        .push_front(1);
+
+    assert_eq!(List::<u32>::new(), list![]);
+    assert_eq!(list_1, list![1]);
+    assert_eq!(list_1_2_3, list![1, 2, 3]);
+}
+
+#[test]
 fn test_first() -> () {
     let empty_list: List<i32> = List::new();
     let singleton_list = List::new()

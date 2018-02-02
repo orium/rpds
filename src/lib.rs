@@ -22,7 +22,8 @@
 //!
 //! Additionally, add this to your crate root:
 //!
-//! ```rust
+//! ```rust,ignore
+//! #[macro_use]
 //! extern crate rpds;
 //! ```
 //!

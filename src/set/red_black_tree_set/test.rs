@@ -91,6 +91,20 @@ mod compile_time {
 }
 
 #[test]
+fn test_macro_rbt_set() -> () {
+    let set_1 = RedBlackTreeSet::new()
+        .insert(1);
+    let set_1_2_3 = RedBlackTreeSet::new()
+        .insert(1)
+        .insert(2)
+        .insert(3);
+
+    assert_eq!(RedBlackTreeSet::<u32>::new(), rbt_set![]);
+    assert_eq!(set_1, rbt_set![1]);
+    assert_eq!(set_1_2_3, rbt_set![1, 2, 3]);
+}
+
+#[test]
 fn test_insert() -> () {
     let mut set = RedBlackTreeSet::new();
     assert_eq!(set.size(), 0);

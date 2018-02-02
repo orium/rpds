@@ -13,6 +13,52 @@ use std::iter::FromIterator;
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! list_reverse {
+    ( ; $($reversed:expr),*) => {
+         {
+            #[allow(unused_mut)]
+            let mut l = $crate::List::new();
+            $(
+                l = l.push_front($reversed);
+            )*
+            l
+        }
+    };
+    ($h:expr ; $($reversed:expr),*) => {
+        list_reverse!( ; $h, $($reversed),*)
+    };
+    ($h:expr, $($t:expr),+ ; $($reversed:expr),*) => {
+        list_reverse!($($t),* ; $h, $($reversed),*)
+    };
+
+    // This is just to handle the cases where this macro is called with an extra comma in the
+    // reserve list, which can happen in a recursive call.
+    ($($t:expr),* ; $($reversed:expr),*,) => {
+        list_reverse!($($t),* ; $($reversed),*)
+    };
+}
+
+/// Creates a [`List`](sequence/list/struct.List.html) containing the given arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let l = List::new()
+///     .push_front(3)
+///     .push_front(2)
+///     .push_front(1);
+///
+/// assert_eq!(list![1, 2, 3], l);
+/// ```
+#[macro_export]
+macro_rules! list {
+    ($($e:expr),*) => {
+        list_reverse!($($e),* ; )
+    };
+}
+
 /// A persistent list with structural sharing.  This data structure supports fast `push_front()`,
 /// `drop_first()`, `first()`, and `last()`.
 ///

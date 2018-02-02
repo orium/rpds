@@ -699,6 +699,20 @@ mod compile_time {
 }
 
 #[test]
+fn test_macro_ht_map() -> () {
+    let set_1 = HashTrieMap::new()
+        .insert(1, 2);
+    let set_1_2_3 = HashTrieMap::new()
+        .insert(1, 2)
+        .insert(2, 3)
+        .insert(3, 4);
+
+    assert_eq!(HashTrieMap::<u32, u32>::new(), ht_map![]);
+    assert_eq!(set_1, ht_map![1 => 2]);
+    assert_eq!(set_1_2_3, ht_map![1 => 2, 2 => 3, 3 => 4]);
+}
+
+#[test]
 fn test_insert_simple() -> () {
     let mut map = HashTrieMap::new();
     assert_eq!(map.size(), 0);

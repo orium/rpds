@@ -14,7 +14,31 @@ use List;
 pub type Iter<'a, T> =
     ::std::iter::Chain<::std::iter::Map<list::IterArc<'a, T>, fn(&::std::sync::Arc<T>) -> &T>, LazilyReversedListIter<'a, T>>;
 
-
+/// Creates a [`Queue`](queue/struct.Queue.html) containing the given arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let q = Queue::new()
+///     .enqueue(1)
+///     .enqueue(2)
+///     .enqueue(3);
+///
+/// assert_eq!(queue![1, 2, 3], q);
+/// ```
+#[macro_export]
+macro_rules! queue {
+    ($($e:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut q = $crate::Queue::new();
+            $(
+                q = q.enqueue($e);
+            )*
+            q
+        }
+    };
+}
 
 /// A persistent queue with structural sharing.  This data structure supports fast `enqueue()`,
 /// `dequeue()`, and `peek()`.

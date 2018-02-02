@@ -93,6 +93,20 @@ fn test_new() -> () {
 }
 
 #[test]
+fn test_macro_stack() -> () {
+    let stack_1 = Stack::new()
+        .push(1);
+    let stack_1_2_3 = Stack::new()
+        .push(1)
+        .push(2)
+        .push(3);
+
+    assert_eq!(Stack::<u32>::new(), stack![]);
+    assert_eq!(stack_1, stack![1]);
+    assert_eq!(stack_1_2_3, stack![1, 2, 3]);
+}
+
+#[test]
 fn test_peek() -> () {
     let empty_stack: Stack<i32> = Stack::new();
     let singleton_stack = Stack::new()

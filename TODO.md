@@ -3,21 +3,20 @@
   * Use property based tests with [quickcheck](https://github.com/BurntSushi/quickcheck)?
 * Rustdocs
   * all data structures
-* HashMap
+* `*Map`
   * extend
-* HashSet
+* `*Set`
   * union
   * difference
   * intersection
-* Queue
+* `Queue`
   * benchmark
-* Stack
+* `Stack`
   * extend
-* Vector
+* `Vector`
   * Support `push_front()`/`drop_first()`
   * extend
-* List
+* `List`
   * extend
-* Macros like `vec!` for all collections.
 * Add clippy to travis.
-* impl FusedIterator for iterators when it is stable.
+* impl `FusedIterator` for iterators when it is stable.

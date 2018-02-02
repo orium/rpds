@@ -763,6 +763,20 @@ mod compile_time {
 }
 
 #[test]
+fn test_macro_rbt_map() -> () {
+    let set_1 = RedBlackTreeMap::new()
+        .insert(1, 2);
+    let set_1_2_3 = RedBlackTreeMap::new()
+        .insert(1, 2)
+        .insert(2, 3)
+        .insert(3, 4);
+
+    assert_eq!(RedBlackTreeMap::<u32, u32>::new(), rbt_map![]);
+    assert_eq!(set_1, rbt_map![1 => 2]);
+    assert_eq!(set_1_2_3, rbt_map![1 => 2, 2 => 3, 3 => 4]);
+}
+
+#[test]
 fn test_insert_simple() -> () {
     let mut map = RedBlackTreeMap::new();
     assert_eq!(map.size(), 0);

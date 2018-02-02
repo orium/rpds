@@ -13,6 +13,32 @@ use List;
 // TODO Use impl trait for return value when available
 pub type Iter<'a, T> = list::Iter<'a, T>;
 
+/// Creates a [`Stack`](stack/struct.Stack.html) containing the given arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let s = Stack::new()
+///     .push(1)
+///     .push(2)
+///     .push(3);
+///
+/// assert_eq!(stack![1, 2, 3], s);
+/// ```
+#[macro_export]
+macro_rules! stack {
+    ($($e:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut s = $crate::Stack::new();
+            $(
+                s = s.push($e);
+            )*
+            s
+        }
+    };
+}
+
 /// A persistent stack with structural sharing.  This data structure supports fast `push()`,
 /// `pop()`, and `peek()`.
 ///

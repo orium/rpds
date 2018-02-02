@@ -21,6 +21,7 @@ categories = [
 
 license = "MPL-2.0"
 
+# What to include when packaging.
 include = [
     "/src/**/*.rs",
     "/Cargo.toml",

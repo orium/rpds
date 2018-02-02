@@ -33,6 +33,33 @@ fn default_degree() -> u8 {
     8 * size_of::<usize>() as u8
 }
 
+/// Creates a [`HashTrieMap`](map/hash_trie_map/struct.HashTrieMap.html) containing the given
+/// arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let m = HashTrieMap::new()
+///     .insert(1, "one")
+///     .insert(2, "two")
+///     .insert(3, "three");
+///
+/// assert_eq!(ht_map![1 => "one", 2 => "two", 3 => "three"], m);
+/// ```
+#[macro_export]
+macro_rules! ht_map {
+    ($($k:expr => $v:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut m = $crate::HashTrieMap::new();
+            $(
+                m = m.insert($k, $v);
+            )*
+            m
+        }
+    };
+}
+
 /// A persistent map with structural sharing.  This implementation uses a
 /// [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie) and supports
 /// fast `insert()`, `remove()`, and `get()`.

@@ -382,6 +382,20 @@ mod compile_time {
 }
 
 #[test]
+fn test_macro_vector() -> () {
+    let vector_1 = Vector::new()
+        .push_back(1);
+    let vector_1_2_3 = Vector::new()
+        .push_back(1)
+        .push_back(2)
+        .push_back(3);
+
+    assert_eq!(Vector::<u32>::new(), vector![]);
+    assert_eq!(vector_1, vector![1]);
+    assert_eq!(vector_1_2_3, vector![1, 2, 3]);
+}
+
+#[test]
 fn test_push_back_adds_element() -> () {
     let limit = 32*32*32+1;
     let mut vector: Vector<i32> = Vector::new();

@@ -2,7 +2,7 @@
 [![Code Coverage (master)](https://codecov.io/gh/orium/rpds/branch/master/graph/badge.svg)](https://codecov.io/gh/orium/rpds)
 [![crates.io](http://meritbadge.herokuapp.com/rpds)](https://crates.io/crates/rpds)
 [![Documentation (latest)](https://docs.rs/rpds/badge.svg)](https://docs.rs/rpds/)
-[![Licensed](https://img.shields.io/crates/l/rpds.svg)](./LICENSE)
+[![License](https://img.shields.io/crates/l/rpds.svg)](./LICENSE)
 
 # Rust Persistent Data Structures
 
@@ -21,6 +21,7 @@ rpds = "<version>"
 Additionally, add this to your crate root:
 
 ```rust
+#[macro_use]
 extern crate rpds;
 ```
 

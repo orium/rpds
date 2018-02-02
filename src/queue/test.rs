@@ -186,6 +186,20 @@ fn test_new() -> () {
 }
 
 #[test]
+fn test_macro_queue() -> () {
+    let queue_1 = Queue::new()
+        .enqueue(1);
+    let queue_1_2_3 = Queue::new()
+        .enqueue(1)
+        .enqueue(2)
+        .enqueue(3);
+
+    assert_eq!(Queue::<u32>::new(), queue![]);
+    assert_eq!(queue_1, queue![1]);
+    assert_eq!(queue_1_2_3, queue![1, 2, 3]);
+}
+
+#[test]
 fn test_peek() -> () {
     let empty_queue: Queue<i32> = Queue::new();
     let singleton_queue = Queue::new()

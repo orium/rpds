@@ -15,6 +15,33 @@ use std::hash::{Hasher, Hash};
 pub type IterKeys<'a, K, V>   = ::std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
 pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
 
+/// Creates a [`RedBlackTreeMap`](map/red_black_tree_map/struct.RedBlackTreeMap.html) containing the
+/// given arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let m = RedBlackTreeMap::new()
+///     .insert(1, "one")
+///     .insert(2, "two")
+///     .insert(3, "three");
+///
+/// assert_eq!(rbt_map![1 => "one", 2 => "two", 3 => "three"], m);
+/// ```
+#[macro_export]
+macro_rules! rbt_map {
+    ($($k:expr => $v:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut m = $crate::RedBlackTreeMap::new();
+            $(
+                m = m.insert($k, $v);
+            )*
+            m
+        }
+    };
+}
+
 /// A persistent map with structural sharing.  This implementation uses a
 /// [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree)
 /// and supports fast `insert()`, `remove()`, and `get()`.
