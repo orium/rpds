@@ -54,7 +54,7 @@ impl<T: Clone> VecUtils for Vec<T> {
     }
 
     fn cloned_remove_last(&self) -> Vec<T> {
-        debug_assert!(self.len() > 0);
+        debug_assert!(!self.is_empty());
         self.cloned_remove(self.len() - 1)
     }
 }

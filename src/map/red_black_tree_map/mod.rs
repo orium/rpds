@@ -421,7 +421,7 @@ impl<K, V> Node<K, V>
     fn insert(root: Option<&Node<K, V>>, key: K, value: V) -> (Node<K, V>, bool) {
         fn ins<K: Ord, V>(node: Option<&Node<K, V>>, k: K, v: V) -> (Node<K, V>, bool) {
             match node {
-                Some(ref node) => {
+                Some(node) => {
                     match k.cmp(&node.entry.key) {
                         Ordering::Less => {
                             let left = Node::borrow(&node.left);
@@ -482,29 +482,29 @@ impl<K, V> Node<K, V>
             use self::Color::Black as B;
 
             match (left, right) {
-                (None, ref r) => r.as_ref().map(|r| (*r).clone()),
-                (ref l, None) => l.as_ref().map(|l| (*l).clone()),
-                (Some(ref l), Some(ref r)) => {
+                (None, r) => r.map(Node::clone),
+                (l, None) => l.map(Node::clone),
+                (Some(l), Some(r)) => {
                     let tree_l_r = Node::borrow(&l.right);
                     let tree_r_l = Node::borrow(&r.left);
 
                     let new_node = match (l.color, r.color) {
                         (B, R) => {
-                            let new_left = fuse(Some(&l), tree_r_l);
+                            let new_left = fuse(Some(l), tree_r_l);
                             Node {
                                 entry: Arc::clone(&r.entry),
                                 color: Color::Red,
-                                left:  new_left.map(|l| Arc::new(l)),
+                                left:  new_left.map(Arc::new),
                                 right: r.right.clone(),
                             }
                         },
                         (R, B) => {
-                            let new_right = fuse(tree_l_r, Some(&r));
+                            let new_right = fuse(tree_l_r, Some(r));
                             Node {
                                 entry: Arc::clone(&l.entry),
                                 color: Color::Red,
                                 left:  l.left.clone(),
-                                right: new_right.map(|l| Arc::new(l)),
+                                right: new_right.map(Arc::new),
                             }
                         },
                         (R, R) => {
@@ -540,7 +540,7 @@ impl<K, V> Node<K, V>
                                         Node {
                                             entry: Arc::clone(&r.entry),
                                             color: Color::Red,
-                                            left:  fused.map(|n| Arc::new(n)),
+                                            left:  fused.map(Arc::new),
                                             right: r.right.clone(),
                                         }
                                     )),
@@ -581,7 +581,7 @@ impl<K, V> Node<K, V>
                                             Node {
                                                 entry: Arc::clone(&r.entry),
                                                 color: Color::Black,
-                                                left:  fused.map(|n| Arc::new(n)),
+                                                left:  fused.map(Arc::new),
                                                 right: r.right.clone(),
                                             }
                                         )),
@@ -781,7 +781,7 @@ impl<K, V> Node<K, V>
             let new_node = Node {
                 entry: Arc::clone(&node.entry),
                 color: Color::Red, // In case of rebalance the color does not matter.
-                left:  new_left.map(|l| Arc::new(l)),
+                left:  new_left.map(Arc::new),
                 right: node.right.clone(),
             };
 
@@ -801,7 +801,7 @@ impl<K, V> Node<K, V>
                 entry: Arc::clone(&node.entry),
                 color: Color::Red, // In case of rebalance the color does not matter.
                 left:  node.left.clone(),
-                right: new_right.map(|r| Arc::new(r)),
+                right: new_right.map(Arc::new),
             };
 
             let balanced_new_node = match node.right_color() {
@@ -816,8 +816,8 @@ impl<K, V> Node<K, V>
             where K: Borrow<Q> + Ord,
                   Q: Ord {
             match node {
-                Some(ref node) => {
-                    match k.cmp(&node.entry.key.borrow()) {
+                Some(node) => {
+                    match k.cmp(node.entry.key.borrow()) {
                         Ordering::Less => del_left(node, k),
                         Ordering::Equal => {
                             let left = Node::borrow(&node.left);
@@ -888,7 +888,7 @@ impl<K, V> RedBlackTreeMap<K, V>
         // We want to keep maximum sharing so in case of no change we just `clone()` ourselves.
         if removed {
             RedBlackTreeMap {
-                root: new_root.map(|r| Arc::new(r)),
+                root: new_root.map(Arc::new),
                 size: self.size - 1,
             }
         } else {
@@ -1090,7 +1090,7 @@ impl<'a, K, V> Iter<'a, K, V>
                     Node::borrow(c)
                 });
 
-        if let Some(ref c) = child {
+        if let Some(c) = child {
             stack.push(c);
             Iter::dig(stack, backwards);
         }
@@ -1136,7 +1136,7 @@ impl<'a, K, V> Iter<'a, K, V>
     }
 
     #[inline]
-    fn current(stack: &Vec<&'a Node<K, V>>) -> Option<(&'a K, &'a V)> {
+    fn current(stack: &[&'a Node<K, V>]) -> Option<(&'a K, &'a V)> {
         stack.last().map(|node| (&node.entry.key, &node.entry.value))
     }
 
@@ -1150,7 +1150,7 @@ impl<'a, K, V> Iter<'a, K, V>
 
     fn current_forward(&mut self) -> Option<(&'a K, &'a V)> {
         if self.non_empty() {
-            Iter::current(&self.stack_forward.as_ref().unwrap())
+            Iter::current(self.stack_forward.as_ref().unwrap())
         } else {
             None
         }
@@ -1166,7 +1166,7 @@ impl<'a, K, V> Iter<'a, K, V>
 
     fn current_backward(&mut self) -> Option<(&'a K, &'a V)> {
         if self.non_empty() {
-            Iter::current(&self.stack_backward.as_ref().unwrap())
+            Iter::current(self.stack_backward.as_ref().unwrap())
         } else {
             None
         }

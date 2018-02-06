@@ -497,7 +497,7 @@ impl<K, V> Bucket<K, V>
                 let (new_entries, removed) =
                     bucket_utils::list_remove_first(
                         entries,
-                        |e|  e.matches(&key, key_hash)
+                        |e|  e.matches(key, key_hash)
                     );
 
                 let new_bucket = match new_entries.len() {
@@ -561,7 +561,7 @@ impl<K, V, H: BuildHasher> HashTrieMap<K, V, H>
     }
 
     pub fn new_with_hasher_and_degree(hasher_builder: H, degree: u8) -> HashTrieMap<K, V, H> {
-        assert!(degree.is_power_of_two(), format!("degree must be a power of two"));
+        assert!(degree.is_power_of_two(), "degree must be a power of two");
         assert!(degree <= default_degree(), format!("degree must not exceed {}", default_degree()));
 
         HashTrieMap {
@@ -763,7 +763,7 @@ impl<'a, K, V> IterStackElement<'a, K, V>
         match *self {
             IterStackElement::Branch(_) =>
                 panic!("called current element of a branch"),
-            IterStackElement::LeafSingle(ref entry) => entry,
+            IterStackElement::LeafSingle(entry) => entry,
             IterStackElement::LeafCollision(ref mut iter) => iter.peek().unwrap(),
         }
     }

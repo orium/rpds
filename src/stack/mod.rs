@@ -62,7 +62,7 @@ macro_rules! stack {
 ///
 /// # Implementation details
 ///
-/// This is a thin wrapper around a [List](../sequence/list/struct.List.html).
+/// This is a thin wrapper around a [`List`](../sequence/list/struct.List.html).
 #[derive(Debug)]
 pub struct Stack<T> {
     list: List<T>

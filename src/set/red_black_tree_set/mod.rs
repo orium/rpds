@@ -64,7 +64,7 @@ macro_rules! rbt_set {
 ///
 /// # Implementation details
 ///
-/// This is a thin wrapper around a [RedBlackTreeMap](../../map/red_black_tree_map/struct.RedBlackTreeMap.html).
+/// This is a thin wrapper around a [`RedBlackTreeMap`](../../map/red_black_tree_map/struct.RedBlackTreeMap.html).
 #[derive(Debug)]
 pub struct RedBlackTreeSet<T>
     where T: Ord {

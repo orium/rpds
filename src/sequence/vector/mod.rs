@@ -221,8 +221,8 @@ impl<T> Node<T> {
 impl<T> Clone for Node<T> {
     fn clone(&self) -> Node<T> {
         match *self {
-            Node::Branch(ref a) => Node::Branch(Vec::clone(&a)),
-            Node::Leaf(ref a)   => Node::Leaf(Vec::clone(&a)),
+            Node::Branch(ref a) => Node::Branch(Vec::clone(a)),
+            Node::Leaf(ref a)   => Node::Leaf(Vec::clone(a)),
         }
     }
 }
@@ -629,7 +629,7 @@ impl<'a, T> Iter<'a, T> {
     }
 
     #[inline]
-    fn current(stack: &Vec<IterStackElement<'a, T>>) -> Option<&'a T> {
+    fn current(stack: &[IterStackElement<'a, T>]) -> Option<&'a T> {
         stack.last().map(|e| e.current_elem())
     }
 

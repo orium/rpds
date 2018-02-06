@@ -66,7 +66,7 @@ macro_rules! ht_set {
 ///
 /// # Implementation details
 ///
-/// This is a thin wrapper around a [HashTrieMap](../../map/hash_trie_map/struct.HashTrieMap.html).
+/// This is a thin wrapper around a [`HashTrieMap`](../../map/hash_trie_map/struct.HashTrieMap.html).
 #[derive(Debug)]
 pub struct HashTrieSet<T, H: BuildHasher = RandomState>
     where T: Eq + Hash,

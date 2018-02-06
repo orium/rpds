@@ -52,7 +52,7 @@ impl<T: Clone> SparseArrayUsize<T> {
 
     #[inline]
     pub fn move_first(mut self) -> Option<T> {
-        if self.array.len() > 0 {
+        if !self.array.is_empty() {
             Some(self.array.swap_remove(0))
         } else {
             None
