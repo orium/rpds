@@ -8,6 +8,7 @@ use std::fmt::Display;
 use std::iter::FromIterator;
 use map::red_black_tree_map;
 use RedBlackTreeMap;
+use std::cmp::Ordering;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = red_black_tree_map::IterKeys<'a, T, ()>;
@@ -107,6 +108,48 @@ impl<T> RedBlackTreeSet<T>
 
     pub fn last(&self) -> Option<&T> {
         self.map.last().map(|(k, _)| k)
+    }
+
+    pub fn is_disjoint(&self, other: &RedBlackTreeSet<T>) -> bool {
+        let mut self_it = self.iter();
+        let mut other_it = other.iter();
+
+        let mut v_opt = self_it.next();
+        let mut u_opt = other_it.next();
+
+        while let (Some(v), Some(u)) = (v_opt, u_opt) {
+            match v.cmp(u) {
+                Ordering::Less    => v_opt = self_it.next(),
+                Ordering::Equal   => return false,
+                Ordering::Greater => u_opt = other_it.next(),
+            }
+        }
+
+        true
+    }
+
+    pub fn is_subset(&self, other: &RedBlackTreeSet<T>) -> bool {
+        let mut other_it = other.iter();
+
+        for v in self.iter() {
+            loop {
+                match other_it.next() {
+                    Some(u) =>
+                        match u.cmp(v) {
+                            Ordering::Less    => (),
+                            Ordering::Equal   => break,
+                            Ordering::Greater => return false,
+                        },
+                    None => return false,
+                }
+            }
+        }
+
+        true
+    }
+
+    pub fn is_superset(&self, other: &RedBlackTreeSet<T>) -> bool {
+        other.is_subset(self)
     }
 
     #[inline]

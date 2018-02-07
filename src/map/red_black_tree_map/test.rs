@@ -6,7 +6,6 @@
 extern crate rand;
 
 use super::*;
-// use std::fmt::Display;
 
 #[derive(Debug)]
 enum InvariantViolation {
@@ -694,6 +693,22 @@ mod iter {
         iterator.next_back();
 
         assert_eq!(iterator.size_hint(), (0, Some(0)));
+    }
+
+    #[test]
+    fn test_iter_sorted() -> () {
+        let map = RedBlackTreeMap::new()
+            .insert(5, ())
+            .insert(6, ())
+            .insert(2, ())
+            .insert(1, ());
+        let mut iterator = map.iter();
+
+        assert_eq!(iterator.next(), Some((&1, &())));
+        assert_eq!(iterator.next(), Some((&2, &())));
+        assert_eq!(iterator.next(), Some((&5, &())));
+        assert_eq!(iterator.next(), Some((&6, &())));
+        assert_eq!(iterator.next(), None);
     }
 
     #[test]

@@ -122,6 +122,18 @@ impl<T, H: BuildHasher> HashTrieSet<T, H>
         self.map.contains_key(v)
     }
 
+    pub fn is_disjoint<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, I>) -> bool {
+        self.iter().all(|v| !other.contains(v))
+    }
+
+    pub fn is_subset<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, I>) -> bool {
+        self.iter().all(|v| other.contains(v))
+    }
+
+    pub fn is_superset<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, I>) -> bool {
+        other.is_subset(self)
+    }
+
     #[inline]
     pub fn size(&self) -> usize {
         self.map.size()
