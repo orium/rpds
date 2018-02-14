@@ -3,16 +3,18 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
 use std::fmt::Display;
 use std::cmp::Ordering;
 use std::hash::{Hasher, Hash};
 use std::iter::FromIterator;
+use std::borrow::Borrow;
 use sequence::list;
 use List;
 
 // TODO Use impl trait instead of this when available.
-pub type Iter<'a, T> =
-    ::std::iter::Chain<::std::iter::Map<list::IterArc<'a, T>, fn(&::std::sync::Arc<T>) -> &T>, LazilyReversedListIter<'a, T>>;
+pub type IterArc<'a, T> = ::std::iter::Chain<list::IterArc<'a, T>, LazilyReversedListIter<'a, T>>;
+pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
 
 /// Creates a [`Queue`](queue/struct.Queue.html) containing the given arguments:
 ///
@@ -126,7 +128,11 @@ impl<T> Queue<T> {
     }
 
     pub fn iter(&self) -> Iter<T> {
-        self.out_list.iter().chain(LazilyReversedListIter::new(&self.in_list))
+        self.iter_arc().map(|v| v.borrow())
+    }
+
+    fn iter_arc(&self) -> IterArc<T> {
+        self.out_list.iter_arc().chain(LazilyReversedListIter::new(&self.in_list))
     }
 }
 
@@ -215,7 +221,7 @@ impl<T> FromIterator<T> for Queue<T> {
 
 pub enum LazilyReversedListIter<'a, T: 'a> {
     Uninitialized { list: &'a List<T> },
-    Initialized { vec: Vec<&'a T>, current: Option<usize> },
+    Initialized { vec: Vec<&'a Arc<T>>, current: Option<usize> },
 }
 
 impl<'a, T> LazilyReversedListIter<'a, T> {
@@ -225,15 +231,15 @@ impl<'a, T> LazilyReversedListIter<'a, T> {
 }
 
 impl<'a, T> Iterator for LazilyReversedListIter<'a, T> {
-    type Item = &'a T;
+    type Item = &'a Arc<T>;
 
-    fn next(&mut self) -> Option<&'a T> {
+    fn next(&mut self) -> Option<&'a Arc<T>> {
         match *self {
             LazilyReversedListIter::Uninitialized { list } => {
                 let len = list.len();
-                let mut vec: Vec<&'a T> = Vec::with_capacity(len);
+                let mut vec: Vec<&'a Arc<T>> = Vec::with_capacity(len);
 
-                for v in list.iter() {
+                for v in list.iter_arc() {
                     vec.push(v);
                 }
 

@@ -25,6 +25,7 @@ use self::sparse_array_usize::SparseArrayUsize;
 type HashValue = u64;
 
 // TODO Use impl trait instead of this when available.
+pub type Iter<'a, K, V> = ::std::iter::Map<IterArc<'a, K, V>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
 pub type IterKeys<'a, K, V>   = ::std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
 pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
 
@@ -638,7 +639,11 @@ impl<K, V, H: BuildHasher> HashTrieMap<K, V, H>
     }
 
     pub fn iter(&self) -> Iter<K, V> {
-        Iter::new(self)
+        self.iter_arc().map(|e| (&e.key, &e.value))
+    }
+
+    fn iter_arc(&self) -> IterArc<K, V> {
+        IterArc::new(self)
     }
 
     pub fn keys(&self) -> IterKeys<K, V> {
@@ -746,7 +751,7 @@ impl<K, V, H> FromIterator<(K, V)> for HashTrieMap<K, V, H> where
 }
 
 #[derive(Debug)]
-pub struct Iter<'a, K: 'a, V: 'a> {
+pub struct IterArc<'a, K: 'a, V: 'a> {
     stack: Vec<IterStackElement<'a, K, V>>,
     size: usize,
 }
@@ -772,12 +777,12 @@ impl<'a, K, V> IterStackElement<'a, K, V>
         }
     }
 
-    fn current_elem(&mut self) -> &'a EntryWithHash<K, V> {
+    fn current_elem(&mut self) -> &'a Arc<Entry<K, V>> {
         match *self {
             IterStackElement::Branch(_) =>
                 panic!("called current element of a branch"),
-            IterStackElement::LeafSingle(entry) => entry,
-            IterStackElement::LeafCollision(ref mut iter) => iter.peek().unwrap(),
+            IterStackElement::LeafSingle(entry) => &entry.entry,
+            IterStackElement::LeafCollision(ref mut iter) => &iter.peek().unwrap().entry,
         }
     }
 
@@ -810,9 +815,9 @@ mod iter_utils {
     }
 }
 
-impl<'a, K, V> Iter<'a, K, V>
+impl<'a, K, V> IterArc<'a, K, V>
     where K: Eq + Hash {
-    fn new<H: BuildHasher + Clone>(map: &HashTrieMap<K, V, H>) -> Iter<K, V> {
+    fn new<H: BuildHasher + Clone>(map: &HashTrieMap<K, V, H>) -> IterArc<K, V> {
         let mut stack: Vec<IterStackElement<K, V>> =
             Vec::with_capacity(iter_utils::trie_max_height(map.degree) + 1);
 
@@ -820,7 +825,7 @@ impl<'a, K, V> Iter<'a, K, V>
             stack.push(IterStackElement::new(map.root.borrow()));
         }
 
-        let mut iter = Iter {
+        let mut iter = IterArc {
             stack,
             size: map.size(),
         };
@@ -864,20 +869,18 @@ impl<'a, K, V> Iter<'a, K, V>
         }
     }
 
-    fn current(&mut self) -> Option<(&'a K, &'a V)> {
+    fn current(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
         self.stack.last_mut().map(|e| {
-            let entry = e.current_elem();
-
-            (entry.key(), entry.value())
+            e.current_elem()
         })
     }
 }
 
-impl<'a, K, V> Iterator for Iter<'a, K, V>
+impl<'a, K, V> Iterator for IterArc<'a, K, V>
     where K: Eq + Hash {
-    type Item = (&'a K, &'a V);
+    type Item = &'a Arc<Entry<K, V>>;
 
-    fn next(&mut self) -> Option<(&'a K, &'a V)> {
+    fn next(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
         let current = self.current();
 
         self.advance();
@@ -894,7 +897,7 @@ impl<'a, K, V> Iterator for Iter<'a, K, V>
     }
 }
 
-impl<'a, K: Eq + Hash, V> ExactSizeIterator for Iter<'a, K, V> {}
+impl<'a, K: Eq + Hash, V> ExactSizeIterator for IterArc<'a, K, V> {}
 
 #[cfg(feature = "serde")]
 pub mod serde {

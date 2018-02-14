@@ -15,6 +15,9 @@ use std::mem::size_of;
 
 use utils::vec_utils::VecUtils;
 
+// TODO Use impl trait instead of this when available.
+pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
+
 const DEFAULT_BITS: u8 = 5;
 
 /// Creates a [`Vector`](sequence/vector/struct.Vector.html) containing the given arguments:
@@ -413,7 +416,11 @@ impl<T> Vector<T> {
     }
 
     pub fn iter(&self) -> Iter<T> {
-        Iter::new(self)
+        self.iter_arc().map(|v| v.borrow())
+    }
+
+    fn iter_arc(&self) -> IterArc<T> {
+        IterArc::new(self)
     }
 }
 
@@ -514,7 +521,7 @@ impl<T> FromIterator<T> for Vector<T> {
     }
 }
 
-pub struct Iter<'a, T: 'a> {
+pub struct IterArc<'a, T: 'a> {
     vector: &'a Vector<T>,
 
     stack_forward:  Option<Vec<IterStackElement<'a, T>>>,
@@ -544,9 +551,9 @@ impl<'a, T> IterStackElement<'a, T> {
         }
     }
 
-    fn current_elem(&self) -> &'a T {
+    fn current_elem(&self) -> &'a Arc<T> {
         match *self.node {
-            Node::Leaf(ref a) => a[self.index as usize].as_ref(),
+            Node::Leaf(ref a) => &a[self.index as usize],
             Node::Branch(_) => panic!("called current element of a branch"),
         }
     }
@@ -564,9 +571,9 @@ impl<'a, T> IterStackElement<'a, T> {
     }
 }
 
-impl<'a, T> Iter<'a, T> {
-    fn new(vector: &Vector<T>) -> Iter<T> {
-        Iter {
+impl<'a, T> IterArc<'a, T> {
+    fn new(vector: &Vector<T>) -> IterArc<T> {
+        IterArc {
             vector,
 
             stack_forward:  None,
@@ -590,7 +597,7 @@ impl<'a, T> Iter<'a, T> {
 
         stack.push(IterStackElement::new(next_node, backwards));
 
-        Iter::dig(stack, backwards);
+        IterArc::dig(stack, backwards);
     }
 
     fn init_if_needed(&mut self, backwards: bool) -> () {
@@ -605,7 +612,7 @@ impl<'a, T> Iter<'a, T> {
 
             stack.push(IterStackElement::new(self.vector.root.borrow(), backwards));
 
-            Iter::dig(&mut stack, backwards);
+            IterArc::dig(&mut stack, backwards);
 
             *stack_field = Some(stack);
         }
@@ -617,11 +624,11 @@ impl<'a, T> Iter<'a, T> {
                 let finished = stack_element.advance(backwards);
 
                 if finished {
-                    Iter::advance(stack, backwards);
+                    IterArc::advance(stack, backwards);
                 } else {
                     stack.push(stack_element);
 
-                    Iter::dig(stack, backwards);
+                    IterArc::dig(stack, backwards);
                 }
             },
             None => (), // Reached the end.  Nothing to do.
@@ -629,7 +636,7 @@ impl<'a, T> Iter<'a, T> {
     }
 
     #[inline]
-    fn current(stack: &[IterStackElement<'a, T>]) -> Option<&'a T> {
+    fn current(stack: &[IterStackElement<'a, T>]) -> Option<&'a Arc<T>> {
         stack.last().map(|e| e.current_elem())
     }
 
@@ -640,15 +647,15 @@ impl<'a, T> Iter<'a, T> {
 
     fn advance_forward(&mut self) -> () {
         if self.non_empty() {
-            Iter::advance(self.stack_forward.as_mut().unwrap(), false);
+            IterArc::advance(self.stack_forward.as_mut().unwrap(), false);
 
             self.left_index += 1;
         }
     }
 
-    fn current_forward(&self) -> Option<&'a T> {
+    fn current_forward(&self) -> Option<&'a Arc<T>> {
         if self.non_empty() {
-            Iter::current(self.stack_forward.as_ref().unwrap())
+            IterArc::current(self.stack_forward.as_ref().unwrap())
         } else {
             None
         }
@@ -656,25 +663,25 @@ impl<'a, T> Iter<'a, T> {
 
     fn advance_backward(&mut self) -> () {
         if self.non_empty() {
-            Iter::advance(self.stack_backward.as_mut().unwrap(), true);
+            IterArc::advance(self.stack_backward.as_mut().unwrap(), true);
 
             self.right_index -= 1;
         }
     }
 
-    fn current_backward(&self) -> Option<&'a T> {
+    fn current_backward(&self) -> Option<&'a Arc<T>> {
         if self.non_empty() {
-            Iter::current(self.stack_backward.as_ref().unwrap())
+            IterArc::current(self.stack_backward.as_ref().unwrap())
         } else {
             None
         }
     }
 }
 
-impl<'a, T> Iterator for Iter<'a, T> {
-    type Item = &'a T;
+impl<'a, T> Iterator for IterArc<'a, T> {
+    type Item = &'a Arc<T>;
 
-    fn next(&mut self) -> Option<&'a T> {
+    fn next(&mut self) -> Option<&'a Arc<T>> {
         self.init_if_needed(false);
 
         let current = self.current_forward();
@@ -691,8 +698,8 @@ impl<'a, T> Iterator for Iter<'a, T> {
     }
 }
 
-impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
-    fn next_back(&mut self) -> Option<&'a T> {
+impl<'a, T> DoubleEndedIterator for IterArc<'a, T> {
+    fn next_back(&mut self) -> Option<&'a Arc<T>> {
         self.init_if_needed(true);
 
         let current = self.current_backward();
@@ -703,7 +710,7 @@ impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
     }
 }
 
-impl<'a, T> ExactSizeIterator for Iter<'a, T> {}
+impl<'a, T> ExactSizeIterator for IterArc<'a, T> {}
 
 #[cfg(feature = "serde")]
 pub mod serde {
