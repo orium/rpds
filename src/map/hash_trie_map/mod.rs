@@ -19,6 +19,7 @@ use std::iter::FromIterator;
 use std::fmt::Display;
 use sequence::list;
 use List;
+use super::entry::Entry;
 use self::sparse_array_usize::SparseArrayUsize;
 
 type HashValue = u64;
@@ -27,11 +28,7 @@ type HashValue = u64;
 pub type IterKeys<'a, K, V>   = ::std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
 pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
 
-// TODO when const_fn is stabilized this can be a const.
-fn default_degree() -> u8 {
-    debug_assert!(8 * size_of::<usize>() <= u8::max_value() as usize);
-    8 * size_of::<usize>() as u8
-}
+const DEFAULT_DEGREE: u8 = 8 * size_of::<usize>() as u8;
 
 /// Creates a [`HashTrieMap`](map/hash_trie_map/struct.HashTrieMap.html) containing the given
 /// arguments:
@@ -159,14 +156,13 @@ enum Node<K, V> {
 
 #[derive(Debug, PartialEq, Eq)]
 enum Bucket<K, V> {
-    Single(Arc<Entry<K, V>>),
-    Collision(List<Arc<Entry<K, V>>>),
+    Single(EntryWithHash<K, V>),
+    Collision(List<EntryWithHash<K, V>>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct Entry<K, V> {
-    key:   K,
-    value: V,
+struct EntryWithHash<K, V> {
+    entry: Arc<Entry<K, V>>,
     key_hash: HashValue,
 }
 
@@ -209,7 +205,7 @@ impl<K, V> Node<K, V>
         Node::Branch(SparseArrayUsize::new())
     }
 
-    fn get<Q: ?Sized>(&self, key: &Q, key_hash: HashValue, depth: usize, degree: u8) -> Option<&Entry<K, V>>
+    fn get<Q: ?Sized>(&self, key: &Q, key_hash: HashValue, depth: usize, degree: u8) -> Option<&EntryWithHash<K, V>>
         where K: Borrow<Q>,
               Q: Hash + Eq {
         match *self {
@@ -225,7 +221,7 @@ impl<K, V> Node<K, V>
     }
 
     /// Returns a pair with the node with the new entry and whether the key is new.
-    fn insert(&self, entry: Arc<Entry<K, V>>, depth: usize, degree: u8) -> (Node<K, V>, bool) {
+    fn insert(&self, entry: EntryWithHash<K, V>, depth: usize, degree: u8) -> (Node<K, V>, bool) {
         match *self {
             Node::Branch(ref subtrees) => {
                 let index: usize = node_utils::index_from_hash(entry.key_hash, depth, degree)
@@ -261,7 +257,7 @@ impl<K, V> Node<K, V>
                 match maximum_depth {
                     // We reached a bucket.  If the bucket contains the key we are inserting then
                     // we just need to replace it.
-                    false if bucket.contains_key(&entry.key, entry.key_hash) => {
+                    false if bucket.contains_key(entry.key(), entry.key_hash) => {
                         let (new_bucket, _) = bucket.insert(entry);
                         let new_node = Node::Leaf(new_bucket);
 
@@ -272,8 +268,8 @@ impl<K, V> Node<K, V>
                     // create a `Node::Branch` and insert the elements of the bucket there, as well
                     // as the new element.
                     false => {
-                        let old_entry: Arc<Entry<K, V>> = match *bucket {
-                            Bucket::Single(ref e) => Arc::clone(e),
+                        let old_entry: EntryWithHash<K, V> = match *bucket {
+                            Bucket::Single(ref e) => EntryWithHash::clone(e),
                             Bucket::Collision(_) =>
                                 unreachable!("hash is not exhausted, so there cannot be a collision here"),
                         };
@@ -431,7 +427,7 @@ mod bucket_utils {
 
 impl<K, V> Bucket<K, V>
     where K: Eq + Hash {
-    fn get<Q: ?Sized>(&self, key: &Q, key_hash: HashValue) -> Option<&Entry<K, V>>
+    fn get<Q: ?Sized>(&self, key: &Q, key_hash: HashValue) -> Option<&EntryWithHash<K, V>>
         where K: Borrow<Q>,
               Q: Hash + Eq {
         match *self {
@@ -457,13 +453,13 @@ impl<K, V> Bucket<K, V>
     /// improve performance with high temporal locality (since `get()` will try to match according
     /// to the list order).  The order of the rest of the list must be preserved for the same
     /// reason.
-    fn insert(&self, entry: Arc<Entry<K, V>>) -> (Bucket<K, V>, bool) {
+    fn insert(&self, entry: EntryWithHash<K, V>) -> (Bucket<K, V>, bool) {
         match *self {
-            Bucket::Single(ref existing_entry) if existing_entry.matches(&entry.key, entry.key_hash) =>
+            Bucket::Single(ref existing_entry) if existing_entry.matches(entry.key(), entry.key_hash) =>
                 (Bucket::Single(entry), false),
             Bucket::Single(ref existing_entry) => {
-                let entries = List::new()
-                    .push_front(Arc::clone(existing_entry))
+                let entries: List<EntryWithHash<K, V>> = List::new()
+                    .push_front(EntryWithHash::clone(existing_entry))
                     .push_front(entry);
 
                 (Bucket::Collision(entries), true)
@@ -472,7 +468,7 @@ impl<K, V> Bucket<K, V>
                 let (mut new_entries, key_existed) =
                     bucket_utils::list_remove_first(
                         entries,
-                        |e| e.matches(&entry.key, entry.key_hash)
+                        |e| e.matches(entry.key(), entry.key_hash)
                     );
 
                 new_entries = new_entries.push_front(entry);
@@ -502,7 +498,7 @@ impl<K, V> Bucket<K, V>
 
                 let new_bucket = match new_entries.len() {
                     0 => unreachable!("impossible to have collision with a single or no entry"),
-                    1 => Bucket::Single(Arc::clone(new_entries.first().unwrap())),
+                    1 => Bucket::Single(EntryWithHash::clone(new_entries.first().unwrap())),
                     _ => Bucket::Collision(new_entries),
                 };
 
@@ -516,36 +512,53 @@ impl<K, V> Clone for Bucket<K, V>
     where K: Eq + Hash {
     fn clone(&self) -> Bucket<K, V> {
         match *self {
-            Bucket::Single(ref entry)      => Bucket::Single(Arc::clone(entry)),
+            Bucket::Single(ref entry)      => Bucket::Single(EntryWithHash::clone(entry)),
             Bucket::Collision(ref entries) => Bucket::Collision(List::clone(entries)),
         }
     }
 }
 
-impl<K, V> Entry<K, V>
+impl<K, V> EntryWithHash<K, V>
     where K: Eq + Hash {
-    fn new<H: BuildHasher>(key: K, value : V, hash_builder: &H) -> Entry<K, V> {
+    fn new<H: BuildHasher>(key: K, value : V, hash_builder: &H) -> EntryWithHash<K, V> {
         let key_hash = node_utils::hash(&key, hash_builder);
 
-        Entry {
-            key,
-            value,
+        EntryWithHash {
+            entry: Arc::new(Entry::new(key, value)),
             key_hash,
         }
+    }
+
+    fn key(&self) -> &K {
+        &self.entry.key
+    }
+
+    fn value(&self) -> &V {
+        &self.entry.value
     }
 
     #[inline]
     fn matches<Q: ?Sized>(&self, key: &Q, key_hash: HashValue) -> bool
         where K: Borrow<Q>,
               Q: Hash + Eq {
-        key_hash == self.key_hash && key == self.key.borrow()
+        self.key_hash == key_hash && self.key().borrow() == key
+    }
+}
+
+impl<K, V> Clone for EntryWithHash<K, V>
+    where K: Eq + Hash {
+    fn clone(&self) -> EntryWithHash<K, V> {
+        EntryWithHash {
+            entry: Arc::clone(&self.entry),
+            key_hash: self.key_hash
+        }
     }
 }
 
 impl<K, V> HashTrieMap<K, V, RandomState>
     where K: Eq + Hash {
     pub fn new() -> HashTrieMap<K, V> {
-        HashTrieMap::new_with_degree(default_degree())
+        HashTrieMap::new_with_degree(DEFAULT_DEGREE)
     }
 
     pub fn new_with_degree(degree: u8) -> HashTrieMap<K, V> {
@@ -557,12 +570,12 @@ impl<K, V, H: BuildHasher> HashTrieMap<K, V, H>
     where K: Eq + Hash,
           H: Clone {
     pub fn new_with_hasher(hasher_builder: H) -> HashTrieMap<K, V, H> {
-        HashTrieMap::new_with_hasher_and_degree(hasher_builder, default_degree())
+        HashTrieMap::new_with_hasher_and_degree(hasher_builder, DEFAULT_DEGREE)
     }
 
     pub fn new_with_hasher_and_degree(hasher_builder: H, degree: u8) -> HashTrieMap<K, V, H> {
         assert!(degree.is_power_of_two(), "degree must be a power of two");
-        assert!(degree <= default_degree(), format!("degree must not exceed {}", default_degree()));
+        assert!(degree <= DEFAULT_DEGREE, format!("degree must not exceed {}", DEFAULT_DEGREE));
 
         HashTrieMap {
             root: Arc::new(Node::new_empty_branch()),
@@ -578,13 +591,13 @@ impl<K, V, H: BuildHasher> HashTrieMap<K, V, H>
         let key_hash = node_utils::hash(key, &self.hasher_builder);
 
         self.root.get(key, key_hash, 0, self.degree)
-            .map(|e| &e.value)
+            .map(|e| e.value())
     }
 
     pub fn insert(&self, key: K, value: V) -> HashTrieMap<K, V, H> {
-        let entry = Entry::new(key, value, &self.hasher_builder);
+        let entry = EntryWithHash::new(key, value, &self.hasher_builder);
         let (new_root, is_new_key) =
-            self.root.insert(Arc::new(entry), 0, self.degree);
+            self.root.insert(entry, 0, self.degree);
 
         HashTrieMap {
             root: Arc::new(new_root),
@@ -741,8 +754,8 @@ pub struct Iter<'a, K: 'a, V: 'a> {
 #[derive(Debug)]
 enum IterStackElement<'a, K: 'a, V: 'a> {
     Branch(Peekable<slice::Iter<'a, Arc<Node<K, V>>>>),
-    LeafSingle(&'a Entry<K, V>),
-    LeafCollision(Peekable<list::Iter<'a, Arc<Entry<K, V>>>>),
+    LeafSingle(&'a EntryWithHash<K, V>),
+    LeafCollision(Peekable<list::Iter<'a, EntryWithHash<K, V>>>),
 }
 
 impl<'a, K, V> IterStackElement<'a, K, V>
@@ -759,7 +772,7 @@ impl<'a, K, V> IterStackElement<'a, K, V>
         }
     }
 
-    fn current_elem(&mut self) -> &'a Entry<K, V> {
+    fn current_elem(&mut self) -> &'a EntryWithHash<K, V> {
         match *self {
             IterStackElement::Branch(_) =>
                 panic!("called current element of a branch"),
@@ -855,7 +868,7 @@ impl<'a, K, V> Iter<'a, K, V>
         self.stack.last_mut().map(|e| {
             let entry = e.current_elem();
 
-            (&entry.key, &entry.value)
+            (entry.key(), entry.value())
         })
     }
 }

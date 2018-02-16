@@ -36,61 +36,61 @@ mod bucket {
     fn test_get() -> () {
         let hash_builder = RandomState::new();
 
-        let entry_a = Arc::new(Entry::new(0xAu8, 0, &hash_builder));
-        let entry_b = Arc::new(Entry::new(0xBu8, 1, &hash_builder));
-        let entry_c = Arc::new(Entry::new(0xCu8, 2, &hash_builder));
+        let entry_a = EntryWithHash::new(0xAu8, 0, &hash_builder);
+        let entry_b = EntryWithHash::new(0xBu8, 1, &hash_builder);
+        let entry_c = EntryWithHash::new(0xCu8, 2, &hash_builder);
 
-        let bucket_single = Bucket::Single(Arc::clone(&entry_a));
+        let bucket_single = Bucket::Single(EntryWithHash::clone(&entry_a));
         let bucket_collision = Bucket::Collision(
             List::new()
-                .push_front(Arc::clone(&entry_a))
-                .push_front(Arc::clone(&entry_b))
+                .push_front(EntryWithHash::clone(&entry_a))
+                .push_front(EntryWithHash::clone(&entry_b))
         );
 
-        assert_eq!(bucket_single.get(&entry_a.key, entry_a.key_hash), Some(entry_a.borrow()));
-        assert_eq!(bucket_single.get(&entry_b.key, entry_b.key_hash), None);
+        assert_eq!(bucket_single.get(entry_a.key(), entry_a.key_hash), Some(entry_a.borrow()));
+        assert_eq!(bucket_single.get(entry_b.key(), entry_b.key_hash), None);
 
-        assert_eq!(bucket_collision.get(&entry_a.key, entry_a.key_hash), Some(entry_a.borrow()));
-        assert_eq!(bucket_collision.get(&entry_b.key, entry_b.key_hash), Some(entry_b.borrow()));
-        assert_eq!(bucket_collision.get(&entry_c.key, entry_c.key_hash), None);
+        assert_eq!(bucket_collision.get(entry_a.key(), entry_a.key_hash), Some(entry_a.borrow()));
+        assert_eq!(bucket_collision.get(entry_b.key(), entry_b.key_hash), Some(entry_b.borrow()));
+        assert_eq!(bucket_collision.get(entry_c.key(), entry_c.key_hash), None);
     }
 
     #[test]
     fn test_insert() -> () {
         let hash_builder = RandomState::new();
 
-        let entry_a  = Arc::new(Entry::new(0xAu8, 0, &hash_builder));
-        let entry_a9 = Arc::new(Entry::new(0xAu8, 9, &hash_builder));
-        let entry_b  = Arc::new(Entry::new(0xBu8, 1, &hash_builder));
-        let entry_b9 = Arc::new(Entry::new(0xBu8, 9, &hash_builder));
-        let entry_c  = Arc::new(Entry::new(0xCu8, 2, &hash_builder));
-        let entry_d  = Arc::new(Entry::new(0xDu8, 2, &hash_builder));
+        let entry_a  = EntryWithHash::new(0xAu8, 0, &hash_builder);
+        let entry_a9 = EntryWithHash::new(0xAu8, 9, &hash_builder);
+        let entry_b  = EntryWithHash::new(0xBu8, 1, &hash_builder);
+        let entry_b9 = EntryWithHash::new(0xBu8, 9, &hash_builder);
+        let entry_c  = EntryWithHash::new(0xCu8, 2, &hash_builder);
+        let entry_d  = EntryWithHash::new(0xDu8, 2, &hash_builder);
 
-        let bucket_single_a = Bucket::Single(Arc::clone(&entry_a));
-        let bucket_single_a9 = Bucket::Single(Arc::clone(&entry_a9));
+        let bucket_single_a = Bucket::Single(EntryWithHash::clone(&entry_a));
+        let bucket_single_a9 = Bucket::Single(EntryWithHash::clone(&entry_a9));
         let bucket_collision_b_a = Bucket::Collision(
             List::new()
-                .push_front(Arc::clone(&entry_a))
-                .push_front(Arc::clone(&entry_b))
+                .push_front(EntryWithHash::clone(&entry_a))
+                .push_front(EntryWithHash::clone(&entry_b))
         );
         let bucket_collision_a_b_c = Bucket::Collision(
             List::new()
-                .push_front(Arc::clone(&entry_c))
-                .push_front(Arc::clone(&entry_b))
-                .push_front(Arc::clone(&entry_a))
+                .push_front(EntryWithHash::clone(&entry_c))
+                .push_front(EntryWithHash::clone(&entry_b))
+                .push_front(EntryWithHash::clone(&entry_a))
         );
         let bucket_collision_b9_a_c = Bucket::Collision(
             List::new()
-                .push_front(Arc::clone(&entry_c))
-                .push_front(Arc::clone(&entry_a))
-                .push_front(Arc::clone(&entry_b9))
+                .push_front(EntryWithHash::clone(&entry_c))
+                .push_front(EntryWithHash::clone(&entry_a))
+                .push_front(EntryWithHash::clone(&entry_b9))
         );
         let bucket_collision_d_a_b_c = Bucket::Collision(
             List::new()
-                .push_front(Arc::clone(&entry_c))
-                .push_front(Arc::clone(&entry_b))
-                .push_front(Arc::clone(&entry_a))
-                .push_front(Arc::clone(&entry_d))
+                .push_front(EntryWithHash::clone(&entry_c))
+                .push_front(EntryWithHash::clone(&entry_b))
+                .push_front(EntryWithHash::clone(&entry_a))
+                .push_front(EntryWithHash::clone(&entry_d))
         );
 
         // Note that we care about the position of the inserted entry: we want it to be in the
@@ -109,29 +109,29 @@ mod bucket {
     fn test_remove() -> () {
         let hash_builder = RandomState::new();
 
-        let entry_a  = Arc::new(Entry::new(0xAu8, 0, &hash_builder));
-        let entry_b  = Arc::new(Entry::new(0xBu8, 1, &hash_builder));
-        let entry_c  = Arc::new(Entry::new(0xCu8, 2, &hash_builder));
-        let entry_d  = Arc::new(Entry::new(0xDu8, 2, &hash_builder));
+        let entry_a  = EntryWithHash::new(0xAu8, 0, &hash_builder);
+        let entry_b  = EntryWithHash::new(0xBu8, 1, &hash_builder);
+        let entry_c  = EntryWithHash::new(0xCu8, 2, &hash_builder);
+        let entry_d  = EntryWithHash::new(0xDu8, 2, &hash_builder);
 
-        let bucket_single_a = Bucket::Single(Arc::clone(&entry_a));
+        let bucket_single_a = Bucket::Single(EntryWithHash::clone(&entry_a));
         let bucket_collision_b_c = Bucket::Collision(
             List::new()
-                .push_front(Arc::clone(&entry_c))
-                .push_front(Arc::clone(&entry_b))
+                .push_front(EntryWithHash::clone(&entry_c))
+                .push_front(EntryWithHash::clone(&entry_b))
         );
         let bucket_collision_a_b_c = Bucket::Collision(
             List::new()
-                .push_front(Arc::clone(&entry_c))
-                .push_front(Arc::clone(&entry_b))
-                .push_front(Arc::clone(&entry_a))
+                .push_front(EntryWithHash::clone(&entry_c))
+                .push_front(EntryWithHash::clone(&entry_b))
+                .push_front(EntryWithHash::clone(&entry_a))
         );
 
-        assert_eq!(bucket_single_a.remove(&entry_a.key, entry_a.key_hash), (None, true));
-        assert_eq!(bucket_single_a.remove(&entry_b.key, entry_b.key_hash), (Some(bucket_single_a), false));
+        assert_eq!(bucket_single_a.remove(entry_a.key(), entry_a.key_hash), (None, true));
+        assert_eq!(bucket_single_a.remove(entry_b.key(), entry_b.key_hash), (Some(bucket_single_a), false));
 
-        assert_eq!(bucket_collision_a_b_c.remove(&entry_a.key, entry_a.key_hash), (Some(bucket_collision_b_c), true));
-        assert_eq!(bucket_collision_a_b_c.remove(&entry_d.key, entry_d.key_hash), (Some(bucket_collision_a_b_c), false));
+        assert_eq!(bucket_collision_a_b_c.remove(entry_a.key(), entry_a.key_hash), (Some(bucket_collision_b_c), true));
+        assert_eq!(bucket_collision_a_b_c.remove(entry_d.key(), entry_d.key_hash), (Some(bucket_collision_a_b_c), false));
     }
 }
 
@@ -306,11 +306,11 @@ mod node {
     fn dummy_hash_trie_map() -> HashTrieMap<u8, i32, MockedHashBuilder> {
         let hash_builder: MockedHashBuilder = dummy_hash_builder();
 
-        let entry_a = Arc::new(Entry::new(0xAu8, 0, &hash_builder));
-        let entry_b = Arc::new(Entry::new(0xBu8, 1, &hash_builder));
-        let entry_c = Arc::new(Entry::new(0xCu8, 2, &hash_builder));
-        let entry_d = Arc::new(Entry::new(0xDu8, 3, &hash_builder));
-        let entry_e = Arc::new(Entry::new(0xEu8, 4, &hash_builder));
+        let entry_a = EntryWithHash::new(0xAu8, 0, &hash_builder);
+        let entry_b = EntryWithHash::new(0xBu8, 1, &hash_builder);
+        let entry_c = EntryWithHash::new(0xCu8, 2, &hash_builder);
+        let entry_d = EntryWithHash::new(0xDu8, 3, &hash_builder);
+        let entry_e = EntryWithHash::new(0xEu8, 4, &hash_builder);
 
         let bucket_a  = Bucket::Single(entry_a);
         let bucket_b  = Bucket::Single(entry_b);
@@ -420,8 +420,8 @@ mod node {
     fn test_compress() -> () {
         let hash_builder: MockedHashBuilder = dummy_hash_builder();
 
-        let entry_a = Arc::new(Entry::new(0xAu8, 0, &hash_builder));
-        let entry_b = Arc::new(Entry::new(0xBu8, 1, &hash_builder));
+        let entry_a = EntryWithHash::new(0xAu8, 0, &hash_builder);
+        let entry_b = EntryWithHash::new(0xBu8, 1, &hash_builder);
 
         let bucket_a = Bucket::Single(entry_a.clone());
         let bucket_b = Bucket::Single(entry_b.clone());
@@ -586,9 +586,9 @@ mod iter {
 
     #[test]
     fn test_iter() -> () {
-        let degrees: Vec<u8> = [2, 4, 16, 32, default_degree()].iter()
+        let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
             .map(|d| *d)
-            .filter(|d| *d <= default_degree()) // we only want valid degrees
+            .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
             .collect();
 
         for degree in degrees {
@@ -598,9 +598,9 @@ mod iter {
 
     #[test]
     fn test_iter_high_collision() -> () {
-        let degrees: Vec<u8> = [2, 4, 16, 32, default_degree()].iter()
+        let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
             .map(|d| *d)
-            .filter(|d| *d <= default_degree()) // we only want valid degrees
+            .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
             .collect();
 
         for degree in degrees {
@@ -769,9 +769,9 @@ fn insert_test<H: BuildHasher + Clone>(initial_map: HashTrieMap<u32, i32, H>) ->
 
 #[test]
 fn test_insert() -> () {
-    let degrees: Vec<u8> = [2, 4, 16, 32, default_degree()].iter()
+    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
         .map(|d| *d)
-        .filter(|d| *d <= default_degree()) // we only want valid degrees
+        .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
         .collect();
 
     for degree in degrees {
@@ -781,9 +781,9 @@ fn test_insert() -> () {
 
 #[test]
 fn test_insert_high_collision() -> () {
-    let degrees: Vec<u8> = [2, 4, 16, 32, default_degree()].iter()
+    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
         .map(|d| *d)
-        .filter(|d| *d <= default_degree()) // we only want valid degrees
+        .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
         .collect();
 
     for degree in degrees {
@@ -865,9 +865,9 @@ fn remove_test<H: BuildHasher + Clone>(initial_map: HashTrieMap<u32, i32, H>) ->
 
 #[test]
 fn test_remove() -> () {
-    let degrees: Vec<u8> = [2, 4, 16, 32, default_degree()].iter()
+    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
         .map(|d| *d)
-        .filter(|d| *d <= default_degree()) // we only want valid degrees
+        .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
         .collect();
 
     for degree in degrees {
@@ -877,9 +877,9 @@ fn test_remove() -> () {
 
 #[test]
 fn test_remove_high_collision() -> () {
-    let degrees: Vec<u8> = [2, 4, 16, 32, default_degree()].iter()
+    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
         .map(|d| *d)
-        .filter(|d| *d <= default_degree()) // we only want valid degrees
+        .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
         .collect();
 
     for degree in degrees {

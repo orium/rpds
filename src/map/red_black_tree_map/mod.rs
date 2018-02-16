@@ -10,6 +10,7 @@ use std::iter::FromIterator;
 use std::ops::Index;
 use std::fmt::Display;
 use std::hash::{Hasher, Hash};
+use super::entry::Entry;
 
 // TODO Use impl trait instead of this when available.
 pub type IterKeys<'a, K, V>   = ::std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
@@ -77,12 +78,6 @@ pub struct RedBlackTreeMap<K, V> {
     size: usize,
 }
 
-#[derive(Debug, PartialEq, Eq)]
-struct Entry<K, V> {
-    key:   K,
-    value: V,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Color {
     Red,
@@ -95,12 +90,6 @@ struct Node<K, V> {
     color: Color,
     left:  Option<Arc<Node<K, V>>>,
     right: Option<Arc<Node<K, V>>>,
-}
-
-impl<K, V> Entry<K, V> {
-    fn new(key: K, value: V) -> Entry<K, V> {
-        Entry { key, value }
-    }
 }
 
 impl<K, V> Clone for Node<K, V> {
