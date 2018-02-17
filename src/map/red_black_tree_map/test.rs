@@ -1080,9 +1080,9 @@ fn test_clone() -> () {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() -> () {
-    use bincode::{serialize, deserialize, Bounded};
+    use bincode::{serialize, deserialize};
     let rbtreemap: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::from_iter(vec![(5,6),(7,8),(9,10),(11,12)].into_iter());
-    let encoded = serialize(&rbtreemap, Bounded(100)).unwrap();
+    let encoded = serialize(&rbtreemap).unwrap();
     let decoded: RedBlackTreeMap<i32, i32> = deserialize(&encoded).unwrap();
     assert_eq!(rbtreemap, decoded);
 }

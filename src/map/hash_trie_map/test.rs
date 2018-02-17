@@ -980,9 +980,9 @@ fn test_clone() -> () {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() -> () {
-    use bincode::{serialize, deserialize, Bounded};
+    use bincode::{serialize, deserialize};
     let hashtriemap: HashTrieMap<i32, i32> = HashTrieMap::from_iter(vec![(5,6),(7,8),(9,10),(11,12)].into_iter());
-    let encoded = serialize(&hashtriemap, Bounded(100)).unwrap();
+    let encoded = serialize(&hashtriemap).unwrap();
     let decoded: HashTrieMap<i32, i32> = deserialize(&encoded).unwrap();
     assert_eq!(hashtriemap, decoded);
 }

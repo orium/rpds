@@ -252,9 +252,9 @@ fn test_clone() -> () {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() -> () {
-    use bincode::{serialize, deserialize, Bounded};
+    use bincode::{serialize, deserialize};
     let hashtrieset: HashTrieSet<i32> = HashTrieSet::from_iter(vec![5,6,7,8].into_iter());
-    let encoded = serialize(&hashtrieset, Bounded(100)).unwrap();
+    let encoded = serialize(&hashtrieset).unwrap();
     let decoded: HashTrieSet<i32> = deserialize(&encoded).unwrap();
     assert_eq!(hashtrieset, decoded);
 }

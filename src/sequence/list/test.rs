@@ -307,9 +307,9 @@ fn test_clone() -> () {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() -> () {
-    use bincode::{serialize, deserialize, Bounded};
+    use bincode::{serialize, deserialize};
     let list: List<i32> = List::from_iter(vec![5,6,7,8].into_iter());
-    let encoded = serialize(&list, Bounded(100)).unwrap();
+    let encoded = serialize(&list).unwrap();
     let decoded: List<i32> = deserialize(&encoded).unwrap();
     assert_eq!(list, decoded);
 }
