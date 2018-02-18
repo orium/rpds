@@ -28,6 +28,7 @@ script:
   - cargo bench --features fatal-warnings,serde
   - cargo doc   --features fatal-warnings,serde
   - cargo package
+  - ./tools/update-readme.sh --check-up-to-date
 
 # TODO Do not build kcov when v34 is available, just install it directly.
 after_success:
