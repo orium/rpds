@@ -13,8 +13,6 @@ use std::ops::Index;
 use std::sync::Arc;
 use std::vec::Vec;
 
-use utils::vec_utils::VecUtils;
-
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
 
@@ -39,7 +37,7 @@ macro_rules! vector {
             #[allow(unused_mut)]
             let mut v = $crate::Vector::new();
             $(
-                v = v.push_back($e);
+                v.push_back_mut($e);
             )*
             v
         }
@@ -127,44 +125,35 @@ impl<T> Node<T> {
         }
     }
 
-    fn assoc<F: Fn(usize, usize) -> usize>(
-        &self,
-        index: usize,
-        value: T,
-        height: usize,
-        bucket: F,
-        degree: usize,
-    ) -> Node<T> {
-        let b = bucket(index, height);
+    fn assoc<F: Fn(usize) -> usize>(&mut self, value: T, height: usize, bucket: F) {
+        let b = bucket(height);
 
         match *self {
-            Node::Leaf(ref a) => {
+            Node::Leaf(ref mut a) => {
                 debug_assert_eq!(height, 0, "cannot have a leaf at this height");
 
-                let new_a = a.cloned_set(b, Arc::new(value));
-
-                Node::Leaf(new_a)
+                if a.len() == b {
+                    a.push(Arc::new(value));
+                } else {
+                    a[b] = Arc::new(value);
+                }
             }
 
-            Node::Branch(ref a) => {
+            Node::Branch(ref mut a) => {
                 debug_assert!(height > 0, "cannot have a branch at this height");
 
-                let new_subtree = match a.get(b) {
-                    Some(subtree) => subtree.assoc(index, value, height - 1, bucket, degree),
-                    None => {
-                        let subtree = if height > 1 {
-                            Node::new_empty_branch()
-                        } else {
-                            Node::new_empty_leaf()
-                        };
-
-                        subtree.assoc(index, value, height - 1, bucket, degree)
-                    }
+                if let Some(subtree) = a.get_mut(b) {
+                    Arc::make_mut(subtree).assoc(value, height - 1, bucket);
+                    return;
+                }
+                let mut subtree = if height > 1 {
+                    Node::new_empty_branch()
+                } else {
+                    Node::new_empty_leaf()
                 };
 
-                let new_a = a.cloned_set(b, Arc::new(new_subtree));
-
-                Node::Branch(new_a)
+                subtree.assoc(value, height - 1, bucket);
+                a.push(Arc::new(subtree));
             }
         }
     }
@@ -191,34 +180,28 @@ impl<T> Node<T> {
     /// This will return `None` if the subtree after drop becomes empty (or it already was empty).
     /// Note that this will prune irrelevant branches, i.e. there will be no branches without
     /// elements under it.
-    fn drop_last(&self) -> Option<Node<T>> {
+    fn drop_last(&mut self) -> Option<()> {
         if self.is_empty() {
             return None;
         }
 
-        let new_node: Node<T> = match *self {
-            Node::Leaf(ref a) => {
-                let new_a = a.cloned_remove_last();
-
-                Node::Leaf(new_a)
+        match *self {
+            Node::Leaf(ref mut a) => {
+                a.pop();
             }
 
-            Node::Branch(ref a) => {
-                let last = a.last().unwrap();
+            Node::Branch(ref mut a) => match Arc::make_mut(a.last_mut().unwrap()).drop_last() {
+                Some(()) => (),
+                None => {
+                    a.pop();
+                }
+            },
+        }
 
-                let new_a = match last.drop_last() {
-                    Some(subtree) => a.cloned_set(a.len() - 1, Arc::new(subtree)),
-                    None => a.cloned_remove_last(),
-                };
-
-                Node::Branch(new_a)
-            }
-        };
-
-        if new_node.is_empty() {
+        if self.is_empty() {
             None
         } else {
-            Some(new_node)
+            Some(())
         }
     }
 }
@@ -287,6 +270,11 @@ impl<T> Vector<T> {
         (index >> (height * self.bits as usize)) & self.mask()
     }
 
+    #[inline]
+    fn bucket2(bits: u8, index: usize, height: usize) -> usize {
+        (index >> (height * bits as usize)) & ((1 << bits) - 1)
+    }
+
     pub fn get(&self, index: usize) -> Option<&T> {
         if index >= self.length {
             None
@@ -298,10 +286,16 @@ impl<T> Vector<T> {
     }
 
     pub fn set(&self, index: usize, v: T) -> Option<Vector<T>> {
+        let mut self_ = self.clone();
+        self_.set_mut(index, v).map(|()| self_)
+    }
+
+    pub fn set_mut(&mut self, index: usize, v: T) -> Option<()> {
         if index >= self.length {
             None
         } else {
-            Some(self.assoc(index, v))
+            self.assoc(index, v);
+            Some(())
         }
     }
 
@@ -310,26 +304,19 @@ impl<T> Vector<T> {
     /// # Panics
     ///
     /// This method will panic if the trie's root doesn't have capacity for the given index.
-    fn assoc(&self, index: usize, v: T) -> Vector<T> {
+    fn assoc(&mut self, index: usize, v: T) {
         debug_assert!(
             index < self.root_max_capacity(),
             "This trie's root cannot support this index"
         );
 
-        let new_root: Node<T> = self.root.assoc(
-            index,
-            v,
-            self.height(),
-            |index, height| self.bucket(index, height),
-            self.degree(),
-        );
+        let height = self.height();
+        let bits = self.bits;
+        Arc::make_mut(&mut self.root).assoc(v, height, |height| Self::bucket2(bits, index, height));
         let adds_item: bool = index >= self.length;
 
-        Vector {
-            root:   Arc::new(new_root),
-            bits:   self.bits,
-            length: self.length + if adds_item { 1 } else { 0 },
-        }
+        self.bits = bits;
+        self.length += if adds_item { 1 } else { 0 };
     }
 
     #[inline]
@@ -350,6 +337,12 @@ impl<T> Vector<T> {
     }
 
     pub fn push_back(&self, v: T) -> Vector<T> {
+        let mut self_ = self.clone();
+        self_.push_back_mut(v);
+        self_
+    }
+
+    pub fn push_back_mut(&mut self, v: T) {
         if self.is_root_full() {
             let mut new_root: Node<T> = Node::new_empty_branch();
 
@@ -358,15 +351,14 @@ impl<T> Vector<T> {
                 _ => unreachable!("expected a branch"),
             }
 
-            let new_vector = Vector {
-                root:   Arc::new(new_root),
-                bits:   self.bits,
-                length: self.length + 1,
-            };
+            let length = self.length;
+            self.root = Arc::new(new_root);
+            self.length += 1;
 
-            new_vector.assoc(self.length, v)
+            self.assoc(length, v)
         } else {
-            self.assoc(self.length, v)
+            let length = self.length;
+            self.assoc(length, v)
         }
     }
 
@@ -374,40 +366,51 @@ impl<T> Vector<T> {
     /// one child.
     ///
     /// The trie must always have a compressed root.
-    fn compress_root(root: Node<T>) -> Node<T> {
-        match root {
-            leaf @ Node::Leaf(_) => leaf,
-            branch @ Node::Branch(_) => if branch.is_singleton() {
-                if let Node::Branch(a) = branch {
-                    Node::clone(a[0].as_ref())
+    #[cfg(test)]
+    fn compress_root(mut root: Node<T>) -> Arc<Node<T>> {
+        match Self::compress_root_mut(&mut root) {
+            Some(new_root) => new_root,
+            None => Arc::new(root),
+        }
+    }
+
+    fn compress_root_mut(root: &mut Node<T>) -> Option<Arc<Node<T>>> {
+        match *root {
+            Node::Leaf(_) => None,
+            Node::Branch(_) => if root.is_singleton() {
+                if let Node::Branch(ref mut a) = *root {
+                    a.pop()
                 } else {
                     unreachable!()
                 }
             } else {
-                branch
+                None
             },
         }
     }
 
     pub fn drop_last(&self) -> Option<Vector<T>> {
+        let mut self_ = self.clone();
+        self_.drop_last_mut().map(|()| self_)
+    }
+
+    pub fn drop_last_mut(&mut self) -> Option<()> {
         if self.length == 0 {
             return None;
         }
 
-        let new_vector = match self.root.drop_last() {
-            None => Vector::new_with_bits(self.bits),
-            Some(root) => {
-                let new_root: Node<T> = Vector::compress_root(root);
-
-                Vector {
-                    root:   Arc::new(new_root),
-                    bits:   self.bits,
-                    length: self.length - 1,
-                }
-            }
+        let new_root = {
+            let root = Arc::make_mut(&mut self.root);
+            root.drop_last();
+            self.length -= 1;
+            Vector::compress_root_mut(root)
         };
 
-        Some(new_vector)
+        if let Some(new_root) = new_root {
+            self.root = new_root;
+        }
+
+        Some(())
     }
 
     #[inline]
@@ -519,12 +522,16 @@ impl<'a, T> IntoIterator for &'a Vector<T> {
 impl<T> FromIterator<T> for Vector<T> {
     fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> Vector<T> {
         let mut vector = Vector::new();
-
-        for e in into_iter {
-            vector = vector.push_back(e);
-        }
-
+        vector.extend(into_iter);
         vector
+    }
+}
+
+impl<T> Extend<T> for Vector<T> {
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        for elem in iter {
+            self.push_back_mut(elem);
+        }
     }
 }
 
@@ -772,7 +779,7 @@ pub mod serde {
             let mut vector = Vector::new();
 
             while let Some(value) = seq.next_element()? {
-                vector = vector.push_back(value);
+                vector.push_back_mut(value);
             }
 
             Ok(vector)
