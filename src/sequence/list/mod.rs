@@ -177,7 +177,7 @@ impl<T> List<T> {
         self.iter_arc().map(|v| v.borrow())
     }
 
-    fn iter_arc(&self) -> IterArc<T> {
+    pub(crate) fn iter_arc(&self) -> IterArc<T> {
         IterArc::new(self)
     }
 }

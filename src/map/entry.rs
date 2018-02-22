@@ -3,7 +3,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-mod entry;
+#[derive(Debug, PartialEq, Eq)]
+pub struct Entry<K, V> {
+    pub key:   K,
+    pub value: V,
+}
 
-pub mod hash_trie_map;
-pub mod red_black_tree_map;
+impl<K, V> Entry<K, V> {
+    pub fn new(key: K, value: V) -> Entry<K, V> {
+        Entry { key, value }
+    }
+}

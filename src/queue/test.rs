@@ -16,9 +16,9 @@ mod lazily_reversed_list_iter {
             .push_front(0);
         let mut iterator = LazilyReversedListIter::new(&list);
 
-        assert_eq!(iterator.next(), Some(&2));
-        assert_eq!(iterator.next(), Some(&1));
-        assert_eq!(iterator.next(), Some(&0));
+        assert_eq!(iterator.next().map(|v| **v), Some(2));
+        assert_eq!(iterator.next().map(|v| **v), Some(1));
+        assert_eq!(iterator.next().map(|v| **v), Some(0));
         assert_eq!(iterator.next(), None);
 
         let empty_list: List<i32> = List::new();

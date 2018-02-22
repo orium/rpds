@@ -10,8 +10,10 @@ use std::iter::FromIterator;
 use std::ops::Index;
 use std::fmt::Display;
 use std::hash::{Hasher, Hash};
+use super::entry::Entry;
 
 // TODO Use impl trait instead of this when available.
+pub type Iter<'a, K, V> = ::std::iter::Map<IterArc<'a, K, V>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
 pub type IterKeys<'a, K, V>   = ::std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
 pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
 
@@ -77,12 +79,6 @@ pub struct RedBlackTreeMap<K, V> {
     size: usize,
 }
 
-#[derive(Debug, PartialEq, Eq)]
-struct Entry<K, V> {
-    key:   K,
-    value: V,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Color {
     Red,
@@ -95,12 +91,6 @@ struct Node<K, V> {
     color: Color,
     left:  Option<Arc<Node<K, V>>>,
     right: Option<Arc<Node<K, V>>>,
-}
-
-impl<K, V> Entry<K, V> {
-    fn new(key: K, value: V) -> Entry<K, V> {
-        Entry { key, value }
-    }
 }
 
 impl<K, V> Clone for Node<K, V> {
@@ -913,7 +903,11 @@ impl<K, V> RedBlackTreeMap<K, V>
     }
 
     pub fn iter(&self) -> Iter<K, V> {
-        Iter::new(self)
+        self.iter_arc().map(|e| (&e.key, &e.value))
+    }
+
+    fn iter_arc(&self) -> IterArc<K, V> {
+        IterArc::new(self)
     }
 
     pub fn keys(&self) -> IterKeys<K, V> {
@@ -1037,7 +1031,7 @@ impl<K, V> FromIterator<(K, V)> for RedBlackTreeMap<K, V> where
 }
 
 #[derive(Debug)]
-pub struct Iter<'a, K: 'a, V: 'a> {
+pub struct IterArc<'a, K: 'a, V: 'a> {
     map: &'a RedBlackTreeMap<K, V>,
 
     stack_forward:  Option<Vec<&'a Node<K, V>>>,
@@ -1067,10 +1061,10 @@ mod iter_utils {
     }
 }
 
-impl<'a, K, V> Iter<'a, K, V>
+impl<'a, K, V> IterArc<'a, K, V>
     where K: Ord {
-    fn new(map: &RedBlackTreeMap<K, V>) -> Iter<K, V> {
-        Iter {
+    fn new(map: &RedBlackTreeMap<K, V>) -> IterArc<K, V> {
+        IterArc {
             map,
 
             stack_forward:  None,
@@ -1092,7 +1086,7 @@ impl<'a, K, V> Iter<'a, K, V>
 
         if let Some(c) = child {
             stack.push(c);
-            Iter::dig(stack, backwards);
+            IterArc::dig(stack, backwards);
         }
     }
 
@@ -1110,7 +1104,7 @@ impl<'a, K, V> Iter<'a, K, V>
             // TODO Use foreach when stable.
             Node::borrow(&self.map.root).map(|r| stack.push(r));
 
-            Iter::dig(&mut stack, backwards);
+            IterArc::dig(&mut stack, backwards);
 
             *stack_field = Some(stack);
         }
@@ -1128,7 +1122,7 @@ impl<'a, K, V> Iter<'a, K, V>
 
                 if let Some(c) = Node::borrow(child) {
                     stack.push(c);
-                    Iter::dig(stack, backwards);
+                    IterArc::dig(stack, backwards);
                 }
             },
             None => (), // Reached the end.  Nothing to do.
@@ -1136,21 +1130,21 @@ impl<'a, K, V> Iter<'a, K, V>
     }
 
     #[inline]
-    fn current(stack: &[&'a Node<K, V>]) -> Option<(&'a K, &'a V)> {
-        stack.last().map(|node| (&node.entry.key, &node.entry.value))
+    fn current(stack: &[&'a Node<K, V>]) -> Option<&'a Arc<Entry<K, V>>> {
+        stack.last().map(|node| &node.entry)
     }
 
     fn advance_forward(&mut self) -> () {
         if self.non_empty() {
-            Iter::advance(&mut self.stack_forward.as_mut().unwrap(), false);
+            IterArc::advance(&mut self.stack_forward.as_mut().unwrap(), false);
 
             self.left_index += 1;
         }
     }
 
-    fn current_forward(&mut self) -> Option<(&'a K, &'a V)> {
+    fn current_forward(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
         if self.non_empty() {
-            Iter::current(self.stack_forward.as_ref().unwrap())
+            IterArc::current(self.stack_forward.as_ref().unwrap())
         } else {
             None
         }
@@ -1158,26 +1152,26 @@ impl<'a, K, V> Iter<'a, K, V>
 
     fn advance_backward(&mut self) -> () {
         if self.non_empty() {
-            Iter::advance(&mut self.stack_backward.as_mut().unwrap(), true);
+            IterArc::advance(&mut self.stack_backward.as_mut().unwrap(), true);
 
             self.right_index -= 1;
         }
     }
 
-    fn current_backward(&mut self) -> Option<(&'a K, &'a V)> {
+    fn current_backward(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
         if self.non_empty() {
-            Iter::current(self.stack_backward.as_ref().unwrap())
+            IterArc::current(self.stack_backward.as_ref().unwrap())
         } else {
             None
         }
     }
 }
 
-impl<'a, K, V> Iterator for Iter<'a, K, V>
+impl<'a, K, V> Iterator for IterArc<'a, K, V>
     where K: Ord {
-    type Item = (&'a K, &'a V);
+    type Item = &'a Arc<Entry<K, V>>;
 
-    fn next(&mut self) -> Option<(&'a K, &'a V)> {
+    fn next(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
         self.init_if_needed(false);
 
         let current = self.current_forward();
@@ -1194,9 +1188,9 @@ impl<'a, K, V> Iterator for Iter<'a, K, V>
     }
 }
 
-impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V>
+impl<'a, K, V> DoubleEndedIterator for IterArc<'a, K, V>
     where K: Ord {
-    fn next_back(&mut self) -> Option<(&'a K, &'a V)> {
+    fn next_back(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
         self.init_if_needed(true);
 
         let current = self.current_backward();
@@ -1207,7 +1201,7 @@ impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V>
     }
 }
 
-impl<'a, K: Ord, V> ExactSizeIterator for Iter<'a, K, V> {}
+impl<'a, K: Ord, V> ExactSizeIterator for IterArc<'a, K, V> {}
 
 #[cfg(feature = "serde")]
 pub mod serde {
