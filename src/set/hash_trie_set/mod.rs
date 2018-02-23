@@ -69,13 +69,17 @@ macro_rules! ht_set {
 /// This is a thin wrapper around a [`HashTrieMap`](../../map/hash_trie_map/struct.HashTrieMap.html).
 #[derive(Debug)]
 pub struct HashTrieSet<T, H: BuildHasher = RandomState>
-    where T: Eq + Hash,
-          H: Clone {
+where
+    T: Eq + Hash,
+    H: Clone,
+{
     map: HashTrieMap<T, (), H>,
 }
 
 impl<T> HashTrieSet<T, RandomState>
-    where T: Eq + Hash {
+where
+    T: Eq + Hash,
+{
     pub fn new() -> HashTrieSet<T> {
         HashTrieSet {
             map: HashTrieMap::new(),
@@ -88,8 +92,10 @@ impl<T> HashTrieSet<T, RandomState>
 }
 
 impl<T, H: BuildHasher> HashTrieSet<T, H>
-    where T: Eq + Hash,
-          H: Clone {
+where
+    T: Eq + Hash,
+    H: Clone,
+{
     pub fn new_with_hasher(hasher_builder: H) -> HashTrieSet<T, H> {
         HashTrieSet {
             map: HashTrieMap::new_with_hasher(hasher_builder),
@@ -109,16 +115,20 @@ impl<T, H: BuildHasher> HashTrieSet<T, H>
     }
 
     pub fn remove<V: ?Sized>(&self, v: &V) -> HashTrieSet<T, H>
-        where T: Borrow<V>,
-              V: Hash + Eq {
+    where
+        T: Borrow<V>,
+        V: Hash + Eq,
+    {
         HashTrieSet {
             map: self.map.remove(v),
         }
     }
 
     pub fn contains<V: ?Sized>(&self, v: &V) -> bool
-        where T: Borrow<V>,
-              V: Hash + Eq {
+    where
+        T: Borrow<V>,
+        V: Hash + Eq,
+    {
         self.map.contains_key(v)
     }
 
@@ -150,8 +160,10 @@ impl<T, H: BuildHasher> HashTrieSet<T, H>
 }
 
 impl<T, H: BuildHasher> Clone for HashTrieSet<T, H>
-    where T: Eq + Hash,
-          H: Clone {
+where
+    T: Eq + Hash,
+    H: Clone,
+{
     fn clone(&self) -> HashTrieSet<T, H> {
         HashTrieSet {
             map: self.map.clone(),
@@ -160,28 +172,37 @@ impl<T, H: BuildHasher> Clone for HashTrieSet<T, H>
 }
 
 impl<T, H: BuildHasher> Default for HashTrieSet<T, H>
-    where T: Eq + Hash,
-          H: Default + Clone {
+where
+    T: Eq + Hash,
+    H: Default + Clone,
+{
     fn default() -> HashTrieSet<T, H> {
         HashTrieSet::new_with_hasher(H::default())
     }
 }
 
 impl<T: Eq, H: BuildHasher> PartialEq for HashTrieSet<T, H>
-    where T: Hash,
-          H: Clone {
+where
+    T: Hash,
+    H: Clone,
+{
     fn eq(&self, other: &HashTrieSet<T, H>) -> bool {
         self.map.eq(&other.map)
     }
 }
 
 impl<T: Eq, H: BuildHasher> Eq for HashTrieSet<T, H>
-    where T: Hash,
-          H: Clone {}
+where
+    T: Hash,
+    H: Clone,
+{
+}
 
 impl<T, H: BuildHasher> Display for HashTrieSet<T, H>
-    where T: Eq + Hash + Display,
-          H: Clone {
+where
+    T: Eq + Hash + Display,
+    H: Clone,
+{
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         let mut first = true;
 
@@ -200,8 +221,10 @@ impl<T, H: BuildHasher> Display for HashTrieSet<T, H>
 }
 
 impl<'a, T, H: BuildHasher> IntoIterator for &'a HashTrieSet<T, H>
-    where T: Eq + Hash,
-          H: Default + Clone {
+where
+    T: Eq + Hash,
+    H: Default + Clone,
+{
     type Item = &'a T;
     type IntoIter = Iter<'a, T>;
 
@@ -210,9 +233,11 @@ impl<'a, T, H: BuildHasher> IntoIterator for &'a HashTrieSet<T, H>
     }
 }
 
-impl<T, H> FromIterator<T> for HashTrieSet<T, H> where
+impl<T, H> FromIterator<T> for HashTrieSet<T, H>
+where
     T: Eq + Hash,
-    H: BuildHasher + Clone + Default {
+    H: BuildHasher + Clone + Default,
+{
     fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> HashTrieSet<T, H> {
         let mut map = HashTrieSet::new_with_hasher(Default::default());
 
@@ -233,28 +258,38 @@ pub mod serde {
     use std::fmt;
 
     impl<T, H> Serialize for HashTrieSet<T, H>
-        where T: Eq + Hash + Serialize,
-              H: BuildHasher + Clone + Default {
+    where
+        T: Eq + Hash + Serialize,
+        H: BuildHasher + Clone + Default,
+    {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             serializer.collect_seq(self)
         }
     }
 
     impl<'de, T, H> Deserialize<'de> for HashTrieSet<T, H>
-        where T: Eq + Hash + Deserialize<'de>,
-              H: BuildHasher + Clone + Default {
-        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<HashTrieSet<T, H>, D::Error> {
-            deserializer.deserialize_seq(HashTrieSetVisitor { phantom: PhantomData } )
+    where
+        T: Eq + Hash + Deserialize<'de>,
+        H: BuildHasher + Clone + Default,
+    {
+        fn deserialize<D: Deserializer<'de>>(
+            deserializer: D,
+        ) -> Result<HashTrieSet<T, H>, D::Error> {
+            deserializer.deserialize_seq(HashTrieSetVisitor {
+                phantom: PhantomData,
+            })
         }
     }
 
     struct HashTrieSetVisitor<T, H> {
-        phantom: PhantomData<(T, H)>
+        phantom: PhantomData<(T, H)>,
     }
 
     impl<'de, T, H> Visitor<'de> for HashTrieSetVisitor<T, H>
-        where T: Eq + Hash + Deserialize<'de>,
-              H: BuildHasher + Clone + Default {
+    where
+        T: Eq + Hash + Deserialize<'de>,
+        H: BuildHasher + Clone + Default,
+    {
         type Value = HashTrieSet<T, H>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -262,7 +297,9 @@ pub mod serde {
         }
 
         fn visit_seq<A>(self, mut seq: A) -> Result<HashTrieSet<T, H>, A::Error>
-            where A: SeqAccess<'de> {
+        where
+            A: SeqAccess<'de>,
+        {
             let mut hashtrieset = HashTrieSet::new_with_hasher(Default::default());
 
             while let Some(value) = seq.next_element()? {

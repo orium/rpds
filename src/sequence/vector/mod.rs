@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::borrow::Borrow;
 use std::fmt::Display;
 use std::cmp::Ordering;
-use std::hash::{Hasher, Hash};
+use std::hash::{Hash, Hasher};
 use std::ops::Index;
 use std::iter::FromIterator;
 use std::mem::size_of;
@@ -95,8 +95,8 @@ macro_rules! vector {
 /// and [Understanding Persistent Vector Part 2](http://hypirion.com/musings/understanding-persistent-vector-pt-2).
 #[derive(Debug)]
 pub struct Vector<T> {
-    root: Arc<Node<T>>,
-    bits: u8,
+    root:   Arc<Node<T>>,
+    bits:   u8,
     length: usize,
 }
 
@@ -119,12 +119,11 @@ impl<T> Node<T> {
         let b = bucket(index, height);
 
         match *self {
-            Node::Branch(ref a) =>
-                a[b].get(index, height - 1, bucket),
+            Node::Branch(ref a) => a[b].get(index, height - 1, bucket),
             Node::Leaf(ref a) => {
                 debug_assert_eq!(height, 0);
                 a[b].as_ref()
-            },
+            }
         }
     }
 
@@ -134,7 +133,7 @@ impl<T> Node<T> {
         value: T,
         height: usize,
         bucket: F,
-        degree: usize
+        degree: usize,
     ) -> Node<T> {
         let b = bucket(index, height);
 
@@ -145,14 +144,13 @@ impl<T> Node<T> {
                 let new_a = a.cloned_set(b, Arc::new(value));
 
                 Node::Leaf(new_a)
-            },
+            }
 
             Node::Branch(ref a) => {
                 debug_assert!(height > 0, "cannot have a branch at this height");
 
                 let new_subtree = match a.get(b) {
-                    Some(subtree) =>
-                        subtree.assoc(index, value, height - 1, bucket, degree),
+                    Some(subtree) => subtree.assoc(index, value, height - 1, bucket, degree),
                     None => {
                         let subtree = if height > 1 {
                             Node::new_empty_branch()
@@ -161,13 +159,13 @@ impl<T> Node<T> {
                         };
 
                         subtree.assoc(index, value, height - 1, bucket, degree)
-                    },
+                    }
                 };
 
                 let new_a = a.cloned_set(b, Arc::new(new_subtree));
 
                 Node::Branch(new_a)
-            },
+            }
         }
     }
 
@@ -183,7 +181,7 @@ impl<T> Node<T> {
 
     fn used(&self) -> usize {
         match *self {
-            Node::Leaf(ref a)   => a.len(),
+            Node::Leaf(ref a) => a.len(),
             Node::Branch(ref a) => a.len(),
         }
     }
@@ -203,7 +201,7 @@ impl<T> Node<T> {
                 let new_a = a.cloned_remove_last();
 
                 Node::Leaf(new_a)
-            },
+            }
 
             Node::Branch(ref a) => {
                 let last = a.last().unwrap();
@@ -214,10 +212,14 @@ impl<T> Node<T> {
                 };
 
                 Node::Branch(new_a)
-            },
+            }
         };
 
-        if new_node.is_empty() { None } else { Some(new_node) }
+        if new_node.is_empty() {
+            None
+        } else {
+            Some(new_node)
+        }
     }
 }
 
@@ -225,7 +227,7 @@ impl<T> Clone for Node<T> {
     fn clone(&self) -> Node<T> {
         match *self {
             Node::Branch(ref a) => Node::Branch(Vec::clone(a)),
-            Node::Leaf(ref a)   => Node::Leaf(Vec::clone(a)),
+            Node::Leaf(ref a) => Node::Leaf(Vec::clone(a)),
         }
     }
 }
@@ -241,7 +243,7 @@ impl<T> Vector<T> {
         Vector {
             root: Arc::new(Node::new_empty_leaf()),
             bits,
-            length: 0
+            length: 0,
         }
     }
 
@@ -289,7 +291,9 @@ impl<T> Vector<T> {
         if index >= self.length {
             None
         } else {
-            Some(self.root.get(index, self.height(), |index, height| self.bucket(index, height)))
+            Some(self.root.get(index, self.height(), |index, height| {
+                self.bucket(index, height)
+            }))
         }
     }
 
@@ -313,15 +317,17 @@ impl<T> Vector<T> {
         );
 
         let new_root: Node<T> = self.root.assoc(
-            index, v, self.height(),
+            index,
+            v,
+            self.height(),
             |index, height| self.bucket(index, height),
-            self.degree()
+            self.degree(),
         );
         let adds_item: bool = index >= self.length;
 
         Vector {
-            root: Arc::new(new_root),
-            bits: self.bits,
+            root:   Arc::new(new_root),
+            bits:   self.bits,
             length: self.length + if adds_item { 1 } else { 0 },
         }
     }
@@ -349,17 +355,17 @@ impl<T> Vector<T> {
 
             match new_root {
                 Node::Branch(ref mut values) => values.push(Arc::clone(&self.root)),
-                _ => unreachable!("expected a branch")
+                _ => unreachable!("expected a branch"),
             }
 
             let new_vector = Vector {
-                root: Arc::new(new_root),
-                bits: self.bits,
+                root:   Arc::new(new_root),
+                bits:   self.bits,
                 length: self.length + 1,
             };
 
             new_vector.assoc(self.length, v)
-        } else  {
+        } else {
             self.assoc(self.length, v)
         }
     }
@@ -370,17 +376,16 @@ impl<T> Vector<T> {
     /// The trie must always have a compressed root.
     fn compress_root(root: Node<T>) -> Node<T> {
         match root {
-            leaf@Node::Leaf(_) => leaf,
-            branch@Node::Branch(_) =>
-                if branch.is_singleton() {
-                    if let Node::Branch(a) = branch {
-                        Node::clone(a[0].as_ref())
-                    } else {
-                        unreachable!()
-                    }
+            leaf @ Node::Leaf(_) => leaf,
+            branch @ Node::Branch(_) => if branch.is_singleton() {
+                if let Node::Branch(a) = branch {
+                    Node::clone(a[0].as_ref())
                 } else {
-                    branch
+                    unreachable!()
                 }
+            } else {
+                branch
+            },
         }
     }
 
@@ -395,8 +400,8 @@ impl<T> Vector<T> {
                 let new_root: Node<T> = Vector::compress_root(root);
 
                 Vector {
-                    root: Arc::new(new_root),
-                    bits: self.bits,
+                    root:   Arc::new(new_root),
+                    bits:   self.bits,
                     length: self.length - 1,
                 }
             }
@@ -474,15 +479,17 @@ impl<T: Hash> Hash for Vector<T> {
 impl<T> Clone for Vector<T> {
     fn clone(&self) -> Vector<T> {
         Vector {
-            root: Arc::clone(&self.root),
-            bits: self.bits,
+            root:   Arc::clone(&self.root),
+            bits:   self.bits,
             length: self.length,
         }
     }
 }
 
 impl<T> Display for Vector<T>
-    where T: Display {
+where
+    T: Display,
+{
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         let mut first = true;
 
@@ -532,7 +539,7 @@ pub struct IterArc<'a, T: 'a> {
 }
 
 struct IterStackElement<'a, T: 'a> {
-    node: &'a Node<T>,
+    node:  &'a Node<T>,
     index: isize,
 }
 
@@ -540,7 +547,11 @@ impl<'a, T> IterStackElement<'a, T> {
     fn new(node: &Node<T>, backwards: bool) -> IterStackElement<T> {
         IterStackElement {
             node,
-            index: if backwards { node.used() as isize - 1 } else { 0 },
+            index: if backwards {
+                node.used() as isize - 1
+            } else {
+                0
+            },
         }
     }
 
@@ -576,7 +587,7 @@ impl<'a, T> IterArc<'a, T> {
         IterArc {
             vector,
 
-            stack_forward:  None,
+            stack_forward: None,
             stack_backward: None,
 
             left_index: 0,
@@ -630,7 +641,7 @@ impl<'a, T> IterArc<'a, T> {
 
                     IterArc::dig(stack, backwards);
                 }
-            },
+            }
             None => (), // Reached the end.  Nothing to do.
         }
     }
@@ -721,25 +732,33 @@ pub mod serde {
     use std::fmt;
 
     impl<T> Serialize for Vector<T>
-        where T: Serialize {
+    where
+        T: Serialize,
+    {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             serializer.collect_seq(self)
         }
     }
 
     impl<'de, T> Deserialize<'de> for Vector<T>
-        where T: Deserialize<'de> {
+    where
+        T: Deserialize<'de>,
+    {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Vector<T>, D::Error> {
-            deserializer.deserialize_seq(VectorVisitor { phantom: PhantomData } )
+            deserializer.deserialize_seq(VectorVisitor {
+                phantom: PhantomData,
+            })
         }
     }
 
     struct VectorVisitor<T> {
-        phantom: PhantomData<T>
+        phantom: PhantomData<T>,
     }
 
     impl<'de, T> Visitor<'de> for VectorVisitor<T>
-        where T: Deserialize<'de> {
+    where
+        T: Deserialize<'de>,
+    {
         type Value = Vector<T>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -747,7 +766,9 @@ pub mod serde {
         }
 
         fn visit_seq<A>(self, mut seq: A) -> Result<Vector<T>, A::Error>
-            where A: SeqAccess<'de> {
+        where
+            A: SeqAccess<'de>,
+        {
             let mut vector = Vector::new();
 
             while let Some(value) = seq.next_element()? {

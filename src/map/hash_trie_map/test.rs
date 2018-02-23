@@ -12,24 +12,27 @@ mod bucket {
     fn test_list_remove_first() -> () {
         use self::bucket_utils::list_remove_first;
 
-        let list_a_b_c = List::new()
-            .push_front('c')
-            .push_front('b')
-            .push_front('a');
-        let list_b_c = List::new()
-            .push_front('c')
-            .push_front('b');
-        let list_a_c = List::new()
-            .push_front('c')
-            .push_front('a');
-        let list_a_b = List::new()
-            .push_front('b')
-            .push_front('a');
+        let list_a_b_c = List::new().push_front('c').push_front('b').push_front('a');
+        let list_b_c = List::new().push_front('c').push_front('b');
+        let list_a_c = List::new().push_front('c').push_front('a');
+        let list_a_b = List::new().push_front('b').push_front('a');
 
-        assert_eq!(list_remove_first(&list_a_b_c, |_| false), (list_a_b_c.clone(), false));
-        assert_eq!(list_remove_first(&list_a_b_c, |c| *c == 'a'), (list_b_c, true));
-        assert_eq!(list_remove_first(&list_a_b_c, |c| *c == 'b'), (list_a_c, true));
-        assert_eq!(list_remove_first(&list_a_b_c, |c| *c == 'c'), (list_a_b, true));
+        assert_eq!(
+            list_remove_first(&list_a_b_c, |_| false),
+            (list_a_b_c.clone(), false)
+        );
+        assert_eq!(
+            list_remove_first(&list_a_b_c, |c| *c == 'a'),
+            (list_b_c, true)
+        );
+        assert_eq!(
+            list_remove_first(&list_a_b_c, |c| *c == 'b'),
+            (list_a_c, true)
+        );
+        assert_eq!(
+            list_remove_first(&list_a_b_c, |c| *c == 'c'),
+            (list_a_b, true)
+        );
     }
 
     #[test]
@@ -44,14 +47,23 @@ mod bucket {
         let bucket_collision = Bucket::Collision(
             List::new()
                 .push_front(EntryWithHash::clone(&entry_a))
-                .push_front(EntryWithHash::clone(&entry_b))
+                .push_front(EntryWithHash::clone(&entry_b)),
         );
 
-        assert_eq!(bucket_single.get(entry_a.key(), entry_a.key_hash), Some(entry_a.borrow()));
+        assert_eq!(
+            bucket_single.get(entry_a.key(), entry_a.key_hash),
+            Some(entry_a.borrow())
+        );
         assert_eq!(bucket_single.get(entry_b.key(), entry_b.key_hash), None);
 
-        assert_eq!(bucket_collision.get(entry_a.key(), entry_a.key_hash), Some(entry_a.borrow()));
-        assert_eq!(bucket_collision.get(entry_b.key(), entry_b.key_hash), Some(entry_b.borrow()));
+        assert_eq!(
+            bucket_collision.get(entry_a.key(), entry_a.key_hash),
+            Some(entry_a.borrow())
+        );
+        assert_eq!(
+            bucket_collision.get(entry_b.key(), entry_b.key_hash),
+            Some(entry_b.borrow())
+        );
         assert_eq!(bucket_collision.get(entry_c.key(), entry_c.key_hash), None);
     }
 
@@ -59,38 +71,38 @@ mod bucket {
     fn test_insert() -> () {
         let hash_builder = RandomState::new();
 
-        let entry_a  = EntryWithHash::new(0xAu8, 0, &hash_builder);
+        let entry_a = EntryWithHash::new(0xAu8, 0, &hash_builder);
         let entry_a9 = EntryWithHash::new(0xAu8, 9, &hash_builder);
-        let entry_b  = EntryWithHash::new(0xBu8, 1, &hash_builder);
+        let entry_b = EntryWithHash::new(0xBu8, 1, &hash_builder);
         let entry_b9 = EntryWithHash::new(0xBu8, 9, &hash_builder);
-        let entry_c  = EntryWithHash::new(0xCu8, 2, &hash_builder);
-        let entry_d  = EntryWithHash::new(0xDu8, 2, &hash_builder);
+        let entry_c = EntryWithHash::new(0xCu8, 2, &hash_builder);
+        let entry_d = EntryWithHash::new(0xDu8, 2, &hash_builder);
 
         let bucket_single_a = Bucket::Single(EntryWithHash::clone(&entry_a));
         let bucket_single_a9 = Bucket::Single(EntryWithHash::clone(&entry_a9));
         let bucket_collision_b_a = Bucket::Collision(
             List::new()
                 .push_front(EntryWithHash::clone(&entry_a))
-                .push_front(EntryWithHash::clone(&entry_b))
+                .push_front(EntryWithHash::clone(&entry_b)),
         );
         let bucket_collision_a_b_c = Bucket::Collision(
             List::new()
                 .push_front(EntryWithHash::clone(&entry_c))
                 .push_front(EntryWithHash::clone(&entry_b))
-                .push_front(EntryWithHash::clone(&entry_a))
+                .push_front(EntryWithHash::clone(&entry_a)),
         );
         let bucket_collision_b9_a_c = Bucket::Collision(
             List::new()
                 .push_front(EntryWithHash::clone(&entry_c))
                 .push_front(EntryWithHash::clone(&entry_a))
-                .push_front(EntryWithHash::clone(&entry_b9))
+                .push_front(EntryWithHash::clone(&entry_b9)),
         );
         let bucket_collision_d_a_b_c = Bucket::Collision(
             List::new()
                 .push_front(EntryWithHash::clone(&entry_c))
                 .push_front(EntryWithHash::clone(&entry_b))
                 .push_front(EntryWithHash::clone(&entry_a))
-                .push_front(EntryWithHash::clone(&entry_d))
+                .push_front(EntryWithHash::clone(&entry_d)),
         );
 
         // Note that we care about the position of the inserted entry: we want it to be in the
@@ -98,40 +110,64 @@ mod bucket {
         // `get()` will try to match according to the list order).  The order of the rest of the
         // list must be preserved for the same reason.
 
-        assert_eq!(bucket_single_a.insert(entry_a9.clone()), (bucket_single_a9, false));
-        assert_eq!(bucket_single_a.insert(entry_b.clone()), (bucket_collision_b_a, true));
+        assert_eq!(
+            bucket_single_a.insert(entry_a9.clone()),
+            (bucket_single_a9, false)
+        );
+        assert_eq!(
+            bucket_single_a.insert(entry_b.clone()),
+            (bucket_collision_b_a, true)
+        );
 
-        assert_eq!(bucket_collision_a_b_c.insert(entry_b9.clone()), (bucket_collision_b9_a_c, false));
-        assert_eq!(bucket_collision_a_b_c.insert(entry_d.clone()), (bucket_collision_d_a_b_c, true));
+        assert_eq!(
+            bucket_collision_a_b_c.insert(entry_b9.clone()),
+            (bucket_collision_b9_a_c, false)
+        );
+        assert_eq!(
+            bucket_collision_a_b_c.insert(entry_d.clone()),
+            (bucket_collision_d_a_b_c, true)
+        );
     }
 
     #[test]
     fn test_remove() -> () {
         let hash_builder = RandomState::new();
 
-        let entry_a  = EntryWithHash::new(0xAu8, 0, &hash_builder);
-        let entry_b  = EntryWithHash::new(0xBu8, 1, &hash_builder);
-        let entry_c  = EntryWithHash::new(0xCu8, 2, &hash_builder);
-        let entry_d  = EntryWithHash::new(0xDu8, 2, &hash_builder);
+        let entry_a = EntryWithHash::new(0xAu8, 0, &hash_builder);
+        let entry_b = EntryWithHash::new(0xBu8, 1, &hash_builder);
+        let entry_c = EntryWithHash::new(0xCu8, 2, &hash_builder);
+        let entry_d = EntryWithHash::new(0xDu8, 2, &hash_builder);
 
         let bucket_single_a = Bucket::Single(EntryWithHash::clone(&entry_a));
         let bucket_collision_b_c = Bucket::Collision(
             List::new()
                 .push_front(EntryWithHash::clone(&entry_c))
-                .push_front(EntryWithHash::clone(&entry_b))
+                .push_front(EntryWithHash::clone(&entry_b)),
         );
         let bucket_collision_a_b_c = Bucket::Collision(
             List::new()
                 .push_front(EntryWithHash::clone(&entry_c))
                 .push_front(EntryWithHash::clone(&entry_b))
-                .push_front(EntryWithHash::clone(&entry_a))
+                .push_front(EntryWithHash::clone(&entry_a)),
         );
 
-        assert_eq!(bucket_single_a.remove(entry_a.key(), entry_a.key_hash), (None, true));
-        assert_eq!(bucket_single_a.remove(entry_b.key(), entry_b.key_hash), (Some(bucket_single_a), false));
+        assert_eq!(
+            bucket_single_a.remove(entry_a.key(), entry_a.key_hash),
+            (None, true)
+        );
+        assert_eq!(
+            bucket_single_a.remove(entry_b.key(), entry_b.key_hash),
+            (Some(bucket_single_a), false)
+        );
 
-        assert_eq!(bucket_collision_a_b_c.remove(entry_a.key(), entry_a.key_hash), (Some(bucket_collision_b_c), true));
-        assert_eq!(bucket_collision_a_b_c.remove(entry_d.key(), entry_d.key_hash), (Some(bucket_collision_a_b_c), false));
+        assert_eq!(
+            bucket_collision_a_b_c.remove(entry_a.key(), entry_a.key_hash),
+            (Some(bucket_collision_b_c), true)
+        );
+        assert_eq!(
+            bucket_collision_a_b_c.remove(entry_d.key(), entry_d.key_hash),
+            (Some(bucket_collision_a_b_c), false)
+        );
     }
 }
 
@@ -151,9 +187,7 @@ mod hasher_mocks {
 
     impl MockedHashBuilder {
         pub fn new(byte_map: HashMap<u8, HashValue>) -> MockedHashBuilder {
-            MockedHashBuilder {
-                byte_map
-            }
+            MockedHashBuilder { byte_map }
         }
     }
 
@@ -169,7 +203,7 @@ mod hasher_mocks {
         fn build_hasher(&self) -> MockedHasher {
             MockedHasher {
                 last_byte: None,
-                byte_map: self.byte_map.clone(),
+                byte_map:  self.byte_map.clone(),
             }
         }
     }
@@ -186,11 +220,11 @@ mod hasher_mocks {
 
     pub struct LimitedHashSpaceHashBuilder {
         inner_hash_builder: RandomState,
-        hash_space_size: usize,
+        hash_space_size:    usize,
     }
 
     pub struct LimitedHashSpaceHasher {
-        inner_hasher: ::std::collections::hash_map::DefaultHasher,
+        inner_hasher:    ::std::collections::hash_map::DefaultHasher,
         hash_space_size: usize,
     }
 
@@ -207,7 +241,7 @@ mod hasher_mocks {
         fn clone(&self) -> LimitedHashSpaceHashBuilder {
             LimitedHashSpaceHashBuilder {
                 inner_hash_builder: self.inner_hash_builder.clone(),
-                hash_space_size: self.hash_space_size,
+                hash_space_size:    self.hash_space_size,
             }
         }
     }
@@ -217,7 +251,7 @@ mod hasher_mocks {
 
         fn build_hasher(&self) -> LimitedHashSpaceHasher {
             LimitedHashSpaceHasher {
-                inner_hasher: self.inner_hash_builder.build_hasher(),
+                inner_hasher:    self.inner_hash_builder.build_hasher(),
                 hash_space_size: self.hash_space_size,
             }
         }
@@ -274,7 +308,9 @@ mod node {
             (0x0, 0b_0000_1000 | (0b0111 << 60)),
             (0x1, 0b_0000_0110 | (0b0101 << 60)),
             (0x2, 0b_0000_1111 | (0b0111 << 60)),
-        ].iter().cloned().collect();
+        ].iter()
+            .cloned()
+            .collect();
 
         MockedHashBuilder::new(hash_mapping)
     }
@@ -312,30 +348,25 @@ mod node {
         let entry_d = EntryWithHash::new(0xDu8, 3, &hash_builder);
         let entry_e = EntryWithHash::new(0xEu8, 4, &hash_builder);
 
-        let bucket_a  = Bucket::Single(entry_a);
-        let bucket_b  = Bucket::Single(entry_b);
-        let bucket_c  = Bucket::Single(entry_c);
+        let bucket_a = Bucket::Single(entry_a);
+        let bucket_b = Bucket::Single(entry_b);
+        let bucket_c = Bucket::Single(entry_c);
         let bucket_de = Bucket::Collision(List::new().push_front(entry_d).push_front(entry_e));
 
         let node_depth_1_first = Node::Branch(
             SparseArrayUsize::new()
                 .set(1, Arc::new(Node::Leaf(bucket_b)))
-                .set(2, Arc::new(Node::Leaf(bucket_a)))
+                .set(2, Arc::new(Node::Leaf(bucket_a))),
         );
 
-        let node_maximum_depth = Node::Branch(
-            SparseArrayUsize::new()
-                .set(7, Arc::new(Node::Leaf(bucket_de)))
-        );
+        let node_maximum_depth =
+            Node::Branch(SparseArrayUsize::new().set(7, Arc::new(Node::Leaf(bucket_de))));
 
         let maximum_depth_branch = {
             let mut branch = node_maximum_depth;
 
             for _ in 0..14 {
-                branch = Node::Branch(
-                    SparseArrayUsize::new()
-                        .set(0, Arc::new(branch))
-                );
+                branch = Node::Branch(SparseArrayUsize::new().set(0, Arc::new(branch)));
             }
 
             branch
@@ -345,7 +376,7 @@ mod node {
             SparseArrayUsize::new()
                 .set(2, Arc::new(Node::Leaf(bucket_c)))
                 .set(6, Arc::new(node_depth_1_first))
-                .set(8, Arc::new(maximum_depth_branch))
+                .set(8, Arc::new(maximum_depth_branch)),
         );
 
         HashTrieMap {
@@ -381,8 +412,7 @@ mod node {
 
     #[test]
     fn test_insert() -> () {
-        let mut map =
-            HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16);
+        let mut map = HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16);
 
         assert_eq!(map.size(), 0);
 
@@ -426,102 +456,107 @@ mod node {
         let bucket_a = Bucket::Single(entry_a.clone());
         let bucket_b = Bucket::Single(entry_b.clone());
         let bucket_a_b = Bucket::Collision(
-            List::new().push_front(entry_b.clone()).push_front(entry_a.clone())
+            List::new()
+                .push_front(entry_b.clone())
+                .push_front(entry_a.clone()),
         );
 
         let empty_branch = Node::<u8, i32>::new_empty_branch();
         let branch_with_collision = {
-            let array =
-                SparseArrayUsize::new()
-                    .set(4, Arc::new(Node::Leaf(bucket_a_b.clone())));
+            let array = SparseArrayUsize::new().set(4, Arc::new(Node::Leaf(bucket_a_b.clone())));
 
             Arc::new(Node::Branch(array))
         };
         let branch_with_two_subtrees = {
-            let array =
-                SparseArrayUsize::new()
-                    .set(4, Arc::new(Node::Leaf(bucket_a.clone())))
-                    .set(7, Arc::new(Node::Leaf(bucket_b.clone())));
+            let array = SparseArrayUsize::new()
+                .set(4, Arc::new(Node::Leaf(bucket_a.clone())))
+                .set(7, Arc::new(Node::Leaf(bucket_b.clone())));
 
             Arc::new(Node::Branch(array))
         };
         let branch_with_single_bucket = {
-            let array =
-                SparseArrayUsize::new()
-                    .set(4, Arc::new(Node::Leaf(bucket_a.clone())));
+            let array = SparseArrayUsize::new().set(4, Arc::new(Node::Leaf(bucket_a.clone())));
 
             Node::Branch(array)
         };
-        let branch_with_branch= {
+        let branch_with_branch = {
             let array =
-                SparseArrayUsize::new()
-                    .set(4, Arc::new(Node::<u8, i32>::new_empty_branch()));
+                SparseArrayUsize::new().set(4, Arc::new(Node::<u8, i32>::new_empty_branch()));
 
             Arc::new(Node::Branch(array))
         };
-        let leaf_with_single_bucket_a =
-            Arc::new(Node::Leaf(bucket_a.clone()));
-        let leaf_with_collision_bucket_a_b =
-            Arc::new(Node::Leaf(bucket_a_b.clone()));
+        let leaf_with_single_bucket_a = Arc::new(Node::Leaf(bucket_a.clone()));
+        let leaf_with_collision_bucket_a_b = Arc::new(Node::Leaf(bucket_a_b.clone()));
 
         assert_eq!(Node::clone(&empty_branch).compress(), None);
-        assert_eq!(Node::clone(&branch_with_collision).compress(), Some(branch_with_collision));
-        assert_eq!(Node::clone(&branch_with_two_subtrees).compress(), Some(branch_with_two_subtrees));
-        assert_eq!(Node::clone(&branch_with_single_bucket).compress(), Some(leaf_with_single_bucket_a.clone()));
-        assert_eq!(Node::clone(&branch_with_branch).compress(), Some(branch_with_branch));
+        assert_eq!(
+            Node::clone(&branch_with_collision).compress(),
+            Some(branch_with_collision)
+        );
+        assert_eq!(
+            Node::clone(&branch_with_two_subtrees).compress(),
+            Some(branch_with_two_subtrees)
+        );
+        assert_eq!(
+            Node::clone(&branch_with_single_bucket).compress(),
+            Some(leaf_with_single_bucket_a.clone())
+        );
+        assert_eq!(
+            Node::clone(&branch_with_branch).compress(),
+            Some(branch_with_branch)
+        );
 
-        assert_eq!(Node::clone(&leaf_with_single_bucket_a).compress(), Some(leaf_with_single_bucket_a));
-        assert_eq!(Node::clone(&leaf_with_collision_bucket_a_b).compress(), Some(leaf_with_collision_bucket_a_b));
+        assert_eq!(
+            Node::clone(&leaf_with_single_bucket_a).compress(),
+            Some(leaf_with_single_bucket_a)
+        );
+        assert_eq!(
+            Node::clone(&leaf_with_collision_bucket_a_b).compress(),
+            Some(leaf_with_collision_bucket_a_b)
+        );
     }
 
     #[test]
     fn test_remove() -> () {
         // This test assumes that `insert()` works correctly.
-        let map_a_b_c_d_e =
-            HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16)
-                .insert(0xA, 0)
-                .insert(0xB, 1)
-                .insert(0xC, 2)
-                .insert(0xD, 3)
-                .insert(0xE, 4);
-        let map_a_b_d_e =
-            HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16)
-                .insert(0xA, 0)
-                .insert(0xB, 1)
-                .insert(0xD, 3)
-                .insert(0xE, 4);
-        let map_a_c_d_e =
-            HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16)
-                .insert(0xA, 0)
-                .insert(0xC, 2)
-                .insert(0xD, 3)
-                .insert(0xE, 4);
-        let map_c_d_e =
-            HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16)
-                .insert(0xC, 2)
-                .insert(0xD, 3)
-                .insert(0xE, 4);
-        let map_a_b_c_e =
-            HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16)
-                .insert(0xA, 0)
-                .insert(0xB, 1)
-                .insert(0xC, 2)
-                .insert(0xE, 4);
-        let map_a_b_c =
-            HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16)
-                .insert(0xA, 0)
-                .insert(0xB, 1)
-                .insert(0xC, 2);
-        let map_empty =
-            HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16);
+        let map_a_b_c_d_e = HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16)
+            .insert(0xA, 0)
+            .insert(0xB, 1)
+            .insert(0xC, 2)
+            .insert(0xD, 3)
+            .insert(0xE, 4);
+        let map_a_b_d_e = HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16)
+            .insert(0xA, 0)
+            .insert(0xB, 1)
+            .insert(0xD, 3)
+            .insert(0xE, 4);
+        let map_a_c_d_e = HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16)
+            .insert(0xA, 0)
+            .insert(0xC, 2)
+            .insert(0xD, 3)
+            .insert(0xE, 4);
+        let map_c_d_e = HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16)
+            .insert(0xC, 2)
+            .insert(0xD, 3)
+            .insert(0xE, 4);
+        let map_a_b_c_e = HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16)
+            .insert(0xA, 0)
+            .insert(0xB, 1)
+            .insert(0xC, 2)
+            .insert(0xE, 4);
+        let map_a_b_c = HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16)
+            .insert(0xA, 0)
+            .insert(0xB, 1)
+            .insert(0xC, 2);
+        let map_empty = HashTrieMap::new_with_hasher_and_degree(dummy_hash_builder(), 16);
 
         // Just a sanity check.
         assert_eq!(map_a_b_c_d_e.root, dummy_hash_trie_map().root);
 
-        let removed_c   = map_a_b_c_d_e.remove(&0xC);
-        let removed_b   = map_a_b_c_d_e.remove(&0xB);
+        let removed_c = map_a_b_c_d_e.remove(&0xC);
+        let removed_b = map_a_b_c_d_e.remove(&0xB);
         let removed_b_a = map_a_b_c_d_e.remove(&0xB).remove(&0xA);
-        let removed_d   = map_a_b_c_d_e.remove(&0xD);
+        let removed_d = map_a_b_c_d_e.remove(&0xD);
         let removed_d_e = map_a_b_c_d_e.remove(&0xD).remove(&0xE);
         let removed_all = map_a_b_c_d_e
             .remove(&0xA)
@@ -530,10 +565,10 @@ mod node {
             .remove(&0xD)
             .remove(&0xE);
 
-        assert_eq!(removed_c.root,   map_a_b_d_e.root);
-        assert_eq!(removed_b.root,   map_a_c_d_e.root);
+        assert_eq!(removed_c.root, map_a_b_d_e.root);
+        assert_eq!(removed_b.root, map_a_c_d_e.root);
         assert_eq!(removed_b_a.root, map_c_d_e.root);
-        assert_eq!(removed_d.root,   map_a_b_c_e.root);
+        assert_eq!(removed_d.root, map_a_b_c_e.root);
         assert_eq!(removed_d_e.root, map_a_b_c.root);
         assert_eq!(removed_all.root, map_empty.root);
 
@@ -604,18 +639,14 @@ mod iter {
             .collect();
 
         for degree in degrees {
-            let hasher =
-                hasher_mocks::LimitedHashSpaceHashBuilder::new(1000);
+            let hasher = hasher_mocks::LimitedHashSpaceHashBuilder::new(1000);
             iterator_test(HashTrieMap::new_with_hasher_and_degree(hasher, degree));
         }
     }
 
     #[test]
     fn test_iter_size_hint() -> () {
-        let map = HashTrieMap::new()
-            .insert(0, 10)
-            .insert(1, 11)
-            .insert(2, 12);
+        let map = HashTrieMap::new().insert(0, 10).insert(1, 11).insert(2, 12);
         let mut iterator = map.iter();
 
         assert_eq!(iterator.size_hint(), (3, Some(3)));
@@ -635,10 +666,7 @@ mod iter {
 
     #[test]
     fn test_iter_keys() -> () {
-        let map = HashTrieMap::new()
-            .insert(0, 10)
-            .insert(1, 11)
-            .insert(2, 12);
+        let map = HashTrieMap::new().insert(0, 10).insert(1, 11).insert(2, 12);
 
         let mut touched = vec![false; 3];
 
@@ -652,10 +680,7 @@ mod iter {
 
     #[test]
     fn test_iter_values() -> () {
-        let map = HashTrieMap::new()
-            .insert(10, 0)
-            .insert(11, 1)
-            .insert(12, 2);
+        let map = HashTrieMap::new().insert(10, 0).insert(11, 1).insert(12, 2);
 
         let mut touched = vec![false; 3];
 
@@ -669,10 +694,7 @@ mod iter {
 
     #[test]
     fn test_into_iterator() -> () {
-        let map = HashTrieMap::new()
-            .insert(0, 10)
-            .insert(1, 11)
-            .insert(2, 12);
+        let map = HashTrieMap::new().insert(0, 10).insert(1, 11).insert(2, 12);
         let mut left = 3;
 
         for _ in &map {
@@ -700,12 +722,8 @@ mod compile_time {
 
 #[test]
 fn test_macro_ht_map() -> () {
-    let set_1 = HashTrieMap::new()
-        .insert(1, 2);
-    let set_1_2_3 = HashTrieMap::new()
-        .insert(1, 2)
-        .insert(2, 3)
-        .insert(3, 4);
+    let set_1 = HashTrieMap::new().insert(1, 2);
+    let set_1_2_3 = HashTrieMap::new().insert(1, 2).insert(2, 3).insert(3, 4);
 
     assert_eq!(HashTrieMap::<u32, u32>::new(), ht_map![]);
     assert_eq!(set_1, ht_map![1 => 2]);
@@ -787,8 +805,7 @@ fn test_insert_high_collision() -> () {
         .collect();
 
     for degree in degrees {
-        let hasher =
-            hasher_mocks::LimitedHashSpaceHashBuilder::new(1000);
+        let hasher = hasher_mocks::LimitedHashSpaceHashBuilder::new(1000);
         insert_test(HashTrieMap::new_with_hasher_and_degree(hasher, degree));
     }
 }
@@ -883,18 +900,14 @@ fn test_remove_high_collision() -> () {
         .collect();
 
     for degree in degrees {
-        let hasher =
-            hasher_mocks::LimitedHashSpaceHashBuilder::new(1000);
+        let hasher = hasher_mocks::LimitedHashSpaceHashBuilder::new(1000);
         remove_test(HashTrieMap::new_with_hasher_and_degree(hasher, degree));
     }
 }
 
 #[test]
 fn test_index() -> () {
-    let map =
-        HashTrieMap::new()
-            .insert(5, "hello")
-            .insert(12, "there");
+    let map = HashTrieMap::new().insert(5, "hello").insert(12, "there");
 
     assert_eq!(map[&5], "hello");
     assert_eq!(map[&12], "there");
@@ -904,10 +917,7 @@ fn test_index() -> () {
 fn test_from_iterator() -> () {
     let vec: Vec<(i32, &str)> = vec![(2, "two"), (5, "five")];
     let map: HashTrieMap<i32, &str> = vec.iter().map(|v| *v).collect();
-    let expected_map =
-        HashTrieMap::new()
-            .insert(2, "two")
-            .insert(5, "five");
+    let expected_map = HashTrieMap::new().insert(2, "two").insert(5, "five");
 
     assert_eq!(map, expected_map);
 }
@@ -923,32 +933,26 @@ fn test_default() -> () {
 #[test]
 fn test_display() -> () {
     let empty_map: HashTrieMap<i32, i32> = HashTrieMap::new();
-    let singleton_map = HashTrieMap::new()
-        .insert("hi", "hello");
-    let map = HashTrieMap::new()
-        .insert(5, "hello")
-        .insert(12, "there");
+    let singleton_map = HashTrieMap::new().insert("hi", "hello");
+    let map = HashTrieMap::new().insert(5, "hello").insert(12, "there");
 
     assert_eq!(format!("{}", empty_map), "{}");
     assert_eq!(format!("{}", singleton_map), "{hi: hello}");
-    assert!(format!("{}", map) == "{5: hello, 12: there}" || format!("{}", map) == "{12: there, 5: hello}");
+    assert!(
+        format!("{}", map) == "{5: hello, 12: there}"
+            || format!("{}", map) == "{12: there, 5: hello}"
+    );
 }
 
 #[test]
 fn test_eq() -> () {
-    let map_1 = HashTrieMap::new()
-        .insert("a", 0xa)
-        .insert("b", 0xb);
-    let map_1_prime = HashTrieMap::new()
-        .insert("a", 0xa)
-        .insert("b", 0xb);
+    let map_1 = HashTrieMap::new().insert("a", 0xa).insert("b", 0xb);
+    let map_1_prime = HashTrieMap::new().insert("a", 0xa).insert("b", 0xb);
     let map_1_prime_2 = HashTrieMap::new()
         .insert("a", 0xa)
         .insert("b", 0xb)
         .insert("b", 0xb);
-    let map_2 = HashTrieMap::new()
-        .insert("a", 0xa)
-        .insert("b", 0xb + 1);
+    let map_2 = HashTrieMap::new().insert("a", 0xa).insert("b", 0xb + 1);
     let map_3 = HashTrieMap::new()
         .insert("a", 0xa)
         .insert("b", 0xb + 1)
@@ -966,10 +970,7 @@ fn test_eq() -> () {
 
 #[test]
 fn test_clone() -> () {
-    let map =
-        HashTrieMap::new()
-            .insert("hello", 4)
-            .insert("there", 5);
+    let map = HashTrieMap::new().insert("hello", 4).insert("there", 5);
     let clone = map.clone();
 
     assert_eq!(clone.size(), map.size());
@@ -980,9 +981,10 @@ fn test_clone() -> () {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() -> () {
-    use bincode::{serialize, deserialize};
-    let hashtriemap: HashTrieMap<i32, i32> = HashTrieMap::from_iter(vec![(5,6),(7,8),(9,10),(11,12)].into_iter());
-    let encoded = serialize(&hashtriemap).unwrap();
+    use bincode::{deserialize, serialize};
+    let map: HashTrieMap<i32, i32> = ht_map![5 => 6, 7 => 8, 9 => 10, 11 => 12];
+    let encoded = serialize(&map).unwrap();
     let decoded: HashTrieMap<i32, i32> = deserialize(&encoded).unwrap();
-    assert_eq!(hashtriemap, decoded);
+
+    assert_eq!(map, decoded);
 }

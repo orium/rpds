@@ -14,7 +14,7 @@ mod utils;
 use rpds::HashTrieMap;
 use utils::BencherNoDrop;
 use utils::iterations;
-use bencher::{Bencher, black_box};
+use bencher::{black_box, Bencher};
 
 fn hash_trie_map_insert(bench: &mut Bencher) -> () {
     let limit = iterations(100_000);
@@ -81,6 +81,9 @@ fn hash_trie_map_iterate(bench: &mut Bencher) -> () {
 
 benchmark_group!(
     benches,
-    hash_trie_map_insert, hash_trie_map_remove, hash_trie_map_get, hash_trie_map_iterate
+    hash_trie_map_insert,
+    hash_trie_map_remove,
+    hash_trie_map_get,
+    hash_trie_map_iterate
 );
 benchmark_main!(benches);

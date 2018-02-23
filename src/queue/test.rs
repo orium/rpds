@@ -10,10 +10,7 @@ mod lazily_reversed_list_iter {
 
     #[test]
     fn test_iter() -> () {
-        let list = List::new()
-            .push_front(2)
-            .push_front(1)
-            .push_front(0);
+        let list = List::new().push_front(2).push_front(1).push_front(0);
         let mut iterator = LazilyReversedListIter::new(&list);
 
         assert_eq!(iterator.next().map(|v| **v), Some(2));
@@ -29,10 +26,7 @@ mod lazily_reversed_list_iter {
 
     #[test]
     fn test_iter_size_hint() -> () {
-        let list = List::new()
-            .push_front(2)
-            .push_front(1)
-            .push_front(0);
+        let list = List::new().push_front(2).push_front(1).push_front(0);
         let mut iterator = LazilyReversedListIter::new(&list);
 
         assert_eq!(iterator.size_hint(), (3, Some(3)));
@@ -61,7 +55,8 @@ mod iter {
         let queue = Queue::new()
             .enqueue(0)
             .enqueue(1)
-            .dequeue().unwrap()
+            .dequeue()
+            .unwrap()
             .enqueue(2)
             .enqueue(3);
         let mut iterator = queue.iter();
@@ -77,7 +72,8 @@ mod iter {
         let queue = Queue::new()
             .enqueue(0)
             .enqueue(1)
-            .dequeue().unwrap()
+            .dequeue()
+            .unwrap()
             .enqueue(2)
             .enqueue(3);
         let mut iterator = queue.iter();
@@ -102,7 +98,8 @@ mod iter {
         let queue = Queue::new()
             .enqueue(0)
             .enqueue(1)
-            .dequeue().unwrap()
+            .dequeue()
+            .unwrap()
             .enqueue(2)
             .enqueue(3);
         let mut expected = 1;
@@ -126,15 +123,12 @@ mod internal {
 
     #[test]
     fn test_enqueue_dequeue() -> () {
-        let queue = Queue::new()
-            .enqueue(0)
-            .enqueue(1)
-            .enqueue(2)
-            .enqueue(3);
+        let queue = Queue::new().enqueue(0).enqueue(1).enqueue(2).enqueue(3);
         let queue_2 = Queue::new()
             .enqueue(0)
             .enqueue(1)
-            .dequeue().unwrap()
+            .dequeue()
+            .unwrap()
             .enqueue(2)
             .enqueue(3);
         let queue_3 = Queue::new()
@@ -142,12 +136,16 @@ mod internal {
             .enqueue(1)
             .enqueue(2)
             .enqueue(3)
-            .dequeue().unwrap();
-        let list_3_2_1_0 = List::new().push_front(0).push_front(1).push_front(2).push_front(3);
+            .dequeue()
+            .unwrap();
+        let list_3_2_1_0 = List::new()
+            .push_front(0)
+            .push_front(1)
+            .push_front(2)
+            .push_front(3);
         let list_3_2 = List::new().push_front(2).push_front(3);
         let list_1 = List::new().push_front(1);
         let list_1_2_3 = List::new().push_front(3).push_front(2).push_front(1);
-
 
         assert!(queue.out_list.is_empty());
         assert_eq!(queue.in_list, list_3_2_1_0);
@@ -187,12 +185,8 @@ fn test_new() -> () {
 
 #[test]
 fn test_macro_queue() -> () {
-    let queue_1 = Queue::new()
-        .enqueue(1);
-    let queue_1_2_3 = Queue::new()
-        .enqueue(1)
-        .enqueue(2)
-        .enqueue(3);
+    let queue_1 = Queue::new().enqueue(1);
+    let queue_1_2_3 = Queue::new().enqueue(1).enqueue(2).enqueue(3);
 
     assert_eq!(Queue::<u32>::new(), queue![]);
     assert_eq!(queue_1, queue![1]);
@@ -202,17 +196,13 @@ fn test_macro_queue() -> () {
 #[test]
 fn test_peek() -> () {
     let empty_queue: Queue<i32> = Queue::new();
-    let singleton_queue = Queue::new()
-        .enqueue("hello");
-    let queue = Queue::new()
-        .enqueue(0)
-        .enqueue(1)
-        .enqueue(2)
-        .enqueue(3);
+    let singleton_queue = Queue::new().enqueue("hello");
+    let queue = Queue::new().enqueue(0).enqueue(1).enqueue(2).enqueue(3);
     let queue_2 = Queue::new()
         .enqueue(0)
         .enqueue(1)
-        .dequeue().unwrap()
+        .dequeue()
+        .unwrap()
         .enqueue(2)
         .enqueue(3);
     let queue_3 = Queue::new()
@@ -220,7 +210,8 @@ fn test_peek() -> () {
         .enqueue(1)
         .enqueue(2)
         .enqueue(3)
-        .dequeue().unwrap();
+        .dequeue()
+        .unwrap();
 
     assert_eq!(empty_queue.peek(), None);
     assert_eq!(singleton_queue.peek(), Some(&"hello"));
@@ -232,17 +223,13 @@ fn test_peek() -> () {
 #[test]
 fn test_dequeue() -> () {
     let empty_queue: Queue<i32> = Queue::new();
-    let singleton_queue = Queue::new()
-        .enqueue("hello");
-    let queue = Queue::new()
-        .enqueue(0)
-        .enqueue(1)
-        .enqueue(2)
-        .enqueue(3);
+    let singleton_queue = Queue::new().enqueue("hello");
+    let queue = Queue::new().enqueue(0).enqueue(1).enqueue(2).enqueue(3);
     let queue_2 = Queue::new()
         .enqueue(0)
         .enqueue(1)
-        .dequeue().unwrap()
+        .dequeue()
+        .unwrap()
         .enqueue(2)
         .enqueue(3);
     let queue_3 = Queue::new()
@@ -250,7 +237,8 @@ fn test_dequeue() -> () {
         .enqueue(1)
         .enqueue(2)
         .enqueue(3)
-        .dequeue().unwrap();
+        .dequeue()
+        .unwrap();
 
     assert!(empty_queue.dequeue().is_none());
     assert_eq!(singleton_queue.dequeue().unwrap().peek(), None);
@@ -285,13 +273,8 @@ fn test_default() -> () {
 #[test]
 fn test_display() -> () {
     let empty_queue: Queue<i32> = Queue::new();
-    let singleton_queue = Queue::new()
-        .enqueue("hello");
-    let queue = Queue::new()
-        .enqueue(0)
-        .enqueue(1)
-        .enqueue(2)
-        .enqueue(3);
+    let singleton_queue = Queue::new().enqueue("hello");
+    let queue = Queue::new().enqueue(0).enqueue(1).enqueue(2).enqueue(3);
 
     assert_eq!(format!("{}", empty_queue), "Queue()");
     assert_eq!(format!("{}", singleton_queue), "Queue(hello)");
@@ -300,15 +283,9 @@ fn test_display() -> () {
 
 #[test]
 fn test_eq() -> () {
-    let queue_1 = Queue::new()
-        .enqueue("a")
-        .enqueue("a");
-    let queue_1_prime = Queue::new()
-        .enqueue("a")
-        .enqueue("a");
-    let queue_2 = Queue::new()
-        .enqueue("a")
-        .enqueue("b");
+    let queue_1 = Queue::new().enqueue("a").enqueue("a");
+    let queue_1_prime = Queue::new().enqueue("a").enqueue("a");
+    let queue_2 = Queue::new().enqueue("a").enqueue("b");
 
     assert_ne!(queue_1, queue_2);
     assert_eq!(queue_1, queue_1);
@@ -318,16 +295,11 @@ fn test_eq() -> () {
 
 #[test]
 fn test_partial_ord() -> () {
-    let queue_1 = Queue::new()
-        .enqueue("a");
-    let queue_1_prime = Queue::new()
-        .enqueue("a");
-    let queue_2 = Queue::new()
-        .enqueue("b");
-    let queue_3 = Queue::new()
-        .enqueue(0.0);
-    let queue_4 = Queue::new()
-        .enqueue(::std::f32::NAN);
+    let queue_1 = Queue::new().enqueue("a");
+    let queue_1_prime = Queue::new().enqueue("a");
+    let queue_2 = Queue::new().enqueue("b");
+    let queue_3 = Queue::new().enqueue(0.0);
+    let queue_4 = Queue::new().enqueue(::std::f32::NAN);
 
     assert_eq!(queue_1.partial_cmp(&queue_1_prime), Some(Ordering::Equal));
     assert_eq!(queue_1.partial_cmp(&queue_2), Some(Ordering::Less));
@@ -337,12 +309,9 @@ fn test_partial_ord() -> () {
 
 #[test]
 fn test_ord() -> () {
-    let queue_1 = Queue::new()
-        .enqueue("a");
-    let queue_1_prime = Queue::new()
-        .enqueue("a");
-    let queue_2 = Queue::new()
-        .enqueue("b");
+    let queue_1 = Queue::new().enqueue("a");
+    let queue_1_prime = Queue::new().enqueue("a");
+    let queue_2 = Queue::new().enqueue("b");
 
     assert_eq!(queue_1.cmp(&queue_1_prime), Ordering::Equal);
     assert_eq!(queue_1.cmp(&queue_2), Ordering::Less);
@@ -359,13 +328,9 @@ fn hash<T: Hash>(queue: &Queue<T>) -> u64 {
 
 #[test]
 fn test_hash() -> () {
-    let queue_1 = Queue::new()
-        .enqueue("a");
-    let queue_1_prime = Queue::new()
-        .enqueue("a");
-    let queue_2 = Queue::new()
-        .enqueue("a")
-        .enqueue("b");
+    let queue_1 = Queue::new().enqueue("a");
+    let queue_1_prime = Queue::new().enqueue("a");
+    let queue_2 = Queue::new().enqueue("a").enqueue("b");
 
     assert_eq!(hash(&queue_1), hash(&queue_1));
     assert_eq!(hash(&queue_1), hash(&queue_1_prime));
@@ -374,9 +339,7 @@ fn test_hash() -> () {
 
 #[test]
 fn test_clone() -> () {
-    let queue = Queue::new()
-        .enqueue("there")
-        .enqueue("hello");
+    let queue = Queue::new().enqueue("there").enqueue("hello");
     let clone = queue.clone();
 
     assert!(clone.iter().eq(queue.iter()));
@@ -386,9 +349,10 @@ fn test_clone() -> () {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() -> () {
-    use bincode::{serialize, deserialize};
-    let queue: Queue<i32> = Queue::from_iter(vec![5,6,7,8].into_iter());
+    use bincode::{deserialize, serialize};
+    let queue: Queue<i32> = queue![5, 6, 7, 8];
     let encoded = serialize(&queue).unwrap();
     let decoded: Queue<i32> = deserialize(&encoded).unwrap();
+
     assert_eq!(queue, decoded);
 }

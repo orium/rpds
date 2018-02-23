@@ -4,7 +4,7 @@
  */
 
 use std::cmp::Ordering;
-use std::hash::{Hasher, Hash};
+use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::fmt::Display;
 use sequence::list;
@@ -65,14 +65,12 @@ macro_rules! stack {
 /// This is a thin wrapper around a [`List`](../sequence/list/struct.List.html).
 #[derive(Debug)]
 pub struct Stack<T> {
-    list: List<T>
+    list: List<T>,
 }
 
 impl<T> Stack<T> {
     pub fn new() -> Stack<T> {
-        Stack {
-            list: List::new()
-        }
+        Stack { list: List::new() }
     }
 
     pub fn peek(&self) -> Option<&T> {
@@ -80,12 +78,12 @@ impl<T> Stack<T> {
     }
 
     pub fn pop(&self) -> Option<Stack<T>> {
-        self.list.drop_first().map(|l| Stack { list: l } )
+        self.list.drop_first().map(|l| Stack { list: l })
     }
 
     pub fn push(&self, v: T) -> Stack<T> {
         Stack {
-            list: self.list.push_front(v)
+            list: self.list.push_front(v),
         }
     }
 
@@ -139,7 +137,7 @@ impl<T: Hash> Hash for Stack<T> {
 impl<T> Clone for Stack<T> {
     fn clone(&self) -> Stack<T> {
         Stack {
-            list: List::clone(&self.list)
+            list: List::clone(&self.list),
         }
     }
 }
@@ -174,7 +172,7 @@ impl<'a, T> IntoIterator for &'a Stack<T> {
 impl<T> FromIterator<T> for Stack<T> {
     fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> Stack<T> {
         Stack {
-            list: List::from_iter(into_iter)
+            list: List::from_iter(into_iter),
         }
     }
 }
@@ -186,19 +184,21 @@ pub mod serde {
     use serde::de::{Deserialize, Deserializer};
 
     impl<T> Serialize for Stack<T>
-        where T: Serialize {
+    where
+        T: Serialize,
+    {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             serializer.collect_seq(self)
         }
     }
 
     impl<'de, T> Deserialize<'de> for Stack<T>
-        where T: Deserialize<'de> {
+    where
+        T: Deserialize<'de>,
+    {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Stack<T>, D::Error> {
             let list: List<T> = Deserialize::deserialize(deserializer)?;
-            Ok(Stack {
-                list: list,
-            })
+            Ok(Stack { list })
         }
     }
 }

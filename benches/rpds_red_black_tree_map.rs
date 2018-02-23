@@ -14,7 +14,7 @@ mod utils;
 use rpds::RedBlackTreeMap;
 use utils::BencherNoDrop;
 use utils::iterations;
-use bencher::{Bencher, black_box};
+use bencher::{black_box, Bencher};
 
 fn red_black_tree_map_insert(bench: &mut Bencher) -> () {
     let limit = iterations(100_000);
@@ -81,6 +81,9 @@ fn red_black_tree_map_iterate(bench: &mut Bencher) -> () {
 
 benchmark_group!(
     benches,
-    red_black_tree_map_insert, red_black_tree_map_remove, red_black_tree_map_get, red_black_tree_map_iterate
+    red_black_tree_map_insert,
+    red_black_tree_map_remove,
+    red_black_tree_map_get,
+    red_black_tree_map_iterate
 );
 benchmark_main!(benches);

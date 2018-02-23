@@ -12,7 +12,11 @@ fn test_new() -> () {
 
     assert_eq!(empty_array.bitmap, 0);
     assert_eq!(empty_array.array.len(), 0);
-    assert_eq!(empty_array.array.capacity(), 0, "Capacity of the branch array is wasteful");
+    assert_eq!(
+        empty_array.array.capacity(),
+        0,
+        "Capacity of the branch array is wasteful"
+    );
 }
 
 #[test]
@@ -45,9 +49,7 @@ fn test_set() -> () {
 
 #[test]
 fn test_remove() -> () {
-    let mut array = SparseArrayUsize::new()
-        .set(3, 'a')
-        .set(60, 'b');
+    let mut array = SparseArrayUsize::new().set(3, 'a').set(60, 'b');
 
     assert_eq!(array.get(3), Some(&'a'));
     assert_eq!(array.get(60), Some(&'b'));
@@ -108,18 +110,18 @@ fn test_map_index() -> () {
 
     let bitmap: usize = 0b_1110_0100_0101;
 
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap,  0), Some(0));
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap,  1), None);
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap,  2), Some(1));
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap,  3), None);
+    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 0), Some(0));
+    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 1), None);
+    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 2), Some(1));
+    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 3), None);
 
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap,  4), None);
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap,  5), None);
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap,  6), Some(2));
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap,  7), None);
+    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 4), None);
+    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 5), None);
+    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 6), Some(2));
+    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 7), None);
 
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap,  8), None);
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap,  9), Some(3));
+    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 8), None);
+    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 9), Some(3));
     assert_eq!(sparse_array_usize_utils::map_index(bitmap, 10), Some(4));
     assert_eq!(sparse_array_usize_utils::map_index(bitmap, 11), Some(5));
 

@@ -38,10 +38,7 @@ mod iter {
 
     #[test]
     fn test_iter_size_hint() -> () {
-        let set = HashTrieSet::new()
-            .insert(0)
-            .insert(1)
-            .insert(2);
+        let set = HashTrieSet::new().insert(0).insert(1).insert(2);
         let mut iterator = set.iter();
 
         assert_eq!(iterator.size_hint(), (3, Some(3)));
@@ -61,10 +58,7 @@ mod iter {
 
     #[test]
     fn test_into_iterator() -> () {
-        let set = HashTrieSet::new()
-            .insert(0)
-            .insert(1)
-            .insert(2);
+        let set = HashTrieSet::new().insert(0).insert(1).insert(2);
         let mut left = 3;
 
         for _ in &set {
@@ -92,12 +86,8 @@ mod compile_time {
 
 #[test]
 fn test_macro_ht_set() -> () {
-    let set_1 = HashTrieSet::new()
-        .insert(1);
-    let set_1_2_3 = HashTrieSet::new()
-        .insert(1)
-        .insert(2)
-        .insert(3);
+    let set_1 = HashTrieSet::new().insert(1);
+    let set_1_2_3 = HashTrieSet::new().insert(1).insert(2).insert(3);
 
     assert_eq!(HashTrieSet::<u32>::new(), ht_set![]);
     assert_eq!(set_1, ht_set![1]);
@@ -178,37 +168,61 @@ fn test_remove() -> () {
 
 #[test]
 fn test_is_disjoint() -> () {
-    assert!(!HashTrieSet::is_disjoint(&ht_set![1, 2, 3], &ht_set![1, 2, 3]));
+    assert!(!HashTrieSet::is_disjoint(
+        &ht_set![1, 2, 3],
+        &ht_set![1, 2, 3]
+    ));
     assert!(!HashTrieSet::is_disjoint(&ht_set![1, 2, 3], &ht_set![0, 1]));
-    assert!(HashTrieSet::is_disjoint(&ht_set![1, 2, 3, 7, 16], &ht_set![0, 4, 17]));
+    assert!(HashTrieSet::is_disjoint(
+        &ht_set![1, 2, 3, 7, 16],
+        &ht_set![0, 4, 17]
+    ));
 }
 
 #[test]
 fn test_is_subset() -> () {
     assert!(HashTrieSet::is_subset(&ht_set![], &ht_set![1, 2, 3]));
     assert!(HashTrieSet::is_subset(&ht_set![1, 2, 3], &ht_set![1, 2, 3]));
-    assert!(!HashTrieSet::is_subset(&ht_set![1, 2, 3], &ht_set![1, 2, 5, 6]));
-    assert!(HashTrieSet::is_subset(&ht_set![1, 2, 3], &ht_set![1, 2, 3, 5, 6]));
-    assert!(!HashTrieSet::is_subset(&ht_set![1, 2, 3, 5, 6], &ht_set![1, 2, 3]));
+    assert!(!HashTrieSet::is_subset(
+        &ht_set![1, 2, 3],
+        &ht_set![1, 2, 5, 6]
+    ));
+    assert!(HashTrieSet::is_subset(
+        &ht_set![1, 2, 3],
+        &ht_set![1, 2, 3, 5, 6]
+    ));
+    assert!(!HashTrieSet::is_subset(
+        &ht_set![1, 2, 3, 5, 6],
+        &ht_set![1, 2, 3]
+    ));
 }
 
 #[test]
 fn test_is_superset() -> () {
     assert!(HashTrieSet::is_superset(&ht_set![1, 2, 3], &ht_set![]));
-    assert!(HashTrieSet::is_superset(&ht_set![1, 2, 3], &ht_set![1, 2, 3]));
-    assert!(!HashTrieSet::is_superset(&ht_set![1, 2, 5, 6], &ht_set![1, 2, 3]));
-    assert!(HashTrieSet::is_superset(&ht_set![1, 2, 3, 5, 6], &ht_set![1, 2, 3]));
-    assert!(!HashTrieSet::is_superset(&ht_set![1, 2, 3], &ht_set![1, 2, 3, 5, 6]));
+    assert!(HashTrieSet::is_superset(
+        &ht_set![1, 2, 3],
+        &ht_set![1, 2, 3]
+    ));
+    assert!(!HashTrieSet::is_superset(
+        &ht_set![1, 2, 5, 6],
+        &ht_set![1, 2, 3]
+    ));
+    assert!(HashTrieSet::is_superset(
+        &ht_set![1, 2, 3, 5, 6],
+        &ht_set![1, 2, 3]
+    ));
+    assert!(!HashTrieSet::is_superset(
+        &ht_set![1, 2, 3],
+        &ht_set![1, 2, 3, 5, 6]
+    ));
 }
 
 #[test]
 fn test_from_iterator() -> () {
     let vec: Vec<&str> = vec![("two"), ("five")];
     let set: HashTrieSet<&str> = vec.iter().map(|v| *v).collect();
-    let expected_set =
-        HashTrieSet::new()
-            .insert("two")
-            .insert("five");
+    let expected_set = HashTrieSet::new().insert("two").insert("five");
 
     assert_eq!(set, expected_set);
 }
@@ -224,11 +238,8 @@ fn test_default() -> () {
 #[test]
 fn test_display() -> () {
     let empty_set: HashTrieSet<i32> = HashTrieSet::new();
-    let singleton_set = HashTrieSet::new()
-        .insert("hi");
-    let set = HashTrieSet::new()
-        .insert(5)
-        .insert(12);
+    let singleton_set = HashTrieSet::new().insert("hi");
+    let set = HashTrieSet::new().insert(5).insert(12);
 
     assert_eq!(format!("{}", empty_set), "{}");
     assert_eq!(format!("{}", singleton_set), "{hi}");
@@ -237,20 +248,10 @@ fn test_display() -> () {
 
 #[test]
 fn test_eq() -> () {
-    let set_1 = HashTrieSet::new()
-        .insert("a")
-        .insert("b");
-    let set_1_prime = HashTrieSet::new()
-        .insert("a")
-        .insert("b");
-    let set_1_prime_2 = HashTrieSet::new()
-        .insert("a")
-        .insert("b")
-        .insert("b");
-    let set_2 = HashTrieSet::new()
-        .insert("a")
-        .insert("b")
-        .insert("c");
+    let set_1 = HashTrieSet::new().insert("a").insert("b");
+    let set_1_prime = HashTrieSet::new().insert("a").insert("b");
+    let set_1_prime_2 = HashTrieSet::new().insert("a").insert("b").insert("b");
+    let set_2 = HashTrieSet::new().insert("a").insert("b").insert("c");
 
     assert_eq!(set_1, set_1_prime);
     assert_eq!(set_1, set_1_prime_2);
@@ -263,10 +264,7 @@ fn test_eq() -> () {
 
 #[test]
 fn test_clone() -> () {
-    let set =
-        HashTrieSet::new()
-            .insert("hello")
-            .insert("there");
+    let set = HashTrieSet::new().insert("hello").insert("there");
     let clone = set.clone();
 
     assert_eq!(clone.size(), set.size());
@@ -277,9 +275,10 @@ fn test_clone() -> () {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() -> () {
-    use bincode::{serialize, deserialize};
-    let hashtrieset: HashTrieSet<i32> = HashTrieSet::from_iter(vec![5,6,7,8].into_iter());
-    let encoded = serialize(&hashtrieset).unwrap();
+    use bincode::{deserialize, serialize};
+    let set: HashTrieSet<i32> = ht_set![5, 6, 7, 8];
+    let encoded = serialize(&set).unwrap();
     let decoded: HashTrieSet<i32> = deserialize(&encoded).unwrap();
-    assert_eq!(hashtrieset, decoded);
+
+    assert_eq!(set, decoded);
 }

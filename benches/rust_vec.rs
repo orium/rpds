@@ -12,7 +12,7 @@ mod utils;
 
 use utils::BencherNoDrop;
 use utils::iterations;
-use bencher::{Bencher, black_box};
+use bencher::{black_box, Bencher};
 
 fn rust_vec_push(bench: &mut Bencher) -> () {
     let limit = iterations(100_000);

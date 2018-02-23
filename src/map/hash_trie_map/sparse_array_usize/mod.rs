@@ -14,7 +14,7 @@ use utils::vec_utils::VecUtils;
 #[derive(Debug, PartialEq, Eq)]
 pub struct SparseArrayUsize<T: Clone> {
     bitmap: usize,
-    array: Vec<T>,
+    array:  Vec<T>,
 }
 
 mod sparse_array_usize_utils {
@@ -34,7 +34,7 @@ impl<T: Clone> SparseArrayUsize<T> {
     pub fn new() -> SparseArrayUsize<T> {
         SparseArrayUsize {
             bitmap: 0,
-            array: Vec::new(),
+            array:  Vec::new(),
         }
     }
 
@@ -63,11 +63,10 @@ impl<T: Clone> SparseArrayUsize<T> {
         debug_assert!(index < 8 * size_of_val(&self.bitmap));
 
         match sparse_array_usize_utils::map_index(self.bitmap, index) {
-            Some(i) =>
-                SparseArrayUsize {
-                    bitmap: self.bitmap,
-                    array:  self.array.cloned_set(i, value),
-                },
+            Some(i) => SparseArrayUsize {
+                bitmap: self.bitmap,
+                array:  self.array.cloned_set(i, value),
+            },
             None => {
                 let new_bitmap = self.bitmap | (1 << index);
                 let i = sparse_array_usize_utils::map_index(new_bitmap, index).unwrap();
@@ -76,17 +75,16 @@ impl<T: Clone> SparseArrayUsize<T> {
                     bitmap: new_bitmap,
                     array:  self.array.cloned_insert(i, value),
                 }
-            },
+            }
         }
     }
 
     pub fn remove(&self, index: usize) -> SparseArrayUsize<T> {
         match sparse_array_usize_utils::map_index(self.bitmap, index) {
-            Some(i) =>
-                SparseArrayUsize {
-                    bitmap: self.bitmap ^ (1 << index),
-                    array:  self.array.cloned_remove(i),
-                },
+            Some(i) => SparseArrayUsize {
+                bitmap: self.bitmap ^ (1 << index),
+                array:  self.array.cloned_remove(i),
+            },
             None => self.clone(),
         }
     }

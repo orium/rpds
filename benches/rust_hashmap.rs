@@ -13,7 +13,7 @@ mod utils;
 use std::collections::HashMap;
 use utils::BencherNoDrop;
 use utils::iterations;
-use bencher::{Bencher, black_box};
+use bencher::{black_box, Bencher};
 
 fn rust_hashmap_insert(bench: &mut Bencher) -> () {
     let limit = iterations(100_000);
@@ -62,5 +62,10 @@ fn rust_hashmap_iterate(bench: &mut Bencher) -> () {
     });
 }
 
-benchmark_group!(benches, rust_hashmap_insert, rust_hashmap_get, rust_hashmap_iterate);
+benchmark_group!(
+    benches,
+    rust_hashmap_insert,
+    rust_hashmap_get,
+    rust_hashmap_iterate
+);
 benchmark_main!(benches);

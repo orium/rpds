@@ -14,7 +14,7 @@ mod utils;
 use rpds::List;
 use utils::BencherNoDrop;
 use utils::iterations;
-use bencher::{Bencher, black_box};
+use bencher::{black_box, Bencher};
 
 fn list_push_front(bench: &mut Bencher) -> () {
     let limit = iterations(100_000);

@@ -13,7 +13,7 @@ mod utils;
 use std::collections::LinkedList;
 use utils::BencherNoDrop;
 use utils::iterations;
-use bencher::{Bencher, black_box};
+use bencher::{black_box, Bencher};
 
 fn rust_linked_list_push_front(bench: &mut Bencher) -> () {
     let limit = iterations(100_000);
@@ -60,6 +60,8 @@ fn rust_linked_list_iterate(bench: &mut Bencher) -> () {
 
 benchmark_group!(
     benches,
-    rust_linked_list_push_front, rust_linked_list_push_back, rust_linked_list_iterate
+    rust_linked_list_push_front,
+    rust_linked_list_push_back,
+    rust_linked_list_iterate
 );
 benchmark_main!(benches);

@@ -10,10 +10,7 @@ mod iter {
 
     #[test]
     fn test_iter() -> () {
-        let stack = Stack::new()
-            .push(2)
-            .push(1)
-            .push(0);
+        let stack = Stack::new().push(2).push(1).push(0);
         let mut iterator = stack.iter();
 
         assert_eq!(iterator.next(), Some(&0));
@@ -24,10 +21,7 @@ mod iter {
 
     #[test]
     fn test_iter_size_hint() -> () {
-        let stack = Stack::new()
-            .push(2)
-            .push(1)
-            .push(0);
+        let stack = Stack::new().push(2).push(1).push(0);
         let mut iterator = stack.iter();
 
         assert_eq!(iterator.size_hint(), (3, Some(3)));
@@ -47,11 +41,7 @@ mod iter {
 
     #[test]
     fn test_into_iterator() -> () {
-        let stack = Stack::new()
-            .push(3)
-            .push(2)
-            .push(1)
-            .push(0);
+        let stack = Stack::new().push(3).push(2).push(1).push(0);
         let mut expected = 0;
         let mut left = 4;
 
@@ -94,12 +84,8 @@ fn test_new() -> () {
 
 #[test]
 fn test_macro_stack() -> () {
-    let stack_1 = Stack::new()
-        .push(1);
-    let stack_1_2_3 = Stack::new()
-        .push(1)
-        .push(2)
-        .push(3);
+    let stack_1 = Stack::new().push(1);
+    let stack_1_2_3 = Stack::new().push(1).push(2).push(3);
 
     assert_eq!(Stack::<u32>::new(), stack![]);
     assert_eq!(stack_1, stack![1]);
@@ -109,13 +95,8 @@ fn test_macro_stack() -> () {
 #[test]
 fn test_peek() -> () {
     let empty_stack: Stack<i32> = Stack::new();
-    let singleton_stack = Stack::new()
-        .push("hello");
-    let stack = Stack::new()
-        .push(3)
-        .push(2)
-        .push(1)
-        .push(0);
+    let singleton_stack = Stack::new().push("hello");
+    let stack = Stack::new().push(3).push(2).push(1).push(0);
 
     assert_eq!(empty_stack.peek(), None);
     assert_eq!(singleton_stack.peek(), Some(&"hello"));
@@ -125,13 +106,8 @@ fn test_peek() -> () {
 #[test]
 fn test_pop() -> () {
     let empty_stack: Stack<i32> = Stack::new();
-    let singleton_stack = Stack::new()
-        .push("hello");
-    let stack = Stack::new()
-        .push(3)
-        .push(2)
-        .push(1)
-        .push(0);
+    let singleton_stack = Stack::new().push("hello");
+    let stack = Stack::new().push(3).push(2).push(1).push(0);
 
     assert!(empty_stack.pop().is_none());
     assert_eq!(singleton_stack.pop().unwrap().peek(), None);
@@ -160,13 +136,8 @@ fn test_default() -> () {
 #[test]
 fn test_display() -> () {
     let empty_stack: Stack<i32> = Stack::new();
-    let singleton_stack = Stack::new()
-        .push("hello");
-    let stack = Stack::new()
-        .push(3)
-        .push(2)
-        .push(1)
-        .push(0);
+    let singleton_stack = Stack::new().push("hello");
+    let stack = Stack::new().push(3).push(2).push(1).push(0);
 
     assert_eq!(format!("{}", empty_stack), "Stack()");
     assert_eq!(format!("{}", singleton_stack), "Stack(hello)");
@@ -175,15 +146,9 @@ fn test_display() -> () {
 
 #[test]
 fn test_eq() -> () {
-    let stack_1 = Stack::new()
-        .push("a")
-        .push("a");
-    let stack_1_prime = Stack::new()
-        .push("a")
-        .push("a");
-    let stack_2 = Stack::new()
-        .push("b")
-        .push("a");
+    let stack_1 = Stack::new().push("a").push("a");
+    let stack_1_prime = Stack::new().push("a").push("a");
+    let stack_2 = Stack::new().push("b").push("a");
 
     assert_ne!(stack_1, stack_2);
     assert_eq!(stack_1, stack_1);
@@ -193,16 +158,11 @@ fn test_eq() -> () {
 
 #[test]
 fn test_partial_ord() -> () {
-    let stack_1 = Stack::new()
-        .push("a");
-    let stack_1_prime = Stack::new()
-        .push("a");
-    let stack_2 = Stack::new()
-        .push("b");
-    let stack_3 = Stack::new()
-        .push(0.0);
-    let stack_4 = Stack::new()
-        .push(::std::f32::NAN);
+    let stack_1 = Stack::new().push("a");
+    let stack_1_prime = Stack::new().push("a");
+    let stack_2 = Stack::new().push("b");
+    let stack_3 = Stack::new().push(0.0);
+    let stack_4 = Stack::new().push(::std::f32::NAN);
 
     assert_eq!(stack_1.partial_cmp(&stack_1_prime), Some(Ordering::Equal));
     assert_eq!(stack_1.partial_cmp(&stack_2), Some(Ordering::Less));
@@ -212,12 +172,9 @@ fn test_partial_ord() -> () {
 
 #[test]
 fn test_ord() -> () {
-    let stack_1 = Stack::new()
-        .push("a");
-    let stack_1_prime = Stack::new()
-        .push("a");
-    let stack_2 = Stack::new()
-        .push("b");
+    let stack_1 = Stack::new().push("a");
+    let stack_1_prime = Stack::new().push("a");
+    let stack_2 = Stack::new().push("b");
 
     assert_eq!(stack_1.cmp(&stack_1_prime), Ordering::Equal);
     assert_eq!(stack_1.cmp(&stack_2), Ordering::Less);
@@ -234,13 +191,9 @@ fn hash<T: Hash>(stack: &Stack<T>) -> u64 {
 
 #[test]
 fn test_hash() -> () {
-    let stack_1 = Stack::new()
-        .push("a");
-    let stack_1_prime = Stack::new()
-        .push("a");
-    let stack_2 = Stack::new()
-        .push("b")
-        .push("a");
+    let stack_1 = Stack::new().push("a");
+    let stack_1_prime = Stack::new().push("a");
+    let stack_2 = Stack::new().push("b").push("a");
 
     assert_eq!(hash(&stack_1), hash(&stack_1));
     assert_eq!(hash(&stack_1), hash(&stack_1_prime));
@@ -249,9 +202,7 @@ fn test_hash() -> () {
 
 #[test]
 fn test_clone() -> () {
-    let stack = Stack::new()
-        .push("there")
-        .push("hello");
+    let stack = Stack::new().push("there").push("hello");
     let clone = stack.clone();
 
     assert!(clone.iter().eq(stack.iter()));
@@ -261,9 +212,10 @@ fn test_clone() -> () {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() -> () {
-    use bincode::{serialize, deserialize};
-    let stack: Stack<i32> = Stack::from_iter(vec![5,6,7,8].into_iter());
+    use bincode::{deserialize, serialize};
+    let stack: Stack<i32> = stack![5, 6, 7, 8];
     let encoded = serialize(&stack).unwrap();
     let decoded: Stack<i32> = deserialize(&encoded).unwrap();
+
     assert_eq!(stack, decoded);
 }

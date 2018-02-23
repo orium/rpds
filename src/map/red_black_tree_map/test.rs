@@ -33,7 +33,7 @@ impl<K, V> Node<K, V> {
 
     fn is_black_height_balanced(&self) -> bool {
         fn black_height<K, V>(node: &Node<K, V>) -> Result<usize, ()> {
-            let bheight_left  = node.left.as_ref().map_or(Ok(0),  |l| black_height(l))?;
+            let bheight_left = node.left.as_ref().map_or(Ok(0), |l| black_height(l))?;
             let bheight_right = node.right.as_ref().map_or(Ok(0), |r| black_height(r))?;
 
             if bheight_left == bheight_right {
@@ -56,12 +56,18 @@ impl<K, V> Node<K, V> {
         };
 
         self_ok
-            && self.left.as_ref().map_or(true,  |l| l.red_nodes_have_black_children())
-            && self.right.as_ref().map_or(true, |r| r.red_nodes_have_black_children())
+            && self.left
+                .as_ref()
+                .map_or(true, |l| l.red_nodes_have_black_children())
+            && self.right
+                .as_ref()
+                .map_or(true, |r| r.red_nodes_have_black_children())
     }
 
     fn has_binary_search_property(&self) -> bool
-        where K: Clone + Ord {
+    where
+        K: Clone + Ord,
+    {
         fn go<K: Clone + Ord, V>(node: &Node<K, V>, last: &mut Option<K>) -> bool {
             let ok_left = node.left.as_ref().map_or(true, |l| go(l, last));
 
@@ -83,13 +89,24 @@ impl<K, V> Node<K, V> {
 }
 
 impl<K, V> RedBlackTreeMap<K, V>
-    where K: Ord + Clone {
+where
+    K: Ord + Clone,
+{
     fn check_consistent(&self) -> Result<(), InvariantViolation> {
-        if !self.root.as_ref().map_or(true, |r| r.has_binary_search_property()) {
+        if !self.root
+            .as_ref()
+            .map_or(true, |r| r.has_binary_search_property())
+        {
             Result::Err(InvariantViolation::BinarySearch)
-        } else if !self.root.as_ref().map_or(true, |r| r.red_nodes_have_black_children()) {
+        } else if !self.root
+            .as_ref()
+            .map_or(true, |r| r.red_nodes_have_black_children())
+        {
             Result::Err(InvariantViolation::RedNodeBlackChildren)
-        } else if !self.root.as_ref().map_or(true, |r| r.is_black_height_balanced()) {
+        } else if !self.root
+            .as_ref()
+            .map_or(true, |r| r.is_black_height_balanced())
+        {
             Result::Err(InvariantViolation::BlackHeightBalanced)
         } else if !self.root.as_ref().map_or(true, |r| r.color == Color::Black) {
             Result::Err(InvariantViolation::BlackRoot)
@@ -105,7 +122,7 @@ mod node {
     use super::*;
 
     fn dummy_entry(v: i32) -> Entry<i32, i32> {
-        Entry { key: v, value: v }
+        Entry { key:   v, value: v }
     }
 
     fn dummy_leaf(v: i32) -> Node<i32, i32> {
@@ -120,7 +137,7 @@ mod node {
     fn dummy_leaf_with_children(
         v: i32,
         left: Option<Node<i32, i32>>,
-        right: Option<Node<i32, i32>>
+        right: Option<Node<i32, i32>>,
     ) -> Node<i32, i32> {
         Node {
             entry: Arc::new(dummy_entry(v)),
@@ -261,10 +278,10 @@ mod node {
         let tree_case_1 = Node {
             entry: Arc::clone(&entry_z),
             color: Color::Black,
-            left: Some(Arc::new(Node {
+            left:  Some(Arc::new(Node {
                 entry: Arc::clone(&entry_y),
                 color: Color::Red,
-                left: Some(Arc::new(Node {
+                left:  Some(Arc::new(Node {
                     entry: Arc::clone(&entry_x),
                     color: Color::Red,
                     left:  Some(Arc::clone(&tree_a)),
@@ -278,10 +295,10 @@ mod node {
         let tree_case_2 = Node {
             entry: Arc::clone(&entry_z),
             color: Color::Black,
-            left: Some(Arc::new(Node {
+            left:  Some(Arc::new(Node {
                 entry: Arc::clone(&entry_x),
                 color: Color::Red,
-                left: Some(Arc::clone(&tree_a)),
+                left:  Some(Arc::clone(&tree_a)),
                 right: Some(Arc::new(Node {
                     entry: Arc::clone(&entry_y),
                     color: Color::Red,
@@ -329,10 +346,10 @@ mod node {
         let tree_none_of_the_above = Node {
             entry: Arc::clone(&entry_z),
             color: Color::Black,
-            left: Some(Arc::new(Node {
+            left:  Some(Arc::new(Node {
                 entry: Arc::clone(&entry_y),
                 color: Color::Red,
-                left: Some(Arc::new(Node {
+                left:  Some(Arc::new(Node {
                     entry: Arc::clone(&entry_x),
                     color: Color::Black,
                     left:  Some(Arc::clone(&tree_a)),
@@ -346,7 +363,7 @@ mod node {
         let tree_balanced = Node {
             entry: Arc::clone(&entry_y),
             color: Color::Red,
-            left: Some(Arc::new(Node {
+            left:  Some(Arc::new(Node {
                 entry: Arc::clone(&entry_x),
                 color: Color::Black,
                 left:  Some(Arc::clone(&tree_a)),
@@ -364,7 +381,10 @@ mod node {
         assert_eq!(tree_case_2.clone().balance(), tree_balanced.clone());
         assert_eq!(tree_case_3.clone().balance(), tree_balanced.clone());
         assert_eq!(tree_case_4.clone().balance(), tree_balanced.clone());
-        assert_eq!(tree_none_of_the_above.clone().balance(), tree_none_of_the_above.clone());
+        assert_eq!(
+            tree_none_of_the_above.clone().balance(),
+            tree_none_of_the_above.clone()
+        );
         assert_eq!(tree_balanced.clone().balance(), tree_balanced.clone());
     }
 
@@ -467,17 +487,20 @@ mod internal {
         let mut map = RedBlackTreeMap::new();
 
         for (i, &v) in values.iter().enumerate() {
-            map = map.insert(v, 2*v);
+            map = map.insert(v, 2 * v);
 
             if let Err(error) = map.check_consistent() {
-                panic!(format!("Consistency error in red-black tree ({:?}).  Insertions: {:?}",
-                               error, &values[0..(i + 1)]));
+                panic!(
+                    "Consistency error in red-black tree ({:?}).  Insertions: {:?}",
+                    error,
+                    &values[0..(i + 1)]
+                );
             }
 
-            let other_v = values[i/2];
+            let other_v = values[i / 2];
 
-            assert_eq!(map.get(&v), Some(&(2*v)));
-            assert_eq!(map.get(&other_v), Some(&(2*other_v)));
+            assert_eq!(map.get(&v), Some(&(2 * v)));
+            assert_eq!(map.get(&other_v), Some(&(2 * other_v)));
         }
     }
 
@@ -516,7 +539,7 @@ mod internal {
         let mut map = RedBlackTreeMap::new();
 
         for &v in values_insert.iter() {
-            map = map.insert(v, 2*v);
+            map = map.insert(v, 2 * v);
         }
 
         for (i, v) in values_remove.iter().enumerate() {
@@ -572,14 +595,14 @@ mod iter {
 
     #[test]
     fn test_lg_floor() -> () {
-        assert_eq!(iter_utils::lg_floor( 1), 0);
-        assert_eq!(iter_utils::lg_floor( 2), 1);
-        assert_eq!(iter_utils::lg_floor( 3), 1);
-        assert_eq!(iter_utils::lg_floor( 4), 2);
-        assert_eq!(iter_utils::lg_floor( 5), 2);
-        assert_eq!(iter_utils::lg_floor( 7), 2);
-        assert_eq!(iter_utils::lg_floor( 8), 3);
-        assert_eq!(iter_utils::lg_floor( 9), 3);
+        assert_eq!(iter_utils::lg_floor(1), 0);
+        assert_eq!(iter_utils::lg_floor(2), 1);
+        assert_eq!(iter_utils::lg_floor(3), 1);
+        assert_eq!(iter_utils::lg_floor(4), 2);
+        assert_eq!(iter_utils::lg_floor(5), 2);
+        assert_eq!(iter_utils::lg_floor(7), 2);
+        assert_eq!(iter_utils::lg_floor(8), 3);
+        assert_eq!(iter_utils::lg_floor(9), 3);
         assert_eq!(iter_utils::lg_floor(15), 3);
         assert_eq!(iter_utils::lg_floor(16), 4);
         assert_eq!(iter_utils::lg_floor(17), 4);
@@ -662,14 +685,14 @@ mod iter {
             .insert(5, 15);
         let mut iterator = map.iter();
 
-        assert_eq!(iterator.next(),      Some((&0, &10)));
+        assert_eq!(iterator.next(), Some((&0, &10)));
         assert_eq!(iterator.next_back(), Some((&5, &15)));
         assert_eq!(iterator.next_back(), Some((&4, &14)));
-        assert_eq!(iterator.next(),      Some((&1, &11)));
-        assert_eq!(iterator.next(),      Some((&2, &12)));
+        assert_eq!(iterator.next(), Some((&1, &11)));
+        assert_eq!(iterator.next(), Some((&2, &12)));
         assert_eq!(iterator.next_back(), Some((&3, &13)));
         assert_eq!(iterator.next_back(), None);
-        assert_eq!(iterator.next(),      None);
+        assert_eq!(iterator.next(), None);
     }
 
     #[test]
@@ -779,8 +802,7 @@ mod compile_time {
 
 #[test]
 fn test_macro_rbt_map() -> () {
-    let set_1 = RedBlackTreeMap::new()
-        .insert(1, 2);
+    let set_1 = RedBlackTreeMap::new().insert(1, 2);
     let set_1_2_3 = RedBlackTreeMap::new()
         .insert(1, 2)
         .insert(2, 3)
@@ -930,30 +952,27 @@ fn test_remove() -> () {
 
 #[test]
 fn test_first() -> () {
-    let map =
-        RedBlackTreeMap::new()
-            .insert(5, "hello")
-            .insert(12, "there");
+    let map = RedBlackTreeMap::new()
+        .insert(5, "hello")
+        .insert(12, "there");
 
     assert_eq!(map.first(), Some((&5, &"hello")));
 }
 
 #[test]
 fn test_last() -> () {
-    let map =
-        RedBlackTreeMap::new()
-            .insert(5, "hello")
-            .insert(12, "there");
+    let map = RedBlackTreeMap::new()
+        .insert(5, "hello")
+        .insert(12, "there");
 
     assert_eq!(map.last(), Some((&12, &"there")));
 }
 
 #[test]
 fn test_index() -> () {
-    let map =
-        RedBlackTreeMap::new()
-            .insert(5, "hello")
-            .insert(12, "there");
+    let map = RedBlackTreeMap::new()
+        .insert(5, "hello")
+        .insert(12, "there");
 
     assert_eq!(map[&5], "hello");
     assert_eq!(map[&12], "there");
@@ -963,10 +982,7 @@ fn test_index() -> () {
 fn test_from_iterator() -> () {
     let vec: Vec<(i32, &str)> = vec![(2, "two"), (5, "five")];
     let map: RedBlackTreeMap<i32, &str> = vec.iter().map(|v| *v).collect();
-    let expected_map =
-        RedBlackTreeMap::new()
-            .insert(2, "two")
-            .insert(5, "five");
+    let expected_map = RedBlackTreeMap::new().insert(2, "two").insert(5, "five");
 
     assert_eq!(map, expected_map);
 }
@@ -982,8 +998,7 @@ fn test_default() -> () {
 #[test]
 fn test_display() -> () {
     let empty_map: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::new();
-    let singleton_map = RedBlackTreeMap::new()
-        .insert("hi", "hello");
+    let singleton_map = RedBlackTreeMap::new().insert("hi", "hello");
     let map = RedBlackTreeMap::new()
         .insert(5, "hello")
         .insert(12, "there");
@@ -995,19 +1010,13 @@ fn test_display() -> () {
 
 #[test]
 fn test_eq() -> () {
-    let map_1 = RedBlackTreeMap::new()
-        .insert("a", 0xa)
-        .insert("b", 0xb);
-    let map_1_prime = RedBlackTreeMap::new()
-        .insert("a", 0xa)
-        .insert("b", 0xb);
+    let map_1 = RedBlackTreeMap::new().insert("a", 0xa).insert("b", 0xb);
+    let map_1_prime = RedBlackTreeMap::new().insert("a", 0xa).insert("b", 0xb);
     let map_1_prime_2 = RedBlackTreeMap::new()
         .insert("a", 0xa)
         .insert("b", 0xb)
         .insert("b", 0xb);
-    let map_2 = RedBlackTreeMap::new()
-        .insert("a", 0xa)
-        .insert("b", 0xb + 1);
+    let map_2 = RedBlackTreeMap::new().insert("a", 0xa).insert("b", 0xb + 1);
     let map_3 = RedBlackTreeMap::new()
         .insert("a", 0xa)
         .insert("b", 0xb + 1)
@@ -1025,16 +1034,11 @@ fn test_eq() -> () {
 
 #[test]
 fn test_partial_ord() -> () {
-    let map_1 = RedBlackTreeMap::new()
-        .insert("a", 0xa);
-    let map_1_prime = RedBlackTreeMap::new()
-        .insert("a", 0xa);
-    let map_2 = RedBlackTreeMap::new()
-        .insert("b", 0xb);
-    let map_3 = RedBlackTreeMap::new()
-        .insert(0, 0.0);
-    let map_4 = RedBlackTreeMap::new()
-        .insert(0, ::std::f32::NAN);
+    let map_1 = RedBlackTreeMap::new().insert("a", 0xa);
+    let map_1_prime = RedBlackTreeMap::new().insert("a", 0xa);
+    let map_2 = RedBlackTreeMap::new().insert("b", 0xb);
+    let map_3 = RedBlackTreeMap::new().insert(0, 0.0);
+    let map_4 = RedBlackTreeMap::new().insert(0, ::std::f32::NAN);
 
     assert_eq!(map_1.partial_cmp(&map_1_prime), Some(Ordering::Equal));
     assert_eq!(map_1.partial_cmp(&map_2), Some(Ordering::Less));
@@ -1044,12 +1048,9 @@ fn test_partial_ord() -> () {
 
 #[test]
 fn test_ord() -> () {
-    let map_1 = RedBlackTreeMap::new()
-        .insert("a", 0xa);
-    let map_1_prime = RedBlackTreeMap::new()
-        .insert("a", 0xa);
-    let map_2 = RedBlackTreeMap::new()
-        .insert("b", 0xb);
+    let map_1 = RedBlackTreeMap::new().insert("a", 0xa);
+    let map_1_prime = RedBlackTreeMap::new().insert("a", 0xa);
+    let map_2 = RedBlackTreeMap::new().insert("b", 0xb);
 
     assert_eq!(map_1.cmp(&map_1_prime), Ordering::Equal);
     assert_eq!(map_1.cmp(&map_2), Ordering::Less);
@@ -1066,13 +1067,9 @@ fn hash<K: Ord + Hash, V: Hash>(map: &RedBlackTreeMap<K, V>) -> u64 {
 
 #[test]
 fn test_hash() -> () {
-    let map_1 = RedBlackTreeMap::new()
-        .insert("a", 0xa);
-    let map_1_prime = RedBlackTreeMap::new()
-        .insert("a", 0xa);
-    let map_2 = RedBlackTreeMap::new()
-        .insert("b", 0xb)
-        .insert("a", 0xa);
+    let map_1 = RedBlackTreeMap::new().insert("a", 0xa);
+    let map_1_prime = RedBlackTreeMap::new().insert("a", 0xa);
+    let map_2 = RedBlackTreeMap::new().insert("b", 0xb).insert("a", 0xa);
 
     assert_eq!(hash(&map_1), hash(&map_1));
     assert_eq!(hash(&map_1), hash(&map_1_prime));
@@ -1081,10 +1078,7 @@ fn test_hash() -> () {
 
 #[test]
 fn test_clone() -> () {
-    let map =
-        RedBlackTreeMap::new()
-            .insert("hello", 4)
-            .insert("there", 5);
+    let map = RedBlackTreeMap::new().insert("hello", 4).insert("there", 5);
     let clone = map.clone();
 
     assert_eq!(clone.size(), map.size());
@@ -1095,9 +1089,10 @@ fn test_clone() -> () {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() -> () {
-    use bincode::{serialize, deserialize};
-    let rbtreemap: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::from_iter(vec![(5,6),(7,8),(9,10),(11,12)].into_iter());
-    let encoded = serialize(&rbtreemap).unwrap();
+    use bincode::{deserialize, serialize};
+    let map: RedBlackTreeMap<i32, i32> = rbt_map![5 => 6, 7 => 8, 9 => 10, 11 => 12];
+    let encoded = serialize(&map).unwrap();
     let decoded: RedBlackTreeMap<i32, i32> = deserialize(&encoded).unwrap();
-    assert_eq!(rbtreemap, decoded);
+
+    assert_eq!(map, decoded);
 }

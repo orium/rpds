@@ -13,7 +13,7 @@ mod utils;
 use std::collections::BTreeMap;
 use utils::BencherNoDrop;
 use utils::iterations;
-use bencher::{Bencher, black_box};
+use bencher::{black_box, Bencher};
 
 fn rust_btreemap_insert(bench: &mut Bencher) -> () {
     let limit = iterations(100_000);
@@ -62,5 +62,10 @@ fn rust_btreemap_iterate(bench: &mut Bencher) -> () {
     });
 }
 
-benchmark_group!(benches, rust_btreemap_insert, rust_btreemap_get, rust_btreemap_iterate);
+benchmark_group!(
+    benches,
+    rust_btreemap_insert,
+    rust_btreemap_get,
+    rust_btreemap_iterate
+);
 benchmark_main!(benches);

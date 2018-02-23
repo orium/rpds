@@ -22,12 +22,19 @@ addons:
       # dependencies of the code coverage tool.
       - jq
 
+install:
+  # needed for rustfmt
+  # TODO Remove when all features used in `.rustfmt.toml` are stable.
+  - rustup toolchain install nightly
+  - rustup component add --toolchain nightly rustfmt-preview
+
 script:
   - cargo build --features fatal-warnings,serde
   - cargo test  --features fatal-warnings,serde
   - cargo bench --features fatal-warnings,serde
   - cargo doc   --features fatal-warnings,serde
   - cargo package
+  - cargo +nightly fmt -- --write-mode=diff
   - ./tools/update-readme.sh --check-up-to-date
 
 # TODO Do not build kcov when v34 is available, just install it directly.

@@ -6,7 +6,7 @@
 use std::sync::Arc;
 use std::fmt::Display;
 use std::cmp::Ordering;
-use std::hash::{Hasher, Hash};
+use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::borrow::Borrow;
 use sequence::list;
@@ -67,7 +67,7 @@ macro_rules! queue {
 /// # Implementation details
 ///
 /// This queue is implemented as described in
-/// [Immutability in C# Part Four: An Immutable Queue](https://blogs.msdn.microsoft.com/ericlippert/2007/12/10/immutability-in-c-part-four-an-immutable-queue/).
+/// [Immutability in C# Part Four: An Immutable Queue](https://goo.gl/hWyMuS).
 #[derive(Debug)]
 pub struct Queue<T> {
     in_list:  List<T>,
@@ -77,7 +77,7 @@ pub struct Queue<T> {
 impl<T> Queue<T> {
     pub fn new() -> Queue<T> {
         Queue {
-            in_list: List::new(),
+            in_list:  List::new(),
             out_list: List::new(),
         }
     }
@@ -92,19 +92,15 @@ impl<T> Queue<T> {
 
     pub fn dequeue(&self) -> Option<Queue<T>> {
         if !self.out_list.is_empty() {
-            Some(
-                Queue {
-                    in_list:  self.in_list.clone(),
-                    out_list: self.out_list.drop_first().unwrap(),
-                }
-            )
+            Some(Queue {
+                in_list:  self.in_list.clone(),
+                out_list: self.out_list.drop_first().unwrap(),
+            })
         } else if !self.in_list.is_empty() {
-            Some(
-                Queue {
-                    in_list:  List::new(),
-                    out_list: self.in_list.reverse().drop_first().unwrap(),
-                }
-            )
+            Some(Queue {
+                in_list:  List::new(),
+                out_list: self.in_list.reverse().drop_first().unwrap(),
+            })
         } else {
             None
         }
@@ -132,7 +128,9 @@ impl<T> Queue<T> {
     }
 
     fn iter_arc(&self) -> IterArc<T> {
-        self.out_list.iter_arc().chain(LazilyReversedListIter::new(&self.in_list))
+        self.out_list
+            .iter_arc()
+            .chain(LazilyReversedListIter::new(&self.in_list))
     }
 }
 
@@ -164,8 +162,9 @@ impl<T: Ord> Ord for Queue<T> {
 
 impl<T: Hash> Hash for Queue<T> {
     fn hash<H: Hasher>(&self, state: &mut H) -> () {
-        // Add the hash of length so that if two collections are added one after the other it doesn't
-        // hash to the same thing as a single collection with the same elements in the same order.
+        // Add the hash of length so that if two collections are added one after the other it
+        // doesn't hash to the same thing as a single collection with the same elements in the same
+        // order.
         self.len().hash(state);
 
         for e in self {
@@ -220,8 +219,13 @@ impl<T> FromIterator<T> for Queue<T> {
 }
 
 pub enum LazilyReversedListIter<'a, T: 'a> {
-    Uninitialized { list: &'a List<T> },
-    Initialized { vec: Vec<&'a Arc<T>>, current: Option<usize> },
+    Uninitialized {
+        list: &'a List<T>,
+    },
+    Initialized {
+        vec:     Vec<&'a Arc<T>>,
+        current: Option<usize>,
+    },
 }
 
 impl<'a, T> LazilyReversedListIter<'a, T> {
@@ -249,27 +253,32 @@ impl<'a, T> Iterator for LazilyReversedListIter<'a, T> {
                 };
 
                 self.next()
-            },
+            }
 
-            LazilyReversedListIter::Initialized { ref vec, ref mut current } => {
+            LazilyReversedListIter::Initialized {
+                ref vec,
+                ref mut current,
+            } => {
                 let v = current.map(|i| vec[i]);
 
                 *current = match *current {
                     Some(0) => None,
                     Some(i) => Some(i - 1),
-                    None    => None,
+                    None => None,
                 };
 
                 v
-            },
+            }
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         let len = match *self {
             LazilyReversedListIter::Uninitialized { list } => list.len(),
-            LazilyReversedListIter::Initialized { current: Some(i), .. } => i + 1,
-            LazilyReversedListIter::Initialized { current: None, .. }    => 0,
+            LazilyReversedListIter::Initialized {
+                current: Some(i), ..
+            } => i + 1,
+            LazilyReversedListIter::Initialized { current: None, .. } => 0,
         };
 
         (len, Some(len))
@@ -285,14 +294,18 @@ pub mod serde {
     use serde::de::{Deserialize, Deserializer};
 
     impl<T> Serialize for Queue<T>
-        where T: Serialize {
+    where
+        T: Serialize,
+    {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             serializer.collect_seq(self)
         }
     }
 
     impl<'de, T> Deserialize<'de> for Queue<T>
-        where T: Deserialize<'de> {
+    where
+        T: Deserialize<'de>,
+    {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Queue<T>, D::Error> {
             let list: List<T> = Deserialize::deserialize(deserializer)?;
             Ok(Queue {

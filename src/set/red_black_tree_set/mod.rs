@@ -68,15 +68,17 @@ macro_rules! rbt_set {
 /// This is a thin wrapper around a [`RedBlackTreeMap`](../../map/red_black_tree_map/struct.RedBlackTreeMap.html).
 #[derive(Debug)]
 pub struct RedBlackTreeSet<T>
-    where T: Ord {
+where
+    T: Ord,
+{
     map: RedBlackTreeMap<T, ()>,
 }
 
 impl<T> RedBlackTreeSet<T>
-    where T: Ord {
+where
+    T: Ord,
+{
     pub fn new() -> RedBlackTreeSet<T> {
-        vec![1,2,3];
-
         RedBlackTreeSet {
             map: RedBlackTreeMap::new(),
         }
@@ -89,16 +91,20 @@ impl<T> RedBlackTreeSet<T>
     }
 
     pub fn remove<V: ?Sized>(&self, v: &V) -> RedBlackTreeSet<T>
-        where T: Borrow<V>,
-              V: Ord {
+    where
+        T: Borrow<V>,
+        V: Ord,
+    {
         RedBlackTreeSet {
             map: self.map.remove(v),
         }
     }
 
     pub fn contains<V: ?Sized>(&self, v: &V) -> bool
-        where T: Borrow<V>,
-              V: Ord {
+    where
+        T: Borrow<V>,
+        V: Ord,
+    {
         self.map.contains_key(v)
     }
 
@@ -119,8 +125,8 @@ impl<T> RedBlackTreeSet<T>
 
         while let (Some(v), Some(u)) = (v_opt, u_opt) {
             match v.cmp(u) {
-                Ordering::Less    => v_opt = self_it.next(),
-                Ordering::Equal   => return false,
+                Ordering::Less => v_opt = self_it.next(),
+                Ordering::Equal => return false,
                 Ordering::Greater => u_opt = other_it.next(),
             }
         }
@@ -134,12 +140,11 @@ impl<T> RedBlackTreeSet<T>
         for v in self.iter() {
             loop {
                 match other_it.next() {
-                    Some(u) =>
-                        match u.cmp(v) {
-                            Ordering::Less    => (),
-                            Ordering::Equal   => break,
-                            Ordering::Greater => return false,
-                        },
+                    Some(u) => match u.cmp(v) {
+                        Ordering::Less => (),
+                        Ordering::Equal => break,
+                        Ordering::Greater => return false,
+                    },
                     None => return false,
                 }
             }
@@ -168,7 +173,9 @@ impl<T> RedBlackTreeSet<T>
 }
 
 impl<T> Clone for RedBlackTreeSet<T>
-    where T: Ord {
+where
+    T: Ord,
+{
     fn clone(&self) -> RedBlackTreeSet<T> {
         RedBlackTreeSet {
             map: self.map.clone(),
@@ -177,24 +184,33 @@ impl<T> Clone for RedBlackTreeSet<T>
 }
 
 impl<T> Default for RedBlackTreeSet<T>
-    where T: Ord {
+where
+    T: Ord,
+{
     fn default() -> RedBlackTreeSet<T> {
         RedBlackTreeSet::new()
     }
 }
 
 impl<T> PartialEq for RedBlackTreeSet<T>
-    where T: Ord {
+where
+    T: Ord,
+{
     fn eq(&self, other: &RedBlackTreeSet<T>) -> bool {
         self.map.eq(&other.map)
     }
 }
 
 impl<T> Eq for RedBlackTreeSet<T>
-    where T: Ord {}
+where
+    T: Ord,
+{
+}
 
 impl<T> Display for RedBlackTreeSet<T>
-    where T: Ord + Display {
+where
+    T: Ord + Display,
+{
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         let mut first = true;
 
@@ -213,7 +229,9 @@ impl<T> Display for RedBlackTreeSet<T>
 }
 
 impl<'a, T> IntoIterator for &'a RedBlackTreeSet<T>
-    where T: Ord {
+where
+    T: Ord,
+{
     type Item = &'a T;
     type IntoIter = Iter<'a, T>;
 
@@ -223,8 +241,10 @@ impl<'a, T> IntoIterator for &'a RedBlackTreeSet<T>
 }
 
 // TODO This can be improved to create a perfectly balanced tree.
-impl<T> FromIterator<T> for RedBlackTreeSet<T> where
-    T: Ord {
+impl<T> FromIterator<T> for RedBlackTreeSet<T>
+where
+    T: Ord,
+{
     fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> RedBlackTreeSet<T> {
         let mut map = RedBlackTreeSet::new();
 
@@ -245,25 +265,35 @@ pub mod serde {
     use std::fmt;
 
     impl<T> Serialize for RedBlackTreeSet<T>
-        where T: Ord + Serialize {
+    where
+        T: Ord + Serialize,
+    {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             serializer.collect_seq(self)
         }
     }
 
     impl<'de, T> Deserialize<'de> for RedBlackTreeSet<T>
-        where T: Ord + Deserialize<'de> {
-        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<RedBlackTreeSet<T>, D::Error> {
-            deserializer.deserialize_seq(RedBlackTreeSetVisitor { phantom: PhantomData } )
+    where
+        T: Ord + Deserialize<'de>,
+    {
+        fn deserialize<D: Deserializer<'de>>(
+            deserializer: D,
+        ) -> Result<RedBlackTreeSet<T>, D::Error> {
+            deserializer.deserialize_seq(RedBlackTreeSetVisitor {
+                phantom: PhantomData,
+            })
         }
     }
 
     struct RedBlackTreeSetVisitor<T> {
-        phantom: PhantomData<T>
+        phantom: PhantomData<T>,
     }
 
     impl<'de, T> Visitor<'de> for RedBlackTreeSetVisitor<T>
-        where T: Ord + Deserialize<'de> {
+    where
+        T: Ord + Deserialize<'de>,
+    {
         type Value = RedBlackTreeSet<T>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -271,7 +301,9 @@ pub mod serde {
         }
 
         fn visit_seq<A>(self, mut seq: A) -> Result<RedBlackTreeSet<T>, A::Error>
-            where A: SeqAccess<'de> {
+        where
+            A: SeqAccess<'de>,
+        {
             let mut rbtreeset = RedBlackTreeSet::new();
 
             while let Some(value) = seq.next_element()? {

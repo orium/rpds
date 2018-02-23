@@ -6,7 +6,7 @@
 use std::sync::Arc;
 use std::fmt::Display;
 use std::cmp::Ordering;
-use std::hash::{Hasher, Hash};
+use std::hash::{Hash, Hasher};
 use std::borrow::Borrow;
 use std::iter::FromIterator;
 
@@ -88,8 +88,8 @@ macro_rules! list {
 /// make some operations more efficient.
 #[derive(Debug)]
 pub struct List<T> {
-    node: Arc<Node<T>>,
-    last: Option<Arc<T>>,
+    node:   Arc<Node<T>>,
+    last:   Option<Arc<T>>,
     length: usize,
 }
 
@@ -102,8 +102,8 @@ enum Node<T> {
 impl<T> List<T> {
     pub fn new() -> List<T> {
         List {
-            node: Arc::new(Node::Nil),
-            last: None,
+            node:   Arc::new(Node::Nil),
+            last:   None,
             length: 0,
         }
     }
@@ -111,7 +111,7 @@ impl<T> List<T> {
     pub fn first(&self) -> Option<&T> {
         match *self.node {
             Node::Cons(ref h, _) => Some(h),
-            Node::Nil            => None,
+            Node::Nil => None,
         }
     }
 
@@ -124,13 +124,17 @@ impl<T> List<T> {
             Node::Cons(_, ref t) => {
                 let new_length = self.length - 1;
                 let new_list = List {
-                    node: Arc::clone(t),
-                    last: if new_length == 0 { None } else { self.last.clone() },
-                    length: new_length
+                    node:   Arc::clone(t),
+                    last:   if new_length == 0 {
+                        None
+                    } else {
+                        self.last.clone()
+                    },
+                    length: new_length,
                 };
 
                 Some(new_list)
-            },
+            }
             Node::Nil => None,
         }
     }
@@ -138,13 +142,13 @@ impl<T> List<T> {
     fn push_front_arc(&self, v: Arc<T>) -> List<T> {
         List {
             // TODO With non-lexical lifetimes can we put the "last" after "node"?
-            last: {
+            last:   {
                 match self.last {
                     Some(ref v) => Some(Arc::clone(v)),
-                    None        => Some(Arc::clone(&v)),
+                    None => Some(Arc::clone(&v)),
                 }
             },
-            node: Arc::new(Node::Cons(v, Arc::clone(&self.node))),
+            node:   Arc::new(Node::Cons(v, Arc::clone(&self.node))),
             length: self.length + 1,
         }
     }
@@ -223,8 +227,8 @@ impl<T: Hash> Hash for List<T> {
 impl<T> Clone for List<T> {
     fn clone(&self) -> List<T> {
         List {
-            node: Arc::clone(&self.node),
-            last: self.last.clone(),
+            node:   Arc::clone(&self.node),
+            last:   self.last.clone(),
             length: self.length,
         }
     }
@@ -279,7 +283,7 @@ impl<T> FromIterator<T> for List<T> {
 
 #[derive(Debug)]
 pub struct IterArc<'a, T: 'a> {
-    next: &'a Node<T>,
+    next:   &'a Node<T>,
     length: usize,
 }
 
@@ -301,8 +305,8 @@ impl<'a, T> Iterator for IterArc<'a, T> {
                 self.next = t;
                 self.length -= 1;
                 Some(v)
-            },
-            Node::Nil => None
+            }
+            Node::Nil => None,
         }
     }
 
@@ -322,24 +326,33 @@ pub mod serde {
     use std::fmt;
 
     impl<T> Serialize for List<T>
-        where T: Serialize {
+    where
+        T: Serialize,
+    {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             serializer.collect_seq(self)
         }
     }
 
-    impl<'de, T> Deserialize<'de> for List<T> where T: Deserialize<'de> {
+    impl<'de, T> Deserialize<'de> for List<T>
+    where
+        T: Deserialize<'de>,
+    {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<List<T>, D::Error> {
-            deserializer.deserialize_seq(ListVisitor { phantom: PhantomData } )
+            deserializer.deserialize_seq(ListVisitor {
+                phantom: PhantomData,
+            })
         }
     }
 
     struct ListVisitor<T> {
-        phantom: PhantomData<T>
+        phantom: PhantomData<T>,
     }
 
     impl<'de, T> Visitor<'de> for ListVisitor<T>
-        where T: Deserialize<'de> {
+    where
+        T: Deserialize<'de>,
+    {
         type Value = List<T>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -347,12 +360,14 @@ pub mod serde {
         }
 
         fn visit_seq<A>(self, mut seq: A) -> Result<List<T>, A::Error>
-            where A: SeqAccess<'de> {
+        where
+            A: SeqAccess<'de>,
+        {
             let mut vec: Vec<T> = if let Some(capacity) = seq.size_hint() {
-                    Vec::with_capacity(capacity)
-                } else {
-                    Vec::new()
-                };
+                Vec::with_capacity(capacity)
+            } else {
+                Vec::new()
+            };
 
             while let Some(value) = seq.next_element()? {
                 vec.push(value);

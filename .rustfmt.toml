@@ -1,0 +1,7 @@
+write_mode = "Diff"
+
+comment_width = 100
+struct_field_align_threshold = 4
+use_field_init_shorthand = true
+use_try_shorthand = true
+match_arm_blocks = false
