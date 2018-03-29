@@ -3,12 +3,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+use RedBlackTreeMap;
+use map::red_black_tree_map;
 use std::borrow::Borrow;
+use std::cmp::Ordering;
 use std::fmt::Display;
 use std::iter::FromIterator;
-use map::red_black_tree_map;
-use RedBlackTreeMap;
-use std::cmp::Ordering;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = red_black_tree_map::IterKeys<'a, T, ()>;
@@ -259,10 +259,10 @@ where
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::ser::{Serialize, Serializer};
     use serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
-    use std::marker::PhantomData;
+    use serde::ser::{Serialize, Serializer};
     use std::fmt;
+    use std::marker::PhantomData;
 
     impl<T> Serialize for RedBlackTreeSet<T>
     where

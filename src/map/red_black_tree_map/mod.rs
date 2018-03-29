@@ -3,14 +3,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-use std::cmp::Ordering;
+use super::entry::Entry;
 use std::borrow::Borrow;
-use std::iter::FromIterator;
-use std::ops::Index;
+use std::cmp::Ordering;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
-use super::entry::Entry;
+use std::iter::FromIterator;
+use std::ops::Index;
+use std::sync::Arc;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, K, V> =
@@ -268,8 +268,8 @@ where
     ///                  c   d
     /// ```
     fn balance(self) -> Node<K, V> {
-        use self::Color::Red as R;
         use self::Color::Black as B;
+        use self::Color::Red as R;
 
         match self.color {
             B => {
@@ -478,8 +478,8 @@ where
         where
             K: Ord,
         {
-            use self::Color::Red as R;
             use self::Color::Black as B;
+            use self::Color::Red as R;
 
             match (left, right) {
                 (None, r) => r.map(Node::clone),
@@ -634,8 +634,8 @@ where
         where
             K: Ord,
         {
-            use self::Color::Red as R;
             use self::Color::Black as B;
+            use self::Color::Red as R;
 
             let color_l: Option<Color> = node.left_color();
             let color_r: Option<Color> = node.right_color();
@@ -712,8 +712,8 @@ where
         where
             K: Ord,
         {
-            use self::Color::Red as R;
             use self::Color::Black as B;
+            use self::Color::Red as R;
 
             let color_r: Option<Color> = node.right_color();
             let color_l: Option<Color> = node.left_color();
@@ -1272,10 +1272,10 @@ impl<'a, K: Ord, V> ExactSizeIterator for IterArc<'a, K, V> {}
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::ser::{Serialize, Serializer};
     use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
-    use std::marker::PhantomData;
+    use serde::ser::{Serialize, Serializer};
     use std::fmt;
+    use std::marker::PhantomData;
 
     impl<K, V> Serialize for RedBlackTreeMap<K, V>
     where

@@ -3,12 +3,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-use std::fmt::Display;
-use std::cmp::Ordering;
-use std::hash::{Hash, Hasher};
 use std::borrow::Borrow;
+use std::cmp::Ordering;
+use std::fmt::Display;
+use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
+use std::sync::Arc;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
@@ -320,10 +320,10 @@ impl<'a, T> ExactSizeIterator for IterArc<'a, T> {}
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::ser::{Serialize, Serializer};
     use serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
-    use std::marker::PhantomData;
+    use serde::ser::{Serialize, Serializer};
     use std::fmt;
+    use std::marker::PhantomData;
 
     impl<T> Serialize for List<T>
     where

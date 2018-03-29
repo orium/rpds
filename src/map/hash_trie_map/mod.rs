@@ -5,22 +5,22 @@
 
 mod sparse_array_usize;
 
-use std::vec::Vec;
-use std::slice;
-use std::sync::Arc;
+use self::sparse_array_usize::SparseArrayUsize;
+use super::entry::Entry;
+use List;
+use sequence::list;
 use std::borrow::Borrow;
-use std::hash::Hash;
-use std::hash::BuildHasher;
 use std::collections::hash_map::RandomState;
+use std::fmt::Display;
+use std::hash::BuildHasher;
+use std::hash::Hash;
+use std::iter::FromIterator;
+use std::iter::Peekable;
 use std::mem::size_of;
 use std::ops::Index;
-use std::iter::Peekable;
-use std::iter::FromIterator;
-use std::fmt::Display;
-use sequence::list;
-use List;
-use super::entry::Entry;
-use self::sparse_array_usize::SparseArrayUsize;
+use std::slice;
+use std::sync::Arc;
+use std::vec::Vec;
 
 type HashValue = u64;
 
@@ -173,8 +173,8 @@ struct EntryWithHash<K, V> {
 mod node_utils {
     use super::HashValue;
     use std::hash::BuildHasher;
-    use std::hash::Hasher;
     use std::hash::Hash;
+    use std::hash::Hasher;
     use std::mem::size_of_val;
 
     // Returns the index of the array for the given hash on depth `depth`.
@@ -857,8 +857,8 @@ where
 }
 
 mod iter_utils {
-    use std::mem::size_of;
     use super::HashValue;
+    use std::mem::size_of;
 
     pub fn trie_max_height(degree: u8) -> usize {
         let bits_per_level = (degree - 1).count_ones() as usize;
@@ -956,10 +956,10 @@ impl<'a, K: Eq + Hash, V> ExactSizeIterator for IterArc<'a, K, V> {}
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::ser::{Serialize, Serializer};
     use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
-    use std::marker::PhantomData;
+    use serde::ser::{Serialize, Serializer};
     use std::fmt;
+    use std::marker::PhantomData;
 
     impl<K, V, H> Serialize for HashTrieMap<K, V, H>
     where

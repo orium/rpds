@@ -11,10 +11,10 @@ extern crate rpds;
 
 mod utils;
 
+use bencher::{black_box, Bencher};
 use rpds::List;
 use utils::BencherNoDrop;
 use utils::iterations;
-use bencher::{black_box, Bencher};
 
 fn list_push_front(bench: &mut Bencher) -> () {
     let limit = iterations(100_000);

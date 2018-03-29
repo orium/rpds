@@ -3,15 +3,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use std::vec::Vec;
-use std::sync::Arc;
 use std::borrow::Borrow;
-use std::fmt::Display;
 use std::cmp::Ordering;
+use std::fmt::Display;
 use std::hash::{Hash, Hasher};
-use std::ops::Index;
 use std::iter::FromIterator;
 use std::mem::size_of;
+use std::ops::Index;
+use std::sync::Arc;
+use std::vec::Vec;
 
 use utils::vec_utils::VecUtils;
 
@@ -726,10 +726,10 @@ impl<'a, T> ExactSizeIterator for IterArc<'a, T> {}
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::ser::{Serialize, Serializer};
     use serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
-    use std::marker::PhantomData;
+    use serde::ser::{Serialize, Serializer};
     use std::fmt;
+    use std::marker::PhantomData;
 
     impl<T> Serialize for Vector<T>
     where

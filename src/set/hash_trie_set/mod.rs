@@ -3,14 +3,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use std::hash::Hash;
-use std::hash::BuildHasher;
+use HashTrieMap;
+use map::hash_trie_map;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
 use std::fmt::Display;
+use std::hash::BuildHasher;
+use std::hash::Hash;
 use std::iter::FromIterator;
-use map::hash_trie_map;
-use HashTrieMap;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = hash_trie_map::IterKeys<'a, T, ()>;
@@ -252,10 +252,10 @@ where
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::ser::{Serialize, Serializer};
     use serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
-    use std::marker::PhantomData;
+    use serde::ser::{Serialize, Serializer};
     use std::fmt;
+    use std::marker::PhantomData;
 
     impl<T, H> Serialize for HashTrieSet<T, H>
     where

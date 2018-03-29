@@ -3,9 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use std::vec::Vec;
-use std::slice;
 use std::mem::size_of_val;
+use std::slice;
+use std::vec::Vec;
 
 use utils::vec_utils::VecUtils;
 

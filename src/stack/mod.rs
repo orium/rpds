@@ -3,12 +3,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+use List;
+use sequence::list;
 use std::cmp::Ordering;
+use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
-use std::fmt::Display;
-use sequence::list;
-use List;
 
 // TODO Use impl trait for return value when available
 pub type Iter<'a, T> = list::Iter<'a, T>;
@@ -180,8 +180,8 @@ impl<T> FromIterator<T> for Stack<T> {
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::ser::{Serialize, Serializer};
     use serde::de::{Deserialize, Deserializer};
+    use serde::ser::{Serialize, Serializer};
 
     impl<T> Serialize for Stack<T>
     where

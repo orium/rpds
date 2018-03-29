@@ -263,17 +263,17 @@ extern crate bincode;
 
 mod utils;
 
-pub mod sequence;
-pub mod stack;
-pub mod queue;
 pub mod map;
+pub mod queue;
+pub mod sequence;
 pub mod set;
+pub mod stack;
 
+pub use map::hash_trie_map::HashTrieMap;
+pub use map::red_black_tree_map::RedBlackTreeMap;
+pub use queue::Queue;
 pub use sequence::list::List;
 pub use sequence::vector::Vector;
-pub use stack::Stack;
-pub use queue::Queue;
-pub use map::hash_trie_map::HashTrieMap;
 pub use set::hash_trie_set::HashTrieSet;
-pub use map::red_black_tree_map::RedBlackTreeMap;
 pub use set::red_black_tree_set::RedBlackTreeSet;
+pub use stack::Stack;

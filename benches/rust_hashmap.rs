@@ -10,10 +10,10 @@ extern crate bencher;
 
 mod utils;
 
+use bencher::{black_box, Bencher};
 use std::collections::HashMap;
 use utils::BencherNoDrop;
 use utils::iterations;
-use bencher::{black_box, Bencher};
 
 fn rust_hashmap_insert(bench: &mut Bencher) -> () {
     let limit = iterations(100_000);

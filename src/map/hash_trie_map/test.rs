@@ -172,9 +172,9 @@ mod bucket {
 }
 
 mod hasher_mocks {
+    use super::*;
     use std::collections::HashMap;
     use std::hash::Hasher;
-    use super::*;
 
     pub struct MockedHashBuilder {
         byte_map: HashMap<u8, HashValue>,
@@ -269,8 +269,8 @@ mod hasher_mocks {
 }
 
 mod node {
-    use super::*;
     use self::hasher_mocks::*;
+    use super::*;
     use std::collections::HashMap;
 
     #[test]

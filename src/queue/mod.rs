@@ -3,14 +3,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
-use std::fmt::Display;
+use List;
+use sequence::list;
+use std::borrow::Borrow;
 use std::cmp::Ordering;
+use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
-use std::borrow::Borrow;
-use sequence::list;
-use List;
+use std::sync::Arc;
 
 // TODO Use impl trait instead of this when available.
 pub type IterArc<'a, T> = ::std::iter::Chain<list::IterArc<'a, T>, LazilyReversedListIter<'a, T>>;
@@ -290,8 +290,8 @@ impl<'a, T> ExactSizeIterator for LazilyReversedListIter<'a, T> {}
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::ser::{Serialize, Serializer};
     use serde::de::{Deserialize, Deserializer};
+    use serde::ser::{Serialize, Serializer};
 
     impl<T> Serialize for Queue<T>
     where
