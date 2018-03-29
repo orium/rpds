@@ -23,9 +23,9 @@ function new_readme() {
     echo "$filename"
 }
 
-check_up_to_date=false
+check=false
 
-args=$(getopt -l "check-up-to-date" -o "ch" -- "$@")
+args=$(getopt -l "check" -o "ch" -- "$@")
 
 eval set -- "$args"
 
@@ -36,12 +36,12 @@ while [ $# -ge 1 ]; do
                     shift
                     break
                     ;;
-                -c|--check-up-to-date)
-                    check_up_to_date=true
+                -c|--check)
+                    check=true
                     shift
                     ;;
                 -h)
-                    echo "usage: $0 [--check-up-to-date]"
+                    echo "usage: $0 [--check]"
                     exit 0
                     ;;
         esac
@@ -51,9 +51,9 @@ done
 
 new_readme_filename=$(new_readme)
 
-if $check_up_to_date; then
+if $check; then
     if ! diff "$new_readme_filename" README.md > /dev/null; then
-        echo "README.md is not up-to-date.  Run $0 to update it." 2>&1
+        echo "README.md is outdated.  Run $0 to update it." 2>&1
         exit 1
     fi
 else
