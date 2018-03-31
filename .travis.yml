@@ -27,9 +27,10 @@ install:
   # TODO Remove when all features used in `.rustfmt.toml` are stable.
   - rustup toolchain install nightly
   - rustup component add --toolchain nightly rustfmt-preview
+  - cargo install cargo-deadlinks
 
 script:
-  - travis_wait ./tools/check.sh
+  - ./tools/check.sh
 
 # TODO Do not build kcov when v34 is available, just install it directly.
 after_success:

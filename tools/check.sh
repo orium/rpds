@@ -13,6 +13,7 @@ cargo build --features fatal-warnings,serde
 cargo test  --features fatal-warnings,serde
 QUICK_BENCH=true cargo bench --features fatal-warnings,serde
 cargo doc   --features fatal-warnings,serde
+cargo deadlinks
 cargo package
 cargo +nightly fmt -- --write-mode=diff
 ./tools/update-readme.sh --check
