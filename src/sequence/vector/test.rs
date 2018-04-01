@@ -36,10 +36,10 @@ mod node {
 
     #[test]
     fn test_drop_last_single_level() -> () {
-        let empty_leaf: Node<u32> = Node::new_empty_leaf();
-        let empty_branch: Node<u32> = Node::new_empty_branch();
-        let singleton_node: Node<u32> = Vector::new().push_back(0).root.as_ref().clone();
-        let one_level_node: Node<u32> = Vector::new()
+        let mut empty_leaf: Node<u32> = Node::new_empty_leaf();
+        let mut empty_branch: Node<u32> = Node::new_empty_branch();
+        let mut singleton_node: Node<u32> = Vector::new().push_back(0).root.as_ref().clone();
+        let mut one_level_node: Node<u32> = Vector::new()
             .push_back(0)
             .push_back(1)
             .root
@@ -49,19 +49,20 @@ mod node {
         assert!(empty_leaf.drop_last().is_none());
         assert!(empty_branch.drop_last().is_none());
         assert!(singleton_node.drop_last().is_none());
-        assert_eq!(one_level_node.drop_last().map(|n| n.used()), Some(1));
+        assert_eq!(one_level_node.drop_last(), Some(()));
+        assert_eq!(one_level_node.used(), 1);
     }
 
     #[test]
     fn test_drop_last_multi_level() -> () {
-        let node_three: Node<u32> = Vector::new_with_bits(1)
+        let mut node_three: Node<u32> = Vector::new_with_bits(1)
             .push_back(0)
             .push_back(1)
             .push_back(2)
             .root
             .as_ref()
             .clone();
-        let node_four: Node<u32> = Vector::new_with_bits(1)
+        let mut node_four: Node<u32> = Vector::new_with_bits(1)
             .push_back(0)
             .push_back(1)
             .push_back(2)
@@ -117,8 +118,10 @@ mod node {
             Node::Branch(a_branch)
         };
 
-        assert_eq!(node_three.drop_last(), Some(node_three_after_drop));
-        assert_eq!(node_four.drop_last(), Some(node_four_after_drop));
+        assert_eq!(node_three.drop_last(), Some(()));
+        assert_eq!(node_three, node_three_after_drop);
+        assert_eq!(node_four.drop_last(), Some(()));
+        assert_eq!(node_four, node_four_after_drop);
     }
 }
 
@@ -368,19 +371,19 @@ mod internal {
             (Node::Branch(a_branch), leaf)
         };
 
-        assert_eq!(empty_leaf.clone(), Vector::compress_root(empty_leaf));
-        assert_eq!(empty_branch.clone(), Vector::compress_root(empty_branch));
+        assert_eq!(empty_leaf.clone(), *Vector::compress_root(empty_leaf));
+        assert_eq!(empty_branch.clone(), *Vector::compress_root(empty_branch));
         assert_eq!(
             singleton_leaf.clone(),
-            Vector::compress_root(singleton_leaf)
+            *Vector::compress_root(singleton_leaf)
         );
         assert_eq!(
             compressed_branch.clone(),
-            Vector::compress_root(compressed_branch)
+            *Vector::compress_root(compressed_branch)
         );
         assert_eq!(
             uncompressed_branch_leaf,
-            Vector::compress_root(uncompressed_branch)
+            *Vector::compress_root(uncompressed_branch)
         );
     }
 
