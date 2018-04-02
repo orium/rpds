@@ -3,9 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Entry<K, V> {
-    pub key:   K,
+    pub key: K,
     pub value: V,
 }
 

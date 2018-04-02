@@ -17,7 +17,7 @@ use utils::BencherNoDrop;
 use utils::iterations;
 
 fn red_black_tree_map_insert(bench: &mut Bencher) -> () {
-    let limit = iterations(100_000);
+    let limit = iterations(10_000);
 
     bench.iter_no_drop(|| {
         let mut map = RedBlackTreeMap::new();
@@ -31,7 +31,7 @@ fn red_black_tree_map_insert(bench: &mut Bencher) -> () {
 }
 
 fn red_black_tree_map_remove(bench: &mut Bencher) -> () {
-    let limit = iterations(100_000);
+    let limit = iterations(10_000);
     let mut full_map = RedBlackTreeMap::new();
 
     for i in 0..limit {
@@ -50,7 +50,7 @@ fn red_black_tree_map_remove(bench: &mut Bencher) -> () {
 }
 
 fn red_black_tree_map_get(bench: &mut Bencher) -> () {
-    let limit = iterations(100_000);
+    let limit = iterations(10_000);
     let mut map = RedBlackTreeMap::new();
 
     for i in 0..limit {
@@ -65,7 +65,7 @@ fn red_black_tree_map_get(bench: &mut Bencher) -> () {
 }
 
 fn red_black_tree_map_iterate(bench: &mut Bencher) -> () {
-    let limit = iterations(100_000);
+    let limit = iterations(10_000);
     let mut map = RedBlackTreeMap::new();
 
     for i in 0..limit {

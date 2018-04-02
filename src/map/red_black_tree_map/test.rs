@@ -21,7 +21,7 @@ impl<K, V> Node<K, V> {
         Node {
             entry: Arc::new(entry),
             color: Color::Black,
-            left:  None,
+            left: None,
             right: None,
         }
     }
@@ -122,14 +122,14 @@ mod node {
     use super::*;
 
     fn dummy_entry(v: i32) -> Entry<i32, i32> {
-        Entry { key:   v, value: v }
+        Entry { key: v, value: v }
     }
 
     fn dummy_leaf(v: i32) -> Node<i32, i32> {
         Node {
             entry: Arc::new(dummy_entry(v)),
             color: Color::Red,
-            left:  None,
+            left: None,
             right: None,
         }
     }
@@ -142,7 +142,7 @@ mod node {
         Node {
             entry: Arc::new(dummy_entry(v)),
             color: Color::Red,
-            left:  left.map(|n| Arc::new(n)),
+            left: left.map(|n| Arc::new(n)),
             right: right.map(|n| Arc::new(n)),
         }
     }
@@ -278,13 +278,13 @@ mod node {
         let tree_case_1 = Node {
             entry: Arc::clone(&entry_z),
             color: Color::Black,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_y),
                 color: Color::Red,
-                left:  Some(Arc::new(Node {
+                left: Some(Arc::new(Node {
                     entry: Arc::clone(&entry_x),
                     color: Color::Red,
-                    left:  Some(Arc::clone(&tree_a)),
+                    left: Some(Arc::clone(&tree_a)),
                     right: Some(Arc::clone(&tree_b)),
                 })),
                 right: Some(Arc::clone(&tree_c)),
@@ -295,14 +295,14 @@ mod node {
         let tree_case_2 = Node {
             entry: Arc::clone(&entry_z),
             color: Color::Black,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_x),
                 color: Color::Red,
-                left:  Some(Arc::clone(&tree_a)),
+                left: Some(Arc::clone(&tree_a)),
                 right: Some(Arc::new(Node {
                     entry: Arc::clone(&entry_y),
                     color: Color::Red,
-                    left:  Some(Arc::clone(&tree_b)),
+                    left: Some(Arc::clone(&tree_b)),
                     right: Some(Arc::clone(&tree_c)),
                 })),
             })),
@@ -312,14 +312,14 @@ mod node {
         let tree_case_3 = Node {
             entry: Arc::clone(&entry_x),
             color: Color::Black,
-            left:  Some(Arc::clone(&tree_a)),
+            left: Some(Arc::clone(&tree_a)),
             right: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_z),
                 color: Color::Red,
-                left:  Some(Arc::new(Node {
+                left: Some(Arc::new(Node {
                     entry: Arc::clone(&entry_y),
                     color: Color::Red,
-                    left:  Some(Arc::clone(&tree_b)),
+                    left: Some(Arc::clone(&tree_b)),
                     right: Some(Arc::clone(&tree_c)),
                 })),
                 right: Some(Arc::clone(&tree_d)),
@@ -329,15 +329,15 @@ mod node {
         let tree_case_4 = Node {
             entry: Arc::clone(&entry_x),
             color: Color::Black,
-            left:  Some(Arc::clone(&tree_a)),
+            left: Some(Arc::clone(&tree_a)),
             right: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_y),
                 color: Color::Red,
-                left:  Some(Arc::clone(&tree_b)),
+                left: Some(Arc::clone(&tree_b)),
                 right: Some(Arc::new(Node {
                     entry: Arc::clone(&entry_z),
                     color: Color::Red,
-                    left:  Some(Arc::clone(&tree_c)),
+                    left: Some(Arc::clone(&tree_c)),
                     right: Some(Arc::clone(&tree_d)),
                 })),
             })),
@@ -346,13 +346,13 @@ mod node {
         let tree_none_of_the_above = Node {
             entry: Arc::clone(&entry_z),
             color: Color::Black,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_y),
                 color: Color::Red,
-                left:  Some(Arc::new(Node {
+                left: Some(Arc::new(Node {
                     entry: Arc::clone(&entry_x),
                     color: Color::Black,
-                    left:  Some(Arc::clone(&tree_a)),
+                    left: Some(Arc::clone(&tree_a)),
                     right: Some(Arc::clone(&tree_b)),
                 })),
                 right: Some(Arc::clone(&tree_c)),
@@ -363,16 +363,16 @@ mod node {
         let tree_balanced = Node {
             entry: Arc::clone(&entry_y),
             color: Color::Red,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_x),
                 color: Color::Black,
-                left:  Some(Arc::clone(&tree_a)),
+                left: Some(Arc::clone(&tree_a)),
                 right: Some(Arc::clone(&tree_b)),
             })),
             right: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_z),
                 color: Color::Black,
-                left:  Some(Arc::clone(&tree_c)),
+                left: Some(Arc::clone(&tree_c)),
                 right: Some(Arc::clone(&tree_d)),
             })),
         };
@@ -406,11 +406,11 @@ mod node {
         let expected_node = Node {
             entry: Arc::new(Entry::new(0, 2)),
             color: Color::Black,
-            left:  None,
+            left: None,
             right: Some(Arc::new(Node {
                 entry: Arc::new(Entry::new(10, 3)),
                 color: Color::Red,
-                left:  None,
+                left: None,
                 right: None,
             })),
         };
@@ -422,11 +422,11 @@ mod node {
         let expected_node = Node {
             entry: Arc::new(Entry::new(0, 2)),
             color: Color::Black,
-            left:  None,
+            left: None,
             right: Some(Arc::new(Node {
                 entry: Arc::new(Entry::new(10, 4)),
                 color: Color::Red,
-                left:  None,
+                left: None,
                 right: None,
             })),
         };
@@ -439,16 +439,16 @@ mod node {
         let expected_node = Node {
             entry: Arc::new(Entry::new(5, 5)),
             color: Color::Black,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(Entry::new(0, 2)),
                 color: Color::Black,
-                left:  None,
+                left: None,
                 right: None,
             })),
             right: Some(Arc::new(Node {
                 entry: Arc::new(Entry::new(10, 4)),
                 color: Color::Black,
-                left:  None,
+                left: None,
                 right: None,
             })),
         };
@@ -461,16 +461,16 @@ mod node {
         let expected_node = Node {
             entry: Arc::new(Entry::new(5, 5)),
             color: Color::Black,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(Entry::new(0, 1)),
                 color: Color::Black,
-                left:  None,
+                left: None,
                 right: None,
             })),
             right: Some(Arc::new(Node {
                 entry: Arc::new(Entry::new(10, 4)),
                 color: Color::Black,
-                left:  None,
+                left: None,
                 right: None,
             })),
         };

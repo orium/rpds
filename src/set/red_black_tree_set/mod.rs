@@ -84,22 +84,6 @@ where
         }
     }
 
-    pub fn insert(&self, v: T) -> RedBlackTreeSet<T> {
-        RedBlackTreeSet {
-            map: self.map.insert(v, ()),
-        }
-    }
-
-    pub fn remove<V: ?Sized>(&self, v: &V) -> RedBlackTreeSet<T>
-    where
-        T: Borrow<V>,
-        V: Ord,
-    {
-        RedBlackTreeSet {
-            map: self.map.remove(v),
-        }
-    }
-
     pub fn contains<V: ?Sized>(&self, v: &V) -> bool
     where
         T: Borrow<V>,
@@ -169,6 +153,27 @@ where
 
     pub fn iter(&self) -> Iter<T> {
         self.map.keys()
+    }
+}
+
+impl<T> RedBlackTreeSet<T>
+where
+    T: Ord + Clone,
+{
+    pub fn insert(&self, v: T) -> RedBlackTreeSet<T> {
+        RedBlackTreeSet {
+            map: self.map.insert(v, ()),
+        }
+    }
+
+    pub fn remove<V: ?Sized>(&self, v: &V) -> RedBlackTreeSet<T>
+    where
+        T: Borrow<V>,
+        V: Ord,
+    {
+        RedBlackTreeSet {
+            map: self.map.remove(v),
+        }
     }
 }
 
@@ -243,7 +248,7 @@ where
 // TODO This can be improved to create a perfectly balanced tree.
 impl<T> FromIterator<T> for RedBlackTreeSet<T>
 where
-    T: Ord,
+    T: Ord + Clone,
 {
     fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> RedBlackTreeSet<T> {
         let mut map = RedBlackTreeSet::new();

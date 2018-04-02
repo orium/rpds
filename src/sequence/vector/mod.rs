@@ -13,9 +13,6 @@ use std::ops::Index;
 use std::sync::Arc;
 use std::vec::Vec;
 
-// TODO Use impl trait instead of this when available.
-pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
-
 const DEFAULT_BITS: u8 = 5;
 
 /// Creates a [`Vector`](sequence/vector/struct.Vector.html) containing the given arguments:
@@ -93,15 +90,15 @@ macro_rules! vector {
 /// and [Understanding Persistent Vector Part 2](http://hypirion.com/musings/understanding-persistent-vector-pt-2).
 #[derive(Debug)]
 pub struct Vector<T> {
-    root:   Arc<Node<T>>,
-    bits:   u8,
+    root: Arc<Node<T>>,
+    bits: u8,
     length: usize,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 enum Node<T> {
     Branch(Vec<Arc<Node<T>>>),
-    Leaf(Vec<Arc<T>>),
+    Leaf(Vec<T>),
 }
 
 impl<T> Node<T> {
@@ -120,11 +117,33 @@ impl<T> Node<T> {
             Node::Branch(ref a) => a[b].get(index, height - 1, bucket),
             Node::Leaf(ref a) => {
                 debug_assert_eq!(height, 0);
-                a[b].as_ref()
+                &a[b]
             }
         }
     }
 
+    #[inline]
+    fn is_empty(&self) -> bool {
+        self.used() == 0
+    }
+
+    #[inline]
+    fn is_singleton(&self) -> bool {
+        self.used() == 1
+    }
+
+    fn used(&self) -> usize {
+        match *self {
+            Node::Leaf(ref a) => a.len(),
+            Node::Branch(ref a) => a.len(),
+        }
+    }
+}
+
+impl<T> Node<T>
+where
+    T: Clone,
+{
     fn assoc<F: Fn(usize) -> usize>(&mut self, value: T, height: usize, bucket: F) {
         let b = bucket(height);
 
@@ -133,9 +152,9 @@ impl<T> Node<T> {
                 debug_assert_eq!(height, 0, "cannot have a leaf at this height");
 
                 if a.len() == b {
-                    a.push(Arc::new(value));
+                    a.push(value);
                 } else {
-                    a[b] = Arc::new(value);
+                    a[b] = value;
                 }
             }
 
@@ -155,23 +174,6 @@ impl<T> Node<T> {
                 subtree.assoc(value, height - 1, bucket);
                 a.push(Arc::new(subtree));
             }
-        }
-    }
-
-    #[inline]
-    fn is_empty(&self) -> bool {
-        self.used() == 0
-    }
-
-    #[inline]
-    fn is_singleton(&self) -> bool {
-        self.used() == 1
-    }
-
-    fn used(&self) -> usize {
-        match *self {
-            Node::Leaf(ref a) => a.len(),
-            Node::Branch(ref a) => a.len(),
         }
     }
 
@@ -206,7 +208,10 @@ impl<T> Node<T> {
     }
 }
 
-impl<T> Clone for Node<T> {
+impl<T> Clone for Node<T>
+where
+    T: Clone,
+{
     fn clone(&self) -> Node<T> {
         match *self {
             Node::Branch(ref a) => Node::Branch(Vec::clone(a)),
@@ -285,40 +290,6 @@ impl<T> Vector<T> {
         }
     }
 
-    pub fn set(&self, index: usize, v: T) -> Option<Vector<T>> {
-        let mut self_ = self.clone();
-        self_.set_mut(index, v).map(|()| self_)
-    }
-
-    pub fn set_mut(&mut self, index: usize, v: T) -> Option<()> {
-        if index >= self.length {
-            None
-        } else {
-            self.assoc(index, v);
-            Some(())
-        }
-    }
-
-    /// Sets the given index to v.
-    ///
-    /// # Panics
-    ///
-    /// This method will panic if the trie's root doesn't have capacity for the given index.
-    fn assoc(&mut self, index: usize, v: T) {
-        debug_assert!(
-            index < self.root_max_capacity(),
-            "This trie's root cannot support this index"
-        );
-
-        let height = self.height();
-        let bits = self.bits;
-        Arc::make_mut(&mut self.root).assoc(v, height, |height| Self::bucket2(bits, index, height));
-        let adds_item: bool = index >= self.length;
-
-        self.bits = bits;
-        self.length += if adds_item { 1 } else { 0 };
-    }
-
     #[inline]
     fn root_max_capacity(&self) -> usize {
         /* A Trie's root max capacity is
@@ -334,6 +305,39 @@ impl<T> Vector<T> {
     #[inline]
     fn is_root_full(&self) -> bool {
         self.length == self.root_max_capacity()
+    }
+
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.length
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn iter(&self) -> Iter<T> {
+        Iter::new(self)
+    }
+}
+
+impl<T> Vector<T>
+where
+    T: Clone,
+{
+    pub fn set(&self, index: usize, v: T) -> Option<Vector<T>> {
+        let mut self_ = self.clone();
+        self_.set_mut(index, v).map(|()| self_)
+    }
+
+    pub fn set_mut(&mut self, index: usize, v: T) -> Option<()> {
+        if index >= self.length {
+            None
+        } else {
+            self.assoc(index, v);
+            Some(())
+        }
     }
 
     pub fn push_back(&self, v: T) -> Vector<T> {
@@ -360,6 +364,26 @@ impl<T> Vector<T> {
             let length = self.length;
             self.assoc(length, v)
         }
+    }
+
+    /// Sets the given index to v.
+    ///
+    /// # Panics
+    ///
+    /// This method will panic if the trie's root doesn't have capacity for the given index.
+    fn assoc(&mut self, index: usize, v: T) {
+        debug_assert!(
+            index < self.root_max_capacity(),
+            "This trie's root cannot support this index"
+        );
+
+        let height = self.height();
+        let bits = self.bits;
+        Arc::make_mut(&mut self.root).assoc(v, height, |height| Self::bucket2(bits, index, height));
+        let adds_item: bool = index >= self.length;
+
+        self.bits = bits;
+        self.length += if adds_item { 1 } else { 0 };
     }
 
     /// Compresses a root.  A root is compressed if, whenever there is a branch, it has more than
@@ -411,24 +435,6 @@ impl<T> Vector<T> {
         }
 
         Some(())
-    }
-
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.length
-    }
-
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    pub fn iter(&self) -> Iter<T> {
-        self.iter_arc().map(|v| v.borrow())
-    }
-
-    fn iter_arc(&self) -> IterArc<T> {
-        IterArc::new(self)
     }
 }
 
@@ -482,8 +488,8 @@ impl<T: Hash> Hash for Vector<T> {
 impl<T> Clone for Vector<T> {
     fn clone(&self) -> Vector<T> {
         Vector {
-            root:   Arc::clone(&self.root),
-            bits:   self.bits,
+            root: Arc::clone(&self.root),
+            bits: self.bits,
             length: self.length,
         }
     }
@@ -519,7 +525,10 @@ impl<'a, T> IntoIterator for &'a Vector<T> {
     }
 }
 
-impl<T> FromIterator<T> for Vector<T> {
+impl<T> FromIterator<T> for Vector<T>
+where
+    T: Clone,
+{
     fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> Vector<T> {
         let mut vector = Vector::new();
         vector.extend(into_iter);
@@ -527,7 +536,10 @@ impl<T> FromIterator<T> for Vector<T> {
     }
 }
 
-impl<T> Extend<T> for Vector<T> {
+impl<T> Extend<T> for Vector<T>
+where
+    T: Clone,
+{
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         for elem in iter {
             self.push_back_mut(elem);
@@ -535,18 +547,18 @@ impl<T> Extend<T> for Vector<T> {
     }
 }
 
-pub struct IterArc<'a, T: 'a> {
+pub struct Iter<'a, T: 'a> {
     vector: &'a Vector<T>,
 
-    stack_forward:  Option<Vec<IterStackElement<'a, T>>>,
+    stack_forward: Option<Vec<IterStackElement<'a, T>>>,
     stack_backward: Option<Vec<IterStackElement<'a, T>>>,
 
-    left_index:  usize, // inclusive
+    left_index: usize,  // inclusive
     right_index: usize, // exclusive
 }
 
 struct IterStackElement<'a, T: 'a> {
-    node:  &'a Node<T>,
+    node: &'a Node<T>,
     index: isize,
 }
 
@@ -569,7 +581,7 @@ impl<'a, T> IterStackElement<'a, T> {
         }
     }
 
-    fn current_elem(&self) -> &'a Arc<T> {
+    fn current_elem(&self) -> &'a T {
         match *self.node {
             Node::Leaf(ref a) => &a[self.index as usize],
             Node::Branch(_) => panic!("called current element of a branch"),
@@ -589,9 +601,9 @@ impl<'a, T> IterStackElement<'a, T> {
     }
 }
 
-impl<'a, T> IterArc<'a, T> {
-    fn new(vector: &Vector<T>) -> IterArc<T> {
-        IterArc {
+impl<'a, T> Iter<'a, T> {
+    fn new(vector: &Vector<T>) -> Iter<T> {
+        Iter {
             vector,
 
             stack_forward: None,
@@ -615,7 +627,7 @@ impl<'a, T> IterArc<'a, T> {
 
         stack.push(IterStackElement::new(next_node, backwards));
 
-        IterArc::dig(stack, backwards);
+        Iter::dig(stack, backwards);
     }
 
     fn init_if_needed(&mut self, backwards: bool) -> () {
@@ -630,7 +642,7 @@ impl<'a, T> IterArc<'a, T> {
 
             stack.push(IterStackElement::new(self.vector.root.borrow(), backwards));
 
-            IterArc::dig(&mut stack, backwards);
+            Iter::dig(&mut stack, backwards);
 
             *stack_field = Some(stack);
         }
@@ -642,11 +654,11 @@ impl<'a, T> IterArc<'a, T> {
                 let finished = stack_element.advance(backwards);
 
                 if finished {
-                    IterArc::advance(stack, backwards);
+                    Iter::advance(stack, backwards);
                 } else {
                     stack.push(stack_element);
 
-                    IterArc::dig(stack, backwards);
+                    Iter::dig(stack, backwards);
                 }
             }
             None => (), // Reached the end.  Nothing to do.
@@ -654,7 +666,7 @@ impl<'a, T> IterArc<'a, T> {
     }
 
     #[inline]
-    fn current(stack: &[IterStackElement<'a, T>]) -> Option<&'a Arc<T>> {
+    fn current(stack: &[IterStackElement<'a, T>]) -> Option<&'a T> {
         stack.last().map(|e| e.current_elem())
     }
 
@@ -665,15 +677,15 @@ impl<'a, T> IterArc<'a, T> {
 
     fn advance_forward(&mut self) -> () {
         if self.non_empty() {
-            IterArc::advance(self.stack_forward.as_mut().unwrap(), false);
+            Iter::advance(self.stack_forward.as_mut().unwrap(), false);
 
             self.left_index += 1;
         }
     }
 
-    fn current_forward(&self) -> Option<&'a Arc<T>> {
+    fn current_forward(&self) -> Option<&'a T> {
         if self.non_empty() {
-            IterArc::current(self.stack_forward.as_ref().unwrap())
+            Iter::current(self.stack_forward.as_ref().unwrap())
         } else {
             None
         }
@@ -681,25 +693,25 @@ impl<'a, T> IterArc<'a, T> {
 
     fn advance_backward(&mut self) -> () {
         if self.non_empty() {
-            IterArc::advance(self.stack_backward.as_mut().unwrap(), true);
+            Iter::advance(self.stack_backward.as_mut().unwrap(), true);
 
             self.right_index -= 1;
         }
     }
 
-    fn current_backward(&self) -> Option<&'a Arc<T>> {
+    fn current_backward(&self) -> Option<&'a T> {
         if self.non_empty() {
-            IterArc::current(self.stack_backward.as_ref().unwrap())
+            Iter::current(self.stack_backward.as_ref().unwrap())
         } else {
             None
         }
     }
 }
 
-impl<'a, T> Iterator for IterArc<'a, T> {
-    type Item = &'a Arc<T>;
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
 
-    fn next(&mut self) -> Option<&'a Arc<T>> {
+    fn next(&mut self) -> Option<&'a T> {
         self.init_if_needed(false);
 
         let current = self.current_forward();
@@ -716,8 +728,8 @@ impl<'a, T> Iterator for IterArc<'a, T> {
     }
 }
 
-impl<'a, T> DoubleEndedIterator for IterArc<'a, T> {
-    fn next_back(&mut self) -> Option<&'a Arc<T>> {
+impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
+    fn next_back(&mut self) -> Option<&'a T> {
         self.init_if_needed(true);
 
         let current = self.current_backward();
@@ -728,7 +740,7 @@ impl<'a, T> DoubleEndedIterator for IterArc<'a, T> {
     }
 }
 
-impl<'a, T> ExactSizeIterator for IterArc<'a, T> {}
+impl<'a, T> ExactSizeIterator for Iter<'a, T> {}
 
 #[cfg(feature = "serde")]
 pub mod serde {

@@ -13,8 +13,6 @@ use std::ops::Index;
 use std::sync::Arc;
 
 // TODO Use impl trait instead of this when available.
-pub type Iter<'a, K, V> =
-    ::std::iter::Map<IterArc<'a, K, V>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
 pub type IterKeys<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
 pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
 
@@ -88,18 +86,22 @@ enum Color {
 
 #[derive(Debug, PartialEq, Eq)]
 struct Node<K, V> {
-    entry: Arc<Entry<K, V>>,
+    entry: Entry<K, V>,
     color: Color,
-    left:  Option<Arc<Node<K, V>>>,
+    left: Option<Arc<Node<K, V>>>,
     right: Option<Arc<Node<K, V>>>,
 }
 
-impl<K, V> Clone for Node<K, V> {
+impl<K, V> Clone for Node<K, V>
+where
+    K: Clone,
+    V: Clone,
+{
     fn clone(&self) -> Node<K, V> {
         Node {
-            entry: Arc::clone(&self.entry),
+            entry: self.entry.clone(),
             color: self.color,
-            left:  self.left.clone(),
+            left: self.left.clone(),
             right: self.right.clone(),
         }
     }
@@ -111,9 +113,9 @@ where
 {
     fn new_red(entry: Entry<K, V>) -> Node<K, V> {
         Node {
-            entry: Arc::new(entry),
+            entry: entry,
             color: Color::Red,
-            left:  None,
+            left: None,
             right: None,
         }
     }
@@ -128,33 +130,6 @@ where
 
     fn right_color(&self) -> Option<Color> {
         self.right.as_ref().map(|r| r.color)
-    }
-
-    fn with_entry(&self, entry: Entry<K, V>) -> Node<K, V> {
-        Node {
-            entry: Arc::new(entry),
-            color: self.color,
-            left:  self.left.clone(),
-            right: self.right.clone(),
-        }
-    }
-
-    fn with_left(&self, left: Node<K, V>) -> Node<K, V> {
-        Node {
-            entry: Arc::clone(&self.entry),
-            color: self.color,
-            left:  Some(Arc::new(left)),
-            right: self.right.clone(),
-        }
-    }
-
-    fn with_right(&self, right: Node<K, V>) -> Node<K, V> {
-        Node {
-            entry: Arc::clone(&self.entry),
-            color: self.color,
-            left:  self.left.clone(),
-            right: Some(Arc::new(right)),
-        }
     }
 
     fn make_black(self) -> Node<K, V> {
@@ -192,6 +167,39 @@ where
         match self.right {
             Some(ref r) => r.last(),
             None => &self.entry,
+        }
+    }
+}
+
+impl<K, V> Node<K, V>
+where
+    K: Ord + Clone,
+    V: Clone,
+{
+    fn with_entry(&self, entry: Entry<K, V>) -> Node<K, V> {
+        Node {
+            entry: entry,
+            color: self.color,
+            left: self.left.clone(),
+            right: self.right.clone(),
+        }
+    }
+
+    fn with_left(&self, left: Node<K, V>) -> Node<K, V> {
+        Node {
+            entry: self.entry.clone(),
+            color: self.color,
+            left: Some(Arc::new(left)),
+            right: self.right.clone(),
+        }
+    }
+
+    fn with_right(&self, right: Node<K, V>) -> Node<K, V> {
+        Node {
+            entry: self.entry.clone(),
+            color: self.color,
+            left: self.left.clone(),
+            right: Some(Arc::new(right)),
         }
     }
 
@@ -292,22 +300,22 @@ where
                         let tree_r: Option<Arc<Node<K, V>>> = self.right;
 
                         let new_left = Node {
-                            entry: Arc::clone(&node_l_l.entry),
+                            entry: node_l_l.entry.clone(),
                             color: Color::Black,
-                            left:  tree_l_l_l,
+                            left: tree_l_l_l,
                             right: tree_l_l_r,
                         };
                         let new_right = Node {
                             entry: self.entry,
                             color: Color::Black,
-                            left:  tree_l_r,
+                            left: tree_l_r,
                             right: tree_r,
                         };
 
                         Node {
-                            entry: Arc::clone(&node_l.entry),
+                            entry: node_l.entry.clone(),
                             color: Color::Red,
-                            left:  Some(Arc::new(new_left)),
+                            left: Some(Arc::new(new_left)),
                             right: Some(Arc::new(new_right)),
                         }
                     }
@@ -323,22 +331,22 @@ where
                         let tree_r: Option<Arc<Node<K, V>>> = self.right;
 
                         let new_left = Node {
-                            entry: Arc::clone(&node_l.entry),
+                            entry: node_l.entry.clone(),
                             color: Color::Black,
-                            left:  tree_l_l,
+                            left: tree_l_l,
                             right: tree_l_r_l,
                         };
                         let new_right = Node {
                             entry: self.entry,
                             color: Color::Black,
-                            left:  tree_l_r_r,
+                            left: tree_l_r_r,
                             right: tree_r,
                         };
 
                         Node {
-                            entry: Arc::clone(&node_l_r.entry),
+                            entry: node_l_r.entry.clone(),
                             color: Color::Red,
-                            left:  Some(Arc::new(new_left)),
+                            left: Some(Arc::new(new_left)),
                             right: Some(Arc::new(new_right)),
                         }
                     }
@@ -356,20 +364,20 @@ where
                         let new_left = Node {
                             entry: self.entry,
                             color: Color::Black,
-                            left:  tree_l,
+                            left: tree_l,
                             right: tree_r_l_l,
                         };
                         let new_right = Node {
-                            entry: Arc::clone(&node_r.entry),
+                            entry: node_r.entry.clone(),
                             color: Color::Black,
-                            left:  tree_r_l_r,
+                            left: tree_r_l_r,
                             right: tree_r_r,
                         };
 
                         Node {
-                            entry: Arc::clone(&node_r_l.entry),
+                            entry: node_r_l.entry.clone(),
                             color: Color::Red,
-                            left:  Some(Arc::new(new_left)),
+                            left: Some(Arc::new(new_left)),
                             right: Some(Arc::new(new_right)),
                         }
                     }
@@ -387,20 +395,20 @@ where
                         let new_left = Node {
                             entry: self.entry,
                             color: Color::Black,
-                            left:  tree_l,
+                            left: tree_l,
                             right: tree_r_l,
                         };
                         let new_right = Node {
-                            entry: Arc::clone(&node_r_r.entry),
+                            entry: node_r_r.entry.clone(),
                             color: Color::Black,
-                            left:  tree_r_r_l,
+                            left: tree_r_r_l,
                             right: tree_r_r_r,
                         };
 
                         Node {
-                            entry: Arc::clone(&node_r.entry),
+                            entry: node_r.entry.clone(),
                             color: Color::Red,
-                            left:  Some(Arc::new(new_left)),
+                            left: Some(Arc::new(new_left)),
                             right: Some(Arc::new(new_right)),
                         }
                     }
@@ -414,7 +422,11 @@ where
 
     /// Returns a pair with the node with the new entry and whether the key is new.
     fn insert(root: Option<&Node<K, V>>, key: K, value: V) -> (Node<K, V>, bool) {
-        fn ins<K: Ord, V>(node: Option<&Node<K, V>>, k: K, v: V) -> (Node<K, V>, bool) {
+        fn ins<K, V>(node: Option<&Node<K, V>>, k: K, v: V) -> (Node<K, V>, bool)
+        where
+            K: Ord + Clone,
+            V: Clone,
+        {
             match node {
                 Some(node) => {
                     match k.cmp(&node.entry.key) {
@@ -471,12 +483,14 @@ where
     /// If the node becomes empty it will return `None` in the first component of the pair.
     fn remove<Q: ?Sized>(root: Option<&Node<K, V>>, key: &Q) -> (Option<Node<K, V>>, bool)
     where
-        K: Borrow<Q>,
+        K: Borrow<Q> + Clone,
         Q: Ord,
+        V: Clone,
     {
         fn fuse<K, V>(left: Option<&Node<K, V>>, right: Option<&Node<K, V>>) -> Option<Node<K, V>>
         where
-            K: Ord,
+            K: Ord + Clone,
+            V: Clone,
         {
             use self::Color::Black as B;
             use self::Color::Red as R;
@@ -492,18 +506,18 @@ where
                         (B, R) => {
                             let new_left = fuse(Some(l), tree_r_l);
                             Node {
-                                entry: Arc::clone(&r.entry),
+                                entry: r.entry.clone(),
                                 color: Color::Red,
-                                left:  new_left.map(Arc::new),
+                                left: new_left.map(Arc::new),
                                 right: r.right.clone(),
                             }
                         }
                         (R, B) => {
                             let new_right = fuse(tree_l_r, Some(r));
                             Node {
-                                entry: Arc::clone(&l.entry),
+                                entry: l.entry.clone(),
                                 color: Color::Red,
-                                left:  l.left.clone(),
+                                left: l.left.clone(),
                                 right: new_right.map(Arc::new),
                             }
                         }
@@ -518,33 +532,33 @@ where
                                     right: f_right,
                                 }) => {
                                     let left_child = Node {
-                                        entry: Arc::clone(&l.entry),
+                                        entry: l.entry.clone(),
                                         color: Color::Red,
-                                        left:  l.left.clone(),
+                                        left: l.left.clone(),
                                         right: f_left,
                                     };
                                     let right_child = Node {
-                                        entry: Arc::clone(&r.entry),
+                                        entry: r.entry.clone(),
                                         color: Color::Red,
-                                        left:  f_right,
+                                        left: f_right,
                                         right: r.right.clone(),
                                     };
 
                                     Node {
                                         entry: f_entry,
                                         color: Color::Red,
-                                        left:  Some(Arc::new(left_child)),
+                                        left: Some(Arc::new(left_child)),
                                         right: Some(Arc::new(right_child)),
                                     }
                                 }
                                 fused => Node {
-                                    entry: Arc::clone(&l.entry),
+                                    entry: l.entry.clone(),
                                     color: Color::Red,
-                                    left:  l.left.clone(),
+                                    left: l.left.clone(),
                                     right: Some(Arc::new(Node {
-                                        entry: Arc::clone(&r.entry),
+                                        entry: r.entry.clone(),
                                         color: Color::Red,
-                                        left:  fused.map(Arc::new),
+                                        left: fused.map(Arc::new),
                                         right: r.right.clone(),
                                     })),
                                 },
@@ -561,34 +575,34 @@ where
                                     right: f_right,
                                 }) => {
                                     let left_child = Node {
-                                        entry: Arc::clone(&l.entry),
+                                        entry: l.entry.clone(),
                                         color: Color::Black,
-                                        left:  l.left.clone(),
+                                        left: l.left.clone(),
                                         right: f_left,
                                     };
                                     let right_child = Node {
-                                        entry: Arc::clone(&r.entry),
+                                        entry: r.entry.clone(),
                                         color: Color::Black,
-                                        left:  f_right,
+                                        left: f_right,
                                         right: r.right.clone(),
                                     };
 
                                     Node {
                                         entry: f_entry,
                                         color: Color::Red,
-                                        left:  Some(Arc::new(left_child)),
+                                        left: Some(Arc::new(left_child)),
                                         right: Some(Arc::new(right_child)),
                                     }
                                 }
                                 fused => {
                                     let new_node = Node {
-                                        entry: Arc::clone(&l.entry),
+                                        entry: l.entry.clone(),
                                         color: Color::Red,
-                                        left:  l.left.clone(),
+                                        left: l.left.clone(),
                                         right: Some(Arc::new(Node {
-                                            entry: Arc::clone(&r.entry),
+                                            entry: r.entry.clone(),
                                             color: Color::Black,
-                                            left:  fused.map(Arc::new),
+                                            left: fused.map(Arc::new),
                                             right: r.right.clone(),
                                         })),
                                     };
@@ -606,7 +620,8 @@ where
 
         fn balance<K, V>(node: Node<K, V>) -> Node<K, V>
         where
-            K: Ord,
+            K: Ord + Clone,
+            V: Clone,
         {
             match (node.left_color(), node.right_color()) {
                 (Some(Color::Red), Some(Color::Red)) => {
@@ -615,9 +630,9 @@ where
                     let new_right = node.right
                         .map(|r| Arc::new(Node::clone(r.borrow()).make_black()));
                     Node {
-                        entry: Arc::clone(&node.entry),
+                        entry: node.entry.clone(),
                         color: Color::Red,
-                        left:  new_left,
+                        left: new_left,
                         right: new_right,
                     }
                 }
@@ -632,7 +647,8 @@ where
 
         fn balance_left<K, V>(node: Node<K, V>) -> Node<K, V>
         where
-            K: Ord,
+            K: Ord + Clone,
+            V: Clone,
         {
             use self::Color::Black as B;
             use self::Color::Red as R;
@@ -649,12 +665,12 @@ where
                     let left = tree_l.unwrap();
 
                     Node {
-                        entry: Arc::clone(&node.entry),
+                        entry: node.entry.clone(),
                         color: Color::Red,
-                        left:  Some(Arc::new(Node {
-                            entry: Arc::clone(&left.entry),
+                        left: Some(Arc::new(Node {
+                            entry: left.entry.clone(),
                             color: Color::Black,
-                            left:  left.left.clone(),
+                            left: left.left.clone(),
                             right: left.right.clone(),
                         })),
                         right: node.right.clone(),
@@ -664,13 +680,13 @@ where
                     let right = tree_r.unwrap();
 
                     let new_node = Node {
-                        entry: Arc::clone(&node.entry),
+                        entry: node.entry.clone(),
                         color: Color::Black,
-                        left:  node.left.clone(),
+                        left: node.left.clone(),
                         right: Some(Arc::new(Node {
-                            entry: Arc::clone(&right.entry),
+                            entry: right.entry.clone(),
                             color: Color::Red,
-                            left:  right.left.clone(),
+                            left: right.left.clone(),
                             right: right.right.clone(),
                         })),
                     };
@@ -682,9 +698,9 @@ where
                     let right_left = Node::borrow(&right.left).unwrap();
 
                     let unbalanced_new_right = Node {
-                        entry: Arc::clone(&right.entry),
+                        entry: right.entry.clone(),
                         color: Color::Black,
-                        left:  right_left.right.clone(),
+                        left: right_left.right.clone(),
                         right: Some(Arc::new(
                             Node::borrow(&right.right).unwrap().clone().make_red(),
                         )),
@@ -693,12 +709,12 @@ where
                     let new_right = balance(unbalanced_new_right);
 
                     Node {
-                        entry: Arc::clone(&right_left.entry),
+                        entry: right_left.entry.clone(),
                         color: Color::Red,
-                        left:  Some(Arc::new(Node {
-                            entry: Arc::clone(&node.entry),
+                        left: Some(Arc::new(Node {
+                            entry: node.entry.clone(),
                             color: Color::Black,
-                            left:  node.left.clone(),
+                            left: node.left.clone(),
                             right: right_left.left.clone(),
                         })),
                         right: Some(Arc::new(new_right)),
@@ -710,7 +726,8 @@ where
 
         fn balance_right<K, V>(node: Node<K, V>) -> Node<K, V>
         where
-            K: Ord,
+            K: Ord + Clone,
+            V: Clone,
         {
             use self::Color::Black as B;
             use self::Color::Red as R;
@@ -727,13 +744,13 @@ where
                     let right = tree_r.unwrap();
 
                     Node {
-                        entry: Arc::clone(&node.entry),
+                        entry: node.entry.clone(),
                         color: Color::Red,
-                        left:  node.left.clone(),
+                        left: node.left.clone(),
                         right: Some(Arc::new(Node {
-                            entry: Arc::clone(&right.entry),
+                            entry: right.entry.clone(),
                             color: Color::Black,
-                            left:  right.left.clone(),
+                            left: right.left.clone(),
                             right: right.right.clone(),
                         })),
                     }
@@ -742,12 +759,12 @@ where
                     let left = tree_l.unwrap();
 
                     let new_node = Node {
-                        entry: Arc::clone(&node.entry),
+                        entry: node.entry.clone(),
                         color: Color::Black,
-                        left:  Some(Arc::new(Node {
-                            entry: Arc::clone(&left.entry),
+                        left: Some(Arc::new(Node {
+                            entry: left.entry.clone(),
                             color: Color::Red,
-                            left:  left.left.clone(),
+                            left: left.left.clone(),
                             right: left.right.clone(),
                         })),
                         right: node.right.clone(),
@@ -760,9 +777,9 @@ where
                     let left_right = Node::borrow(&left.right).unwrap();
 
                     let unbalanced_new_left = Node {
-                        entry: Arc::clone(&left.entry),
+                        entry: left.entry.clone(),
                         color: Color::Black,
-                        left:  Some(Arc::new(
+                        left: Some(Arc::new(
                             Node::borrow(&left.left).unwrap().clone().make_red(),
                         )),
                         right: left_right.left.clone(),
@@ -771,13 +788,13 @@ where
                     let new_left = balance(unbalanced_new_left);
 
                     Node {
-                        entry: Arc::clone(&left_right.entry),
+                        entry: left_right.entry.clone(),
                         color: Color::Red,
-                        left:  Some(Arc::new(new_left)),
+                        left: Some(Arc::new(new_left)),
                         right: Some(Arc::new(Node {
-                            entry: Arc::clone(&node.entry),
+                            entry: node.entry.clone(),
                             color: Color::Black,
-                            left:  left_right.right.clone(),
+                            left: left_right.right.clone(),
                             right: node.right.clone(),
                         })),
                     }
@@ -788,14 +805,15 @@ where
 
         fn del_left<K, V, Q: ?Sized>(node: &Node<K, V>, k: &Q) -> (Option<Node<K, V>>, bool)
         where
-            K: Borrow<Q> + Ord,
+            K: Borrow<Q> + Ord + Clone,
             Q: Ord,
+            V: Clone,
         {
             let (new_left, removed) = del(Node::borrow(&node.left), k);
             let new_node = Node {
-                entry: Arc::clone(&node.entry),
+                entry: node.entry.clone(),
                 color: Color::Red, // In case of rebalance the color does not matter.
-                left:  new_left.map(Arc::new),
+                left: new_left.map(Arc::new),
                 right: node.right.clone(),
             };
 
@@ -809,14 +827,15 @@ where
 
         fn del_right<K, V, Q: ?Sized>(node: &Node<K, V>, k: &Q) -> (Option<Node<K, V>>, bool)
         where
-            K: Borrow<Q> + Ord,
+            K: Borrow<Q> + Ord + Clone,
             Q: Ord,
+            V: Clone,
         {
             let (new_right, removed) = del(Node::borrow(&node.right), k);
             let new_node = Node {
-                entry: Arc::clone(&node.entry),
+                entry: node.entry.clone(),
                 color: Color::Red, // In case of rebalance the color does not matter.
-                left:  node.left.clone(),
+                left: node.left.clone(),
                 right: new_right.map(Arc::new),
             };
 
@@ -830,8 +849,9 @@ where
 
         fn del<K, V, Q: ?Sized>(node: Option<&Node<K, V>>, k: &Q) -> (Option<Node<K, V>>, bool)
         where
-            K: Borrow<Q> + Ord,
+            K: Borrow<Q> + Ord + Clone,
             Q: Ord,
+            V: Clone,
         {
             match node {
                 Some(node) => match k.cmp(node.entry.key.borrow()) {
@@ -892,6 +912,42 @@ where
             .map(|e| (&e.key, &e.value))
     }
 
+    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        self.get(key).is_some()
+    }
+
+    #[inline]
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.size() == 0
+    }
+
+    pub fn iter(&self) -> Iter<K, V> {
+        Iter::new(self)
+    }
+
+    pub fn keys(&self) -> IterKeys<K, V> {
+        self.iter().map(|(k, _)| k)
+    }
+
+    pub fn values(&self) -> IterValues<K, V> {
+        self.iter().map(|(_, v)| v)
+    }
+}
+
+impl<K, V> RedBlackTreeMap<K, V>
+where
+    K: Ord + Clone,
+    V: Clone,
+{
     pub fn insert(&self, key: K, value: V) -> RedBlackTreeMap<K, V> {
         let root = Node::borrow(&self.root);
         let (new_root, is_new_key) = Node::insert(root, key, value);
@@ -919,40 +975,6 @@ where
         } else {
             self.clone()
         }
-    }
-
-    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
-    where
-        K: Borrow<Q>,
-        Q: Ord,
-    {
-        self.get(key).is_some()
-    }
-
-    #[inline]
-    pub fn size(&self) -> usize {
-        self.size
-    }
-
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.size() == 0
-    }
-
-    pub fn iter(&self) -> Iter<K, V> {
-        self.iter_arc().map(|e| (&e.key, &e.value))
-    }
-
-    fn iter_arc(&self) -> IterArc<K, V> {
-        IterArc::new(self)
-    }
-
-    pub fn keys(&self) -> IterKeys<K, V> {
-        self.iter().map(|(k, _)| k)
-    }
-
-    pub fn values(&self) -> IterValues<K, V> {
-        self.iter().map(|(_, v)| v)
     }
 }
 
@@ -1073,7 +1095,8 @@ where
 // TODO This can be improved to create a perfectly balanced tree.
 impl<K, V> FromIterator<(K, V)> for RedBlackTreeMap<K, V>
 where
-    K: Ord,
+    K: Ord + Clone,
+    V: Clone,
 {
     fn from_iter<I: IntoIterator<Item = (K, V)>>(into_iter: I) -> RedBlackTreeMap<K, V> {
         let mut map = RedBlackTreeMap::new();
@@ -1087,13 +1110,13 @@ where
 }
 
 #[derive(Debug)]
-pub struct IterArc<'a, K: 'a, V: 'a> {
+pub struct Iter<'a, K: 'a, V: 'a> {
     map: &'a RedBlackTreeMap<K, V>,
 
-    stack_forward:  Option<Vec<&'a Node<K, V>>>,
+    stack_forward: Option<Vec<&'a Node<K, V>>>,
     stack_backward: Option<Vec<&'a Node<K, V>>>,
 
-    left_index:  usize, // inclusive
+    left_index: usize,  // inclusive
     right_index: usize, // exclusive
 }
 
@@ -1117,12 +1140,12 @@ mod iter_utils {
     }
 }
 
-impl<'a, K, V> IterArc<'a, K, V>
+impl<'a, K, V> Iter<'a, K, V>
 where
     K: Ord,
 {
-    fn new(map: &RedBlackTreeMap<K, V>) -> IterArc<K, V> {
-        IterArc {
+    fn new(map: &RedBlackTreeMap<K, V>) -> Iter<K, V> {
+        Iter {
             map,
 
             stack_forward: None,
@@ -1145,7 +1168,7 @@ where
 
         if let Some(c) = child {
             stack.push(c);
-            IterArc::dig(stack, backwards);
+            Iter::dig(stack, backwards);
         }
     }
 
@@ -1162,7 +1185,7 @@ where
             // TODO Use foreach when stable.
             Node::borrow(&self.map.root).map(|r| stack.push(r));
 
-            IterArc::dig(&mut stack, backwards);
+            Iter::dig(&mut stack, backwards);
 
             *stack_field = Some(stack);
         }
@@ -1184,7 +1207,7 @@ where
 
                 if let Some(c) = Node::borrow(child) {
                     stack.push(c);
-                    IterArc::dig(stack, backwards);
+                    Iter::dig(stack, backwards);
                 }
             }
             None => (), // Reached the end.  Nothing to do.
@@ -1192,21 +1215,21 @@ where
     }
 
     #[inline]
-    fn current(stack: &[&'a Node<K, V>]) -> Option<&'a Arc<Entry<K, V>>> {
+    fn current(stack: &[&'a Node<K, V>]) -> Option<&'a Entry<K, V>> {
         stack.last().map(|node| &node.entry)
     }
 
     fn advance_forward(&mut self) -> () {
         if self.non_empty() {
-            IterArc::advance(&mut self.stack_forward.as_mut().unwrap(), false);
+            Iter::advance(&mut self.stack_forward.as_mut().unwrap(), false);
 
             self.left_index += 1;
         }
     }
 
-    fn current_forward(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
+    fn current_forward(&mut self) -> Option<&'a Entry<K, V>> {
         if self.non_empty() {
-            IterArc::current(self.stack_forward.as_ref().unwrap())
+            Iter::current(self.stack_forward.as_ref().unwrap())
         } else {
             None
         }
@@ -1214,35 +1237,35 @@ where
 
     fn advance_backward(&mut self) -> () {
         if self.non_empty() {
-            IterArc::advance(&mut self.stack_backward.as_mut().unwrap(), true);
+            Iter::advance(&mut self.stack_backward.as_mut().unwrap(), true);
 
             self.right_index -= 1;
         }
     }
 
-    fn current_backward(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
+    fn current_backward(&mut self) -> Option<&'a Entry<K, V>> {
         if self.non_empty() {
-            IterArc::current(self.stack_backward.as_ref().unwrap())
+            Iter::current(self.stack_backward.as_ref().unwrap())
         } else {
             None
         }
     }
 }
 
-impl<'a, K, V> Iterator for IterArc<'a, K, V>
+impl<'a, K, V> Iterator for Iter<'a, K, V>
 where
     K: Ord,
 {
-    type Item = &'a Arc<Entry<K, V>>;
+    type Item = (&'a K, &'a V);
 
-    fn next(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
+    fn next(&mut self) -> Option<Self::Item> {
         self.init_if_needed(false);
 
         let current = self.current_forward();
 
         self.advance_forward();
 
-        current
+        current.map(|current| (&current.key, &current.value))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -1252,22 +1275,22 @@ where
     }
 }
 
-impl<'a, K, V> DoubleEndedIterator for IterArc<'a, K, V>
+impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V>
 where
     K: Ord,
 {
-    fn next_back(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
+    fn next_back(&mut self) -> Option<Self::Item> {
         self.init_if_needed(true);
 
         let current = self.current_backward();
 
         self.advance_backward();
 
-        current
+        current.map(|current| (&current.key, &current.value))
     }
 }
 
-impl<'a, K: Ord, V> ExactSizeIterator for IterArc<'a, K, V> {}
+impl<'a, K: Ord, V> ExactSizeIterator for Iter<'a, K, V> {}
 
 #[cfg(feature = "serde")]
 pub mod serde {
