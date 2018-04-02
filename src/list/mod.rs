@@ -21,7 +21,7 @@ macro_rules! list_reverse {
             #[allow(unused_mut)]
             let mut l = $crate::List::new();
             $(
-                l = l.push_front($reversed);
+                l.push_front_mut($reversed);
             )*
             l
         }
@@ -40,7 +40,7 @@ macro_rules! list_reverse {
     };
 }
 
-/// Creates a [`List`](sequence/list/struct.List.html) containing the given arguments:
+/// Creates a [`List`](list/struct.List.html) containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -59,8 +59,7 @@ macro_rules! list {
     };
 }
 
-/// A persistent list with structural sharing.  This data structure supports fast `push_front()`,
-/// `drop_first()`, `first()`, and `last()`.
+/// A persistent list with structural sharing.
 ///
 /// # Complexity
 ///
@@ -88,83 +87,101 @@ macro_rules! list {
 /// make some operations more efficient.
 #[derive(Debug)]
 pub struct List<T> {
-    node:   Arc<Node<T>>,
+    head:   Option<Arc<Node<T>>>,
     last:   Option<Arc<T>>,
     length: usize,
 }
 
 #[derive(Debug)]
-enum Node<T> {
-    Cons(Arc<T>, Arc<Node<T>>),
-    Nil,
+struct Node<T> {
+    value: Arc<T>,
+    next:  Option<Arc<Node<T>>>,
 }
 
 impl<T> List<T> {
     pub fn new() -> List<T> {
         List {
-            node:   Arc::new(Node::Nil),
+            head:   None,
             last:   None,
             length: 0,
         }
     }
 
     pub fn first(&self) -> Option<&T> {
-        match *self.node {
-            Node::Cons(ref h, _) => Some(h),
-            Node::Nil => None,
-        }
+        self.head.as_ref().map(|node| node.value.borrow())
     }
 
     pub fn last(&self) -> Option<&T> {
-        self.last.as_ref().map(|v| v.borrow())
+        self.last.as_ref().map(|node| node.borrow())
     }
 
     pub fn drop_first(&self) -> Option<List<T>> {
-        match *self.node {
-            Node::Cons(_, ref t) => {
-                let new_length = self.length - 1;
-                let new_list = List {
-                    node:   Arc::clone(t),
-                    last:   if new_length == 0 {
-                        None
-                    } else {
-                        self.last.clone()
-                    },
-                    length: new_length,
-                };
+        let mut new_list = self.clone();
 
-                Some(new_list)
-            }
-            Node::Nil => None,
+        if new_list.drop_first_mut() {
+            Some(new_list)
+        } else {
+            None
         }
     }
 
-    fn push_front_arc(&self, v: Arc<T>) -> List<T> {
-        List {
-            // TODO With non-lexical lifetimes can we put the "last" after "node"?
-            last:   {
-                match self.last {
-                    Some(ref v) => Some(Arc::clone(v)),
-                    None => Some(Arc::clone(&v)),
-                }
-            },
-            node:   Arc::new(Node::Cons(v, Arc::clone(&self.node))),
-            length: self.length + 1,
+    pub fn drop_first_mut(&mut self) -> bool {
+        if let Some(ref h) = self.head.take() {
+            self.head = h.next.clone();
+            self.length -= 1;
+
+            if self.length == 0 {
+                self.last = None;
+            }
+
+            true
+        } else {
+            false
         }
+    }
+
+    fn push_front_arc_mut(&mut self, v: Arc<T>) {
+        if self.length == 0 {
+            self.last = Some(Arc::clone(&v));
+        }
+
+        let new_head = Node {
+            value: v,
+            next:  self.head.take(),
+        };
+
+        self.head = Some(Arc::new(new_head));
+        self.length += 1;
     }
 
     pub fn push_front(&self, v: T) -> List<T> {
-        self.push_front_arc(Arc::new(v))
+        let mut new_list = self.clone();
+
+        new_list.push_front_mut(v);
+
+        new_list
+    }
+
+    pub fn push_front_mut(&mut self, v: T) {
+        self.push_front_arc_mut(Arc::new(v))
     }
 
     pub fn reverse(&self) -> List<T> {
+        let mut new_list = self.clone();
+
+        new_list.reverse_mut();
+
+        new_list
+    }
+
+    pub fn reverse_mut(&mut self) {
         let mut list = List::new();
 
         for v in self.iter_arc() {
-            list = list.push_front_arc(Arc::clone(v));
+            list.push_front_arc_mut(Arc::clone(v));
         }
 
-        list
+        *self = list;
     }
 
     #[inline]
@@ -213,7 +230,7 @@ impl<T: Ord> Ord for List<T> {
 }
 
 impl<T: Hash> Hash for List<T> {
-    fn hash<H: Hasher>(&self, state: &mut H) -> () {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         // Add the hash of length so that if two collections are added one after the other it doesn't
         // hash to the same thing as a single collection with the same elements in the same order.
         self.len().hash(state);
@@ -227,7 +244,7 @@ impl<T: Hash> Hash for List<T> {
 impl<T> Clone for List<T> {
     fn clone(&self) -> List<T> {
         List {
-            node:   Arc::clone(&self.node),
+            head:   self.head.clone(),
             last:   self.last.clone(),
             length: self.length,
         }
@@ -274,7 +291,7 @@ impl<T> FromIterator<T> for List<T> {
         let mut list: List<T> = List::new();
 
         for e in vec.into_iter().rev() {
-            list = list.push_front(e);
+            list.push_front_mut(e);
         }
 
         list
@@ -283,14 +300,14 @@ impl<T> FromIterator<T> for List<T> {
 
 #[derive(Debug)]
 pub struct IterArc<'a, T: 'a> {
-    next:   &'a Node<T>,
+    next:   Option<&'a Node<T>>,
     length: usize,
 }
 
 impl<'a, T> IterArc<'a, T> {
     fn new(list: &List<T>) -> IterArc<T> {
         IterArc {
-            next:   list.node.borrow(),
+            next:   list.head.as_ref().map(|node| node.as_ref()),
             length: list.len(),
         }
     }
@@ -300,13 +317,16 @@ impl<'a, T> Iterator for IterArc<'a, T> {
     type Item = &'a Arc<T>;
 
     fn next(&mut self) -> Option<&'a Arc<T>> {
-        match *self.next {
-            Node::Cons(ref v, ref t) => {
-                self.next = t;
+        match self.next {
+            Some(&Node {
+                value: ref v,
+                next: ref t,
+            }) => {
+                self.next = t.as_ref().map(|node| node.as_ref());
                 self.length -= 1;
                 Some(v)
             }
-            Node::Nil => None,
+            None => None,
         }
     }
 
@@ -376,7 +396,7 @@ pub mod serde {
             let mut list: List<T> = List::new();
 
             for value in vec.into_iter().rev() {
-                list = list.push_front(value);
+                list.push_front_mut(value);
             }
 
             Ok(list)

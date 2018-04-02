@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use utils::BencherNoDrop;
 use utils::iterations;
 
-fn rust_hashmap_insert(bench: &mut Bencher) -> () {
+fn std_hashmap_insert(bench: &mut Bencher) {
     let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
@@ -32,7 +32,7 @@ fn rust_hashmap_insert(bench: &mut Bencher) -> () {
 // TODO implement rust_hashmap_remove in the same style as the test of `HashTrieMap::remove()` once
 // we can do per-iteration initialization.
 
-fn rust_hashmap_get(bench: &mut Bencher) -> () {
+fn std_hashmap_get(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut map: HashMap<usize, isize> = HashMap::new();
 
@@ -47,7 +47,7 @@ fn rust_hashmap_get(bench: &mut Bencher) -> () {
     });
 }
 
-fn rust_hashmap_iterate(bench: &mut Bencher) -> () {
+fn std_hashmap_iterate(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut map: HashMap<usize, isize> = HashMap::new();
 
@@ -64,8 +64,8 @@ fn rust_hashmap_iterate(bench: &mut Bencher) -> () {
 
 benchmark_group!(
     benches,
-    rust_hashmap_insert,
-    rust_hashmap_get,
-    rust_hashmap_iterate
+    std_hashmap_insert,
+    std_hashmap_get,
+    std_hashmap_iterate
 );
 benchmark_main!(benches);

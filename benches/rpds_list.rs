@@ -16,7 +16,7 @@ use rpds::List;
 use utils::BencherNoDrop;
 use utils::iterations;
 
-fn list_push_front(bench: &mut Bencher) -> () {
+fn rpds_list_push_front(bench: &mut Bencher) {
     let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
@@ -30,7 +30,59 @@ fn list_push_front(bench: &mut Bencher) -> () {
     });
 }
 
-fn list_iterate(bench: &mut Bencher) -> () {
+fn rpds_list_push_front_mut(bench: &mut Bencher) {
+    let limit = iterations(100_000);
+
+    bench.iter_no_drop(|| {
+        let mut list: List<usize> = List::new();
+
+        for i in 0..limit {
+            list.push_front_mut(i);
+        }
+
+        list
+    });
+}
+
+fn rpds_list_drop_first(bench: &mut Bencher) {
+    let limit = iterations(100_000);
+    let mut full_list: List<usize> = List::new();
+
+    for i in 0..limit {
+        full_list = full_list.push_front(i);
+    }
+
+    bench.iter_no_drop(|| {
+        let mut list: List<usize> = full_list.clone();
+
+        for _ in 0..limit {
+            list = list.drop_first().unwrap();
+        }
+
+        list
+    });
+}
+
+fn rpds_list_drop_first_mut(bench: &mut Bencher) {
+    let limit = iterations(100_000);
+    let mut full_list: List<usize> = List::new();
+
+    for i in 0..limit {
+        full_list.push_front_mut(i);
+    }
+
+    bench.iter_no_drop(|| {
+        let mut list: List<usize> = full_list.clone();
+
+        for _ in 0..limit {
+            list.drop_first_mut();
+        }
+
+        list
+    });
+}
+
+fn rpds_list_iterate(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut list: List<usize> = List::new();
 
@@ -45,5 +97,12 @@ fn list_iterate(bench: &mut Bencher) -> () {
     });
 }
 
-benchmark_group!(benches, list_push_front, list_iterate);
+benchmark_group!(
+    benches,
+    rpds_list_push_front,
+    rpds_list_push_front_mut,
+    rpds_list_drop_first,
+    rpds_list_drop_first_mut,
+    rpds_list_iterate
+);
 benchmark_main!(benches);

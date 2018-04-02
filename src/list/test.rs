@@ -9,13 +9,13 @@ mod iter {
     use super::*;
 
     #[test]
-    fn test_iter() -> () {
+    fn test_iter() {
         let limit = 1024;
         let mut list = List::new();
         let mut left = limit;
 
         for i in 0..limit {
-            list = list.push_front(i);
+            list.push_front_mut(i);
         }
 
         for v in list.iter() {
@@ -27,8 +27,8 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_size_hint() -> () {
-        let list = List::new().push_front(2).push_front(1).push_front(0);
+    fn test_iter_size_hint() {
+        let list = list![0, 1, 2];
         let mut iterator = list.iter();
 
         assert_eq!(iterator.size_hint(), (3, Some(3)));
@@ -47,12 +47,8 @@ mod iter {
     }
 
     #[test]
-    fn test_into_iterator() -> () {
-        let list = List::new()
-            .push_front(3)
-            .push_front(2)
-            .push_front(1)
-            .push_front(0);
+    fn test_into_iterator() {
+        let list = list![0, 1, 2, 3];
         let mut expected = 0;
         let mut left = 4;
 
@@ -73,33 +69,37 @@ mod compile_time {
     use super::*;
 
     #[test]
-    fn test_is_send() -> () {
+    fn test_is_send() {
         let _: Box<Send> = Box::new(List::<i32>::new());
     }
 
     #[test]
-    fn test_is_sync() -> () {
+    fn test_is_sync() {
         let _: Box<Sync> = Box::new(List::<i32>::new());
     }
 }
 
 #[test]
-fn test_new() -> () {
+fn test_new() {
     let empty_list: List<i32> = List::new();
 
-    match *empty_list.node {
-        Node::Nil => (),
-        _ => panic!("should be nil"),
-    };
+    assert!(empty_list.head.is_none());
 
     assert_eq!(empty_list.len(), 0);
     assert!(empty_list.is_empty());
 }
 
 #[test]
-fn test_macro_list() -> () {
-    let list_1 = List::new().push_front(1);
-    let list_1_2_3 = List::new().push_front(3).push_front(2).push_front(1);
+fn test_macro_list() {
+    let mut list_1 = List::new();
+
+    list_1.push_front_mut(1);
+
+    let mut list_1_2_3 = List::new();
+
+    list_1_2_3.push_front_mut(3);
+    list_1_2_3.push_front_mut(2);
+    list_1_2_3.push_front_mut(1);
 
     assert_eq!(List::<u32>::new(), list![]);
     assert_eq!(list_1, list![1]);
@@ -107,14 +107,10 @@ fn test_macro_list() -> () {
 }
 
 #[test]
-fn test_first() -> () {
+fn test_first() {
     let empty_list: List<i32> = List::new();
-    let singleton_list = List::new().push_front("hello");
-    let list = List::new()
-        .push_front(3)
-        .push_front(2)
-        .push_front(1)
-        .push_front(0);
+    let singleton_list = list!["hello"];
+    let list = list![0, 1, 2, 3];
 
     assert_eq!(empty_list.first(), None);
     assert_eq!(singleton_list.first(), Some(&"hello"));
@@ -122,23 +118,54 @@ fn test_first() -> () {
 }
 
 #[test]
-fn test_last() -> () {
+fn test_last() {
     let empty_list: List<i32> = List::new();
-    let singleton_list = List::new().push_front("hello");
-    let list = List::new()
-        .push_front(3)
-        .push_front(2)
-        .push_front(1)
-        .push_front(0);
+    let mut singleton_list = list!["hello"];
+    let list = list![0, 1, 2, 3];
 
     assert_eq!(empty_list.last(), None);
     assert_eq!(singleton_list.last(), Some(&"hello"));
     assert_eq!(list.last(), Some(&3));
-    assert_eq!(singleton_list.drop_first().unwrap().last(), None);
+
+    singleton_list.drop_first_mut();
+    assert_eq!(singleton_list.last(), None);
 }
 
 #[test]
-fn test_drop_first() -> () {
+fn test_drop_first_mut() {
+    let mut empty_list: List<i32> = List::new();
+    let mut singleton_list = list!["hello"];
+    let mut list = list![0, 1, 2, 3];
+
+    empty_list.drop_first_mut();
+    assert!(empty_list.is_empty());
+
+    singleton_list.drop_first_mut();
+    assert_eq!(singleton_list.first(), None);
+
+    list.drop_first_mut();
+    assert_eq!(list.first(), Some(&1));
+
+    assert_eq!(list.len(), 3);
+}
+
+#[test]
+fn test_reverse_mut() {
+    let mut empty_list: List<i32> = List::new();
+    let mut singleton_list = list!["hello"];
+    let mut list = list![0, 1, 2, 3];
+
+    list.reverse_mut();
+    singleton_list.reverse_mut();
+    empty_list.reverse_mut();
+
+    assert_eq!(empty_list, empty_list);
+    assert_eq!(singleton_list, singleton_list);
+    assert_eq!(list, list![3, 2, 1, 0]);
+}
+
+#[test]
+fn test_drop_first() {
     let empty_list: List<i32> = List::new();
     let singleton_list = List::new().push_front("hello");
     let list = List::new()
@@ -147,7 +174,8 @@ fn test_drop_first() -> () {
         .push_front(1)
         .push_front(0);
 
-    assert!(empty_list.drop_first().is_none());
+    empty_list.drop_first();
+    assert!(empty_list.is_empty());
     assert_eq!(singleton_list.drop_first().unwrap().first(), None);
     assert_eq!(list.drop_first().unwrap().first(), Some(&1));
 
@@ -156,7 +184,7 @@ fn test_drop_first() -> () {
 }
 
 #[test]
-fn test_reverse() -> () {
+fn test_reverse() {
     let empty_list: List<i32> = List::new();
     let singleton_list = List::new().push_front("hello");
     let list = List::new()
@@ -176,7 +204,7 @@ fn test_reverse() -> () {
 }
 
 #[test]
-fn test_from_iterator() -> () {
+fn test_from_iterator() {
     let vec: Vec<u32> = vec![10, 11, 12, 13];
     let list: List<u32> = vec.iter().map(|v| *v).collect();
 
@@ -184,7 +212,7 @@ fn test_from_iterator() -> () {
 }
 
 #[test]
-fn test_default() -> () {
+fn test_default() {
     let list: List<i32> = List::default();
 
     assert_eq!(list.first(), None);
@@ -192,14 +220,10 @@ fn test_default() -> () {
 }
 
 #[test]
-fn test_display() -> () {
+fn test_display() {
     let empty_list: List<i32> = List::new();
-    let singleton_list = List::new().push_front("hello");
-    let list = List::new()
-        .push_front(3)
-        .push_front(2)
-        .push_front(1)
-        .push_front(0);
+    let singleton_list = list!["hello"];
+    let list = list![0, 1, 2, 3];
 
     assert_eq!(format!("{}", empty_list), "[]");
     assert_eq!(format!("{}", singleton_list), "[hello]");
@@ -207,10 +231,10 @@ fn test_display() -> () {
 }
 
 #[test]
-fn test_eq() -> () {
-    let list_1 = List::new().push_front("a").push_front("a");
-    let list_1_prime = List::new().push_front("a").push_front("a");
-    let list_2 = List::new().push_front("b").push_front("a");
+fn test_eq() {
+    let list_1 = list!["a", "a"];
+    let list_1_prime = list!["a", "a"];
+    let list_2 = list!["a", "b"];
 
     assert_ne!(list_1, list_2);
     assert_eq!(list_1, list_1);
@@ -219,12 +243,12 @@ fn test_eq() -> () {
 }
 
 #[test]
-fn test_partial_ord() -> () {
-    let list_1 = List::new().push_front("a");
-    let list_1_prime = List::new().push_front("a");
-    let list_2 = List::new().push_front("b");
-    let list_3 = List::new().push_front(0.0);
-    let list_4 = List::new().push_front(::std::f32::NAN);
+fn test_partial_ord() {
+    let list_1 = list!["a"];
+    let list_1_prime = list!["a"];
+    let list_2 = list!["b"];
+    let list_3 = list![0.0];
+    let list_4 = list![::std::f32::NAN];
 
     assert_eq!(list_1.partial_cmp(&list_1_prime), Some(Ordering::Equal));
     assert_eq!(list_1.partial_cmp(&list_2), Some(Ordering::Less));
@@ -233,10 +257,10 @@ fn test_partial_ord() -> () {
 }
 
 #[test]
-fn test_ord() -> () {
-    let list_1 = List::new().push_front("a");
-    let list_1_prime = List::new().push_front("a");
-    let list_2 = List::new().push_front("b");
+fn test_ord() {
+    let list_1 = list!["a"];
+    let list_1_prime = list!["a"];
+    let list_2 = list!["b"];
 
     assert_eq!(list_1.cmp(&list_1_prime), Ordering::Equal);
     assert_eq!(list_1.cmp(&list_2), Ordering::Less);
@@ -252,10 +276,10 @@ fn hash<T: Hash>(list: &List<T>) -> u64 {
 }
 
 #[test]
-fn test_hash() -> () {
-    let list_1 = List::new().push_front("a");
-    let list_1_prime = List::new().push_front("a");
-    let list_2 = List::new().push_front("b").push_front("a");
+fn test_hash() {
+    let list_1 = list!["a"];
+    let list_1_prime = list!["a"];
+    let list_2 = list!["a", "b"];
 
     assert_eq!(hash(&list_1), hash(&list_1));
     assert_eq!(hash(&list_1), hash(&list_1_prime));
@@ -263,8 +287,8 @@ fn test_hash() -> () {
 }
 
 #[test]
-fn test_clone() -> () {
-    let list = List::new().push_front("there").push_front("hello");
+fn test_clone() {
+    let list = list!["hello", "there"];
     let clone = list.clone();
 
     assert!(clone.iter().eq(list.iter()));
@@ -274,7 +298,7 @@ fn test_clone() -> () {
 
 #[cfg(feature = "serde")]
 #[test]
-fn test_serde() -> () {
+fn test_serde() {
     use bincode::{deserialize, serialize};
     let list: List<i32> = list![5, 6, 7, 8];
     let encoded = serialize(&list).unwrap();

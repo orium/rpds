@@ -9,7 +9,6 @@ pub trait VecUtils {
     fn cloned_set(&self, index: usize, value: Self::Item) -> Self;
     fn cloned_insert(&self, index: usize, value: Self::Item) -> Self;
     fn cloned_remove(&self, index: usize) -> Self;
-    fn cloned_remove_last(&self) -> Self;
 }
 
 impl<T: Clone> VecUtils for Vec<T> {
@@ -51,11 +50,6 @@ impl<T: Clone> VecUtils for Vec<T> {
         cloned_vec.extend_from_slice(&self[(index + 1)..self.len()]);
 
         cloned_vec
-    }
-
-    fn cloned_remove_last(&self) -> Vec<T> {
-        debug_assert!(!self.is_empty());
-        self.cloned_remove(self.len() - 1)
     }
 }
 

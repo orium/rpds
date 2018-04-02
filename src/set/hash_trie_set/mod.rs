@@ -43,8 +43,7 @@ macro_rules! ht_set {
 }
 
 /// A persistent set with structural sharing.  This implementation uses a
-/// [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie)
-/// and supports fast `insert()`, `remove()`, and `contains()`.
+/// [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie).
 ///
 /// # Complexity
 ///

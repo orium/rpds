@@ -51,7 +51,7 @@
 //!   8. [`RedBlackTreeSet`](#redblacktreeset)
 //!
 //! ### `List`
-//! [![List documentation](https://img.shields.io/badge/doc-List-303070.svg)](sequence/list/struct.List.html)
+//! [![List documentation](https://img.shields.io/badge/doc-List-303070.svg)](list/struct.List.html)
 //!
 //! Your classic functional list.
 //!
@@ -74,7 +74,7 @@
 //! ```
 //!
 //! ### `Vector`
-//! [![Vector documentation](https://img.shields.io/badge/doc-Vector-303070.svg)](sequence/vector/struct.Vector.html)
+//! [![Vector documentation](https://img.shields.io/badge/doc-Vector-303070.svg)](vector/struct.Vector.html)
 //!
 //! A sequence that can be indexed.  The implementation is described in
 //! [Understanding Persistent Vector Part 1](http://hypirion.com/musings/understanding-persistent-vector-pt-1)
@@ -263,17 +263,19 @@ extern crate bincode;
 
 mod utils;
 
+#[macro_use]
+pub mod list;
 pub mod map;
 pub mod queue;
-pub mod sequence;
 pub mod set;
 pub mod stack;
+pub mod vector;
 
+pub use list::List;
 pub use map::hash_trie_map::HashTrieMap;
 pub use map::red_black_tree_map::RedBlackTreeMap;
 pub use queue::Queue;
-pub use sequence::list::List;
-pub use sequence::vector::Vector;
 pub use set::hash_trie_set::HashTrieSet;
 pub use set::red_black_tree_set::RedBlackTreeSet;
 pub use stack::Stack;
+pub use vector::Vector;

@@ -8,7 +8,7 @@ mod sparse_array_usize;
 use self::sparse_array_usize::SparseArrayUsize;
 use super::entry::Entry;
 use List;
-use sequence::list;
+use list;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
 use std::fmt::Display;
@@ -32,8 +32,8 @@ pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V))
 
 const DEFAULT_DEGREE: u8 = 8 * size_of::<usize>() as u8;
 
-/// Creates a [`HashTrieMap`](map/hash_trie_map/struct.HashTrieMap.html) containing the given
-/// arguments:
+/// Creates a [`HashTrieMap`](map/hash_trie_map/struct.HashTrieMap.html) containing the
+/// given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -60,8 +60,7 @@ macro_rules! ht_map {
 }
 
 /// A persistent map with structural sharing.  This implementation uses a
-/// [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie) and supports
-/// fast `insert()`, `remove()`, and `get()`.
+/// [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie).
 ///
 /// # Complexity
 ///
@@ -890,7 +889,7 @@ where
         iter
     }
 
-    fn dig(&mut self) -> () {
+    fn dig(&mut self) {
         let next_stack_elem: Option<IterStackElement<K, V>> = self.stack.last_mut().and_then(
             |stack_top| match *stack_top {
                 IterStackElement::Branch(ref mut iter) =>
@@ -906,7 +905,7 @@ where
         });
     }
 
-    fn advance(&mut self) -> () {
+    fn advance(&mut self) {
         match self.stack.pop() {
             Some(mut stack_element) => {
                 let finished = stack_element.advance();

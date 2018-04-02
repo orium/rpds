@@ -41,8 +41,7 @@ macro_rules! rbt_set {
 }
 
 /// A persistent set with structural sharing.  This implementation uses a
-/// [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree)
-/// and supports fast `insert()`, `remove()`, and `contains()`.
+/// [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree).
 ///
 /// # Complexity
 ///

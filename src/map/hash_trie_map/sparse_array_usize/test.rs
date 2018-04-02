@@ -7,7 +7,7 @@ use super::*;
 use std::mem::size_of;
 
 #[test]
-fn test_new() -> () {
+fn test_new() {
     let empty_array: SparseArrayUsize<u32> = SparseArrayUsize::new();
 
     assert_eq!(empty_array.bitmap, 0);
@@ -20,7 +20,7 @@ fn test_new() -> () {
 }
 
 #[test]
-fn test_set() -> () {
+fn test_set() {
     let mut array = SparseArrayUsize::new();
 
     assert_eq!(array.size(), 0);
@@ -48,7 +48,7 @@ fn test_set() -> () {
 }
 
 #[test]
-fn test_remove() -> () {
+fn test_remove() {
     let mut array = SparseArrayUsize::new().set(3, 'a').set(60, 'b');
 
     assert_eq!(array.get(3), Some(&'a'));
@@ -74,7 +74,7 @@ fn test_remove() -> () {
 }
 
 #[test]
-fn test_first() -> () {
+fn test_first() {
     let mut array = SparseArrayUsize::new();
 
     assert_eq!(array.first(), None);
@@ -93,7 +93,7 @@ fn test_first() -> () {
 }
 
 #[test]
-fn test_move_first() -> () {
+fn test_move_first() {
     let mut array = SparseArrayUsize::new();
 
     array = array.set(60, 'b');
@@ -103,7 +103,7 @@ fn test_move_first() -> () {
 }
 
 #[test]
-fn test_map_index() -> () {
+fn test_map_index() {
     for i in 0..(8 * size_of::<usize>()) {
         assert_eq!(sparse_array_usize_utils::map_index(0, i), None);
     }
