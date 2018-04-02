@@ -50,7 +50,7 @@ fatal-warnings = []
 features = ["serde"]
 
 [[bench]]
-name = "rust_linked_list"
+name = "std_linked_list"
 harness = false
 
 [[bench]]
@@ -58,7 +58,7 @@ name = "rpds_list"
 harness = false
 
 [[bench]]
-name = "rust_vec"
+name = "std_vec"
 harness = false
 
 [[bench]]
@@ -66,7 +66,7 @@ name = "rpds_vector"
 harness = false
 
 [[bench]]
-name = "rust_hashmap"
+name = "std_hashmap"
 harness = false
 
 [[bench]]
@@ -74,7 +74,7 @@ name = "rpds_hash_trie_map"
 harness = false
 
 [[bench]]
-name = "rust_btreemap"
+name = "std_btreemap"
 harness = false
 
 [[bench]]

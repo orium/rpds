@@ -4,21 +4,20 @@
  */
 
 use List;
-use sequence::list;
 use std::cmp::Ordering;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 
 // TODO Use impl trait for return value when available
-pub type Iter<'a, T> = list::Iter<'a, T>;
+pub type Iter<'a, T> = ::list::Iter<'a, T>;
 
 /// Creates a [`Stack`](stack/struct.Stack.html) containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
 /// #
-/// let s = Stack::new()
+/// let mut s = Stack::new()
 ///     .push(1)
 ///     .push(2)
 ///     .push(3);
@@ -32,15 +31,14 @@ macro_rules! stack {
             #[allow(unused_mut)]
             let mut s = $crate::Stack::new();
             $(
-                s = s.push($e);
+                s.push_mut($e);
             )*
             s
         }
     };
 }
 
-/// A persistent stack with structural sharing.  This data structure supports fast `push()`,
-/// `pop()`, and `peek()`.
+/// A persistent stack with structural sharing.
 ///
 /// # Complexity
 ///
@@ -62,7 +60,7 @@ macro_rules! stack {
 ///
 /// # Implementation details
 ///
-/// This is a thin wrapper around a [`List`](../sequence/list/struct.List.html).
+/// This is a thin wrapper around a [`List`](../list/struct.List.html).
 #[derive(Debug)]
 pub struct Stack<T> {
     list: List<T>,
@@ -78,13 +76,29 @@ impl<T> Stack<T> {
     }
 
     pub fn pop(&self) -> Option<Stack<T>> {
-        self.list.drop_first().map(|l| Stack { list: l })
+        let mut new_stack = self.clone();
+
+        if new_stack.pop_mut() {
+            Some(new_stack)
+        } else {
+            None
+        }
+    }
+
+    pub fn pop_mut(&mut self) -> bool {
+        self.list.drop_first_mut()
     }
 
     pub fn push(&self, v: T) -> Stack<T> {
-        Stack {
-            list: self.list.push_front(v),
-        }
+        let mut new_stack = self.clone();
+
+        new_stack.push_mut(v);
+
+        new_stack
+    }
+
+    pub fn push_mut(&mut self, v: T) {
+        self.list.push_front_mut(v);
     }
 
     #[inline]
@@ -94,7 +108,7 @@ impl<T> Stack<T> {
 
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.size() == 0
+        self.list.is_empty()
     }
 
     pub fn iter(&self) -> Iter<T> {
@@ -129,7 +143,7 @@ impl<T: Ord> Ord for Stack<T> {
 }
 
 impl<T: Hash> Hash for Stack<T> {
-    fn hash<H: Hasher>(&self, state: &mut H) -> () {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         self.list.hash(state)
     }
 }
@@ -188,7 +202,7 @@ pub mod serde {
         T: Serialize,
     {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-            serializer.collect_seq(self)
+            self.list.serialize(serializer)
         }
     }
 
@@ -197,8 +211,7 @@ pub mod serde {
         T: Deserialize<'de>,
     {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Stack<T>, D::Error> {
-            let list: List<T> = Deserialize::deserialize(deserializer)?;
-            Ok(Stack { list })
+            Deserialize::deserialize(deserializer).map(|list| Stack { list })
         }
     }
 }

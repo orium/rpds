@@ -174,7 +174,7 @@ mod node {
     }
 
     #[test]
-    fn test_get() -> () {
+    fn test_get() {
         let tree = dummy_tree_0_1_2_3();
 
         assert_eq!(tree.get(&0).unwrap().key, 0);
@@ -185,21 +185,21 @@ mod node {
     }
 
     #[test]
-    fn test_first() -> () {
+    fn test_first() {
         let tree = dummy_tree_0_1_2_3();
 
         assert_eq!(tree.first().key, 0);
     }
 
     #[test]
-    fn test_last() -> () {
+    fn test_last() {
         let tree = dummy_tree_0_1_2_3();
 
         assert_eq!(tree.last().key, 3);
     }
 
     #[test]
-    fn test_balance() -> () {
+    fn test_balance() {
         //                                                                ╭────────────────────╮
         //                                                                │  ┌───┐             │
         //                                                                │  │   │ Red node    │
@@ -389,7 +389,7 @@ mod node {
     }
 
     #[test]
-    fn test_insert() -> () {
+    fn test_insert() {
         let (node, is_new_key) = Node::insert(None, 0, 1);
         let expected_node = Node::new_black(Entry::new(0, 1));
 
@@ -483,7 +483,7 @@ mod node {
 mod internal {
     use super::*;
 
-    fn insert_test(values: &[u32]) -> () {
+    fn insert_test(values: &[u32]) {
         let mut map = RedBlackTreeMap::new();
 
         for (i, &v) in values.iter().enumerate() {
@@ -535,7 +535,7 @@ mod internal {
         }
     }
 
-    fn remove_test(values_insert: &[u32], values_remove: &[u32]) -> () {
+    fn remove_test(values_insert: &[u32], values_remove: &[u32]) {
         let mut map = RedBlackTreeMap::new();
 
         for &v in values_insert.iter() {
@@ -594,7 +594,7 @@ mod iter {
     use super::*;
 
     #[test]
-    fn test_lg_floor() -> () {
+    fn test_lg_floor() {
         assert_eq!(iter_utils::lg_floor(1), 0);
         assert_eq!(iter_utils::lg_floor(2), 1);
         assert_eq!(iter_utils::lg_floor(3), 1);
@@ -609,7 +609,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_empty() -> () {
+    fn test_iter_empty() {
         let map: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::new();
 
         for _ in map.iter() {
@@ -618,7 +618,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_empty_backwards() -> () {
+    fn test_iter_empty_backwards() {
         let map: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::new();
 
         for _ in map.iter().rev() {
@@ -627,7 +627,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_big_map() -> () {
+    fn test_iter_big_map() {
         let limit = 512;
         let mut map = RedBlackTreeMap::new();
         let mut expected = 0;
@@ -651,7 +651,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_big_map_backwards() -> () {
+    fn test_iter_big_map_backwards() {
         let limit = 512;
         let mut map = RedBlackTreeMap::new();
         let mut expected = limit - 1;
@@ -675,7 +675,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_both_directions() -> () {
+    fn test_iter_both_directions() {
         let map = RedBlackTreeMap::new()
             .insert(0, 10)
             .insert(1, 11)
@@ -696,7 +696,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_size_hint() -> () {
+    fn test_iter_size_hint() {
         let map = RedBlackTreeMap::new()
             .insert(0, 10)
             .insert(1, 11)
@@ -719,7 +719,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_sorted() -> () {
+    fn test_iter_sorted() {
         let map = RedBlackTreeMap::new()
             .insert(5, ())
             .insert(6, ())
@@ -735,7 +735,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_keys() -> () {
+    fn test_iter_keys() {
         let map = RedBlackTreeMap::new()
             .insert(0, 10)
             .insert(1, 11)
@@ -749,7 +749,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_values() -> () {
+    fn test_iter_values() {
         let map = RedBlackTreeMap::new()
             .insert(10, 0)
             .insert(11, 1)
@@ -763,7 +763,7 @@ mod iter {
     }
 
     #[test]
-    fn test_into_iterator() -> () {
+    fn test_into_iterator() {
         let map = RedBlackTreeMap::new()
             .insert(0, 0)
             .insert(1, 2)
@@ -790,18 +790,18 @@ mod compile_time {
     use super::*;
 
     #[test]
-    fn test_is_send() -> () {
+    fn test_is_send() {
         let _: Box<Send> = Box::new(RedBlackTreeMap::<i32, i32>::new());
     }
 
     #[test]
-    fn test_is_sync() -> () {
+    fn test_is_sync() {
         let _: Box<Sync> = Box::new(RedBlackTreeMap::<i32, i32>::new());
     }
 }
 
 #[test]
-fn test_macro_rbt_map() -> () {
+fn test_macro_rbt_map() {
     let set_1 = RedBlackTreeMap::new().insert(1, 2);
     let set_1_2_3 = RedBlackTreeMap::new()
         .insert(1, 2)
@@ -814,7 +814,7 @@ fn test_macro_rbt_map() -> () {
 }
 
 #[test]
-fn test_insert_simple() -> () {
+fn test_insert_simple() {
     let mut map = RedBlackTreeMap::new();
     assert_eq!(map.size(), 0);
 
@@ -843,7 +843,7 @@ fn test_insert_simple() -> () {
 }
 
 #[test]
-fn test_insert() -> () {
+fn test_insert() {
     let mut map = RedBlackTreeMap::new();
     let limit = 50_000;
     let overwrite_limit = 10_000;
@@ -872,7 +872,7 @@ fn test_insert() -> () {
 }
 
 #[test]
-fn test_contains_key() -> () {
+fn test_contains_key() {
     let map = RedBlackTreeMap::new().insert("foo", 7);
 
     assert!(map.contains_key("foo"));
@@ -880,7 +880,7 @@ fn test_contains_key() -> () {
 }
 
 #[test]
-fn test_remove_simple() -> () {
+fn test_remove_simple() {
     let mut map = RedBlackTreeMap::new()
         .insert("foo", 4)
         .insert("bar", 12)
@@ -925,7 +925,7 @@ fn test_remove_simple() -> () {
 }
 
 #[test]
-fn test_remove() -> () {
+fn test_remove() {
     let mut map = RedBlackTreeMap::new();
     let limit = 50_000;
 
@@ -951,7 +951,7 @@ fn test_remove() -> () {
 }
 
 #[test]
-fn test_first() -> () {
+fn test_first() {
     let map = RedBlackTreeMap::new()
         .insert(5, "hello")
         .insert(12, "there");
@@ -960,7 +960,7 @@ fn test_first() -> () {
 }
 
 #[test]
-fn test_last() -> () {
+fn test_last() {
     let map = RedBlackTreeMap::new()
         .insert(5, "hello")
         .insert(12, "there");
@@ -969,7 +969,7 @@ fn test_last() -> () {
 }
 
 #[test]
-fn test_index() -> () {
+fn test_index() {
     let map = RedBlackTreeMap::new()
         .insert(5, "hello")
         .insert(12, "there");
@@ -979,7 +979,7 @@ fn test_index() -> () {
 }
 
 #[test]
-fn test_from_iterator() -> () {
+fn test_from_iterator() {
     let vec: Vec<(i32, &str)> = vec![(2, "two"), (5, "five")];
     let map: RedBlackTreeMap<i32, &str> = vec.iter().map(|v| *v).collect();
     let expected_map = RedBlackTreeMap::new().insert(2, "two").insert(5, "five");
@@ -988,7 +988,7 @@ fn test_from_iterator() -> () {
 }
 
 #[test]
-fn test_default() -> () {
+fn test_default() {
     let map: RedBlackTreeMap<u32, char> = RedBlackTreeMap::default();
 
     assert_eq!(map.size(), 0);
@@ -996,7 +996,7 @@ fn test_default() -> () {
 }
 
 #[test]
-fn test_display() -> () {
+fn test_display() {
     let empty_map: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::new();
     let singleton_map = RedBlackTreeMap::new().insert("hi", "hello");
     let map = RedBlackTreeMap::new()
@@ -1009,7 +1009,7 @@ fn test_display() -> () {
 }
 
 #[test]
-fn test_eq() -> () {
+fn test_eq() {
     let map_1 = RedBlackTreeMap::new().insert("a", 0xa).insert("b", 0xb);
     let map_1_prime = RedBlackTreeMap::new().insert("a", 0xa).insert("b", 0xb);
     let map_1_prime_2 = RedBlackTreeMap::new()
@@ -1033,7 +1033,7 @@ fn test_eq() -> () {
 }
 
 #[test]
-fn test_partial_ord() -> () {
+fn test_partial_ord() {
     let map_1 = RedBlackTreeMap::new().insert("a", 0xa);
     let map_1_prime = RedBlackTreeMap::new().insert("a", 0xa);
     let map_2 = RedBlackTreeMap::new().insert("b", 0xb);
@@ -1047,7 +1047,7 @@ fn test_partial_ord() -> () {
 }
 
 #[test]
-fn test_ord() -> () {
+fn test_ord() {
     let map_1 = RedBlackTreeMap::new().insert("a", 0xa);
     let map_1_prime = RedBlackTreeMap::new().insert("a", 0xa);
     let map_2 = RedBlackTreeMap::new().insert("b", 0xb);
@@ -1066,7 +1066,7 @@ fn hash<K: Ord + Hash, V: Hash>(map: &RedBlackTreeMap<K, V>) -> u64 {
 }
 
 #[test]
-fn test_hash() -> () {
+fn test_hash() {
     let map_1 = RedBlackTreeMap::new().insert("a", 0xa);
     let map_1_prime = RedBlackTreeMap::new().insert("a", 0xa);
     let map_2 = RedBlackTreeMap::new().insert("b", 0xb).insert("a", 0xa);
@@ -1077,7 +1077,7 @@ fn test_hash() -> () {
 }
 
 #[test]
-fn test_clone() -> () {
+fn test_clone() {
     let map = RedBlackTreeMap::new().insert("hello", 4).insert("there", 5);
     let clone = map.clone();
 
@@ -1088,7 +1088,7 @@ fn test_clone() -> () {
 
 #[cfg(feature = "serde")]
 #[test]
-fn test_serde() -> () {
+fn test_serde() {
     use bincode::{deserialize, serialize};
     let map: RedBlackTreeMap<i32, i32> = rbt_map![5 => 6, 7 => 8, 9 => 10, 11 => 12];
     let encoded = serialize(&map).unwrap();

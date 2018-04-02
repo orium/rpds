@@ -6,7 +6,7 @@
 use super::*;
 
 #[test]
-fn test_cloned_set() -> () {
+fn test_cloned_set() {
     let vec: Vec<&str> = vec!["a", "b", "c", "d"];
 
     assert_eq!(vec.cloned_set(0, "x"), vec!["x", "b", "c", "d"]);
@@ -16,7 +16,7 @@ fn test_cloned_set() -> () {
 }
 
 #[test]
-fn test_cloned_insert() -> () {
+fn test_cloned_insert() {
     let empty: Vec<&str> = Vec::new();
     let vec: Vec<&str> = vec!["a", "b", "c", "d"];
 
@@ -27,17 +27,10 @@ fn test_cloned_insert() -> () {
 }
 
 #[test]
-fn test_cloned_remove() -> () {
+fn test_cloned_remove() {
     let vec: Vec<&str> = vec!["a", "b", "c", "d"];
 
     assert_eq!(vec.cloned_remove(0), vec!["b", "c", "d"]);
     assert_eq!(vec.cloned_remove(2), vec!["a", "b", "d"]);
     assert_eq!(vec.cloned_remove(3), vec!["a", "b", "c"]);
-}
-
-#[test]
-fn test_cloned_remove_last() -> () {
-    let vec: Vec<&str> = vec!["a", "b", "c", "d"];
-
-    assert_eq!(vec.cloned_remove_last(), vec!["a", "b", "c"]);
 }

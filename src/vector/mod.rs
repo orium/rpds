@@ -18,7 +18,7 @@ pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
 
 const DEFAULT_BITS: u8 = 5;
 
-/// Creates a [`Vector`](sequence/vector/struct.Vector.html) containing the given arguments:
+/// Creates a [`Vector`](vector/struct.Vector.html) containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -44,8 +44,7 @@ macro_rules! vector {
     };
 }
 
-/// A persistent vector with structural sharing.  This data structure supports fast `push_back()`, `set()`,
-/// `drop_last()`, and `get()`.
+/// A persistent vector with structural sharing.
 ///
 /// # Complexity
 ///
@@ -177,12 +176,12 @@ impl<T> Node<T> {
 
     /// Drops the last element.
     ///
-    /// This will return `None` if the subtree after drop becomes empty (or it already was empty).
+    /// This will return `true` if the subtree after drop becomes empty (or it already was empty).
     /// Note that this will prune irrelevant branches, i.e. there will be no branches without
     /// elements under it.
-    fn drop_last(&mut self) -> Option<()> {
+    fn drop_last(&mut self) -> bool {
         if self.is_empty() {
-            return None;
+            return true;
         }
 
         match *self {
@@ -190,19 +189,12 @@ impl<T> Node<T> {
                 a.pop();
             }
 
-            Node::Branch(ref mut a) => match Arc::make_mut(a.last_mut().unwrap()).drop_last() {
-                Some(()) => (),
-                None => {
-                    a.pop();
-                }
+            Node::Branch(ref mut a) => if Arc::make_mut(a.last_mut().unwrap()).drop_last() {
+                a.pop();
             },
         }
 
-        if self.is_empty() {
-            None
-        } else {
-            Some(())
-        }
+        self.is_empty()
     }
 }
 
@@ -212,6 +204,23 @@ impl<T> Clone for Node<T> {
             Node::Branch(ref a) => Node::Branch(Vec::clone(a)),
             Node::Leaf(ref a) => Node::Leaf(Vec::clone(a)),
         }
+    }
+}
+
+mod vector_utils {
+    #[inline]
+    pub fn degree(bits: u8) -> usize {
+        1 << bits
+    }
+
+    #[inline]
+    pub fn mask(bits: u8) -> usize {
+        degree(bits) - 1
+    }
+
+    #[inline]
+    pub fn bucket(bits: u8, index: usize, height: usize) -> usize {
+        (index >> (height * bits as usize)) & mask(bits)
     }
 }
 
@@ -243,11 +252,6 @@ impl<T> Vector<T> {
     }
 
     #[inline]
-    fn degree(&self) -> usize {
-        1 << self.bits
-    }
-
-    #[inline]
     fn height(&self) -> usize {
         if self.length > 1 {
             let u: usize = self.length - 1;
@@ -260,42 +264,33 @@ impl<T> Vector<T> {
         }
     }
 
-    #[inline]
-    fn mask(&self) -> usize {
-        self.degree() - 1
-    }
-
-    #[inline]
-    fn bucket(&self, index: usize, height: usize) -> usize {
-        (index >> (height * self.bits as usize)) & self.mask()
-    }
-
-    #[inline]
-    fn bucket2(bits: u8, index: usize, height: usize) -> usize {
-        (index >> (height * bits as usize)) & ((1 << bits) - 1)
-    }
-
     pub fn get(&self, index: usize) -> Option<&T> {
         if index >= self.length {
             None
         } else {
             Some(self.root.get(index, self.height(), |index, height| {
-                self.bucket(index, height)
+                vector_utils::bucket(self.bits, index, height)
             }))
         }
     }
 
     pub fn set(&self, index: usize, v: T) -> Option<Vector<T>> {
-        let mut self_ = self.clone();
-        self_.set_mut(index, v).map(|()| self_)
+        let mut new_vector = self.clone();
+
+        if new_vector.set_mut(index, v) {
+            Some(new_vector)
+        } else {
+            None
+        }
     }
 
-    pub fn set_mut(&mut self, index: usize, v: T) -> Option<()> {
+    /// Returns `true` if the operation was successful.
+    pub fn set_mut(&mut self, index: usize, v: T) -> bool {
         if index >= self.length {
-            None
+            false
         } else {
             self.assoc(index, v);
-            Some(())
+            true
         }
     }
 
@@ -312,11 +307,14 @@ impl<T> Vector<T> {
 
         let height = self.height();
         let bits = self.bits;
-        Arc::make_mut(&mut self.root).assoc(v, height, |height| Self::bucket2(bits, index, height));
+        Arc::make_mut(&mut self.root).assoc(v, height, |height| {
+            vector_utils::bucket(bits, index, height)
+        });
         let adds_item: bool = index >= self.length;
 
-        self.bits = bits;
-        self.length += if adds_item { 1 } else { 0 };
+        if adds_item {
+            self.length += 1;
+        }
     }
 
     #[inline]
@@ -337,9 +335,11 @@ impl<T> Vector<T> {
     }
 
     pub fn push_back(&self, v: T) -> Vector<T> {
-        let mut self_ = self.clone();
-        self_.push_back_mut(v);
-        self_
+        let mut new_vector = self.clone();
+
+        new_vector.push_back_mut(v);
+
+        new_vector
     }
 
     pub fn push_back_mut(&mut self, v: T) {
@@ -366,15 +366,7 @@ impl<T> Vector<T> {
     /// one child.
     ///
     /// The trie must always have a compressed root.
-    #[cfg(test)]
-    fn compress_root(mut root: Node<T>) -> Arc<Node<T>> {
-        match Self::compress_root_mut(&mut root) {
-            Some(new_root) => new_root,
-            None => Arc::new(root),
-        }
-    }
-
-    fn compress_root_mut(root: &mut Node<T>) -> Option<Arc<Node<T>>> {
+    fn compress_root(root: &mut Node<T>) -> Option<Arc<Node<T>>> {
         match *root {
             Node::Leaf(_) => None,
             Node::Branch(_) => if root.is_singleton() {
@@ -390,27 +382,34 @@ impl<T> Vector<T> {
     }
 
     pub fn drop_last(&self) -> Option<Vector<T>> {
-        let mut self_ = self.clone();
-        self_.drop_last_mut().map(|()| self_)
+        let mut new_vector = self.clone();
+
+        if new_vector.drop_last_mut() {
+            Some(new_vector)
+        } else {
+            None
+        }
     }
 
-    pub fn drop_last_mut(&mut self) -> Option<()> {
-        if self.length == 0 {
-            return None;
+    pub fn drop_last_mut(&mut self) -> bool {
+        if self.length > 0 {
+            let new_root = {
+                let root = Arc::make_mut(&mut self.root);
+
+                root.drop_last();
+                self.length -= 1;
+
+                Vector::compress_root(root)
+            };
+
+            if let Some(new_root) = new_root {
+                self.root = new_root;
+            }
+
+            true
+        } else {
+            false
         }
-
-        let new_root = {
-            let root = Arc::make_mut(&mut self.root);
-            root.drop_last();
-            self.length -= 1;
-            Vector::compress_root_mut(root)
-        };
-
-        if let Some(new_root) = new_root {
-            self.root = new_root;
-        }
-
-        Some(())
     }
 
     #[inline]
@@ -468,7 +467,7 @@ impl<T: Ord> Ord for Vector<T> {
 }
 
 impl<T: Hash> Hash for Vector<T> {
-    fn hash<H: Hasher>(&self, state: &mut H) -> () {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         // Add the hash of length so that if two collections are added one after the other it doesn't
         // hash to the same thing as a single collection with the same elements in the same order.
         self.len().hash(state);
@@ -602,7 +601,7 @@ impl<'a, T> IterArc<'a, T> {
         }
     }
 
-    fn dig(stack: &mut Vec<IterStackElement<T>>, backwards: bool) -> () {
+    fn dig(stack: &mut Vec<IterStackElement<T>>, backwards: bool) {
         let next_node: &Node<T> = {
             let stack_top = stack.last().unwrap();
 
@@ -618,7 +617,7 @@ impl<'a, T> IterArc<'a, T> {
         IterArc::dig(stack, backwards);
     }
 
-    fn init_if_needed(&mut self, backwards: bool) -> () {
+    fn init_if_needed(&mut self, backwards: bool) {
         let stack_field = if backwards {
             &mut self.stack_backward
         } else {
@@ -636,7 +635,7 @@ impl<'a, T> IterArc<'a, T> {
         }
     }
 
-    fn advance(stack: &mut Vec<IterStackElement<T>>, backwards: bool) -> () {
+    fn advance(stack: &mut Vec<IterStackElement<T>>, backwards: bool) {
         match stack.pop() {
             Some(mut stack_element) => {
                 let finished = stack_element.advance(backwards);
@@ -663,7 +662,7 @@ impl<'a, T> IterArc<'a, T> {
         self.left_index < self.right_index
     }
 
-    fn advance_forward(&mut self) -> () {
+    fn advance_forward(&mut self) {
         if self.non_empty() {
             IterArc::advance(self.stack_forward.as_mut().unwrap(), false);
 
@@ -679,7 +678,7 @@ impl<'a, T> IterArc<'a, T> {
         }
     }
 
-    fn advance_backward(&mut self) -> () {
+    fn advance_backward(&mut self) {
         if self.non_empty() {
             IterArc::advance(self.stack_backward.as_mut().unwrap(), true);
 

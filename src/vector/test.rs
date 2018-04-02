@@ -9,7 +9,7 @@ mod node {
     use super::*;
 
     #[test]
-    fn test_new_empty_branch() -> () {
+    fn test_new_empty_branch() {
         let node: Node<u32> = Node::new_empty_branch();
 
         match node {
@@ -22,7 +22,7 @@ mod node {
     }
 
     #[test]
-    fn test_new_empty_leaf() -> () {
+    fn test_new_empty_leaf() {
         let node: Node<u32> = Node::new_empty_leaf();
 
         match node {
@@ -35,7 +35,7 @@ mod node {
     }
 
     #[test]
-    fn test_drop_last_single_level() -> () {
+    fn test_drop_last_single_level() {
         let mut empty_leaf: Node<u32> = Node::new_empty_leaf();
         let mut empty_branch: Node<u32> = Node::new_empty_branch();
         let mut singleton_node: Node<u32> = Vector::new().push_back(0).root.as_ref().clone();
@@ -46,15 +46,15 @@ mod node {
             .as_ref()
             .clone();
 
-        assert!(empty_leaf.drop_last().is_none());
-        assert!(empty_branch.drop_last().is_none());
-        assert!(singleton_node.drop_last().is_none());
-        assert_eq!(one_level_node.drop_last(), Some(()));
+        assert!(empty_leaf.drop_last());
+        assert!(empty_branch.drop_last());
+        assert!(singleton_node.drop_last());
+        assert!(!one_level_node.drop_last());
         assert_eq!(one_level_node.used(), 1);
     }
 
     #[test]
-    fn test_drop_last_multi_level() -> () {
+    fn test_drop_last_multi_level() {
         let mut node_three: Node<u32> = Vector::new_with_bits(1)
             .push_back(0)
             .push_back(1)
@@ -118,9 +118,9 @@ mod node {
             Node::Branch(a_branch)
         };
 
-        assert_eq!(node_three.drop_last(), Some(()));
+        assert!(!node_three.drop_last());
         assert_eq!(node_three, node_three_after_drop);
-        assert_eq!(node_four.drop_last(), Some(()));
+        assert!(!node_four.drop_last());
         assert_eq!(node_four, node_four_after_drop);
     }
 }
@@ -129,7 +129,7 @@ mod iter {
     use super::*;
 
     #[test]
-    fn test_iter_empty() -> () {
+    fn test_iter_empty() {
         let vector: Vector<i32> = Vector::new();
 
         for _ in vector.iter() {
@@ -138,7 +138,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_empty_backwards() -> () {
+    fn test_iter_empty_backwards() {
         let vector: Vector<i32> = Vector::new();
 
         for _ in vector.iter().rev() {
@@ -147,7 +147,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_big_vector() -> () {
+    fn test_iter_big_vector() {
         let limit = 32 * 32 * 32 + 1;
         let mut vector = Vector::new();
         let mut expected = 0;
@@ -170,7 +170,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_big_vector_backwards() -> () {
+    fn test_iter_big_vector_backwards() {
         let limit = 32 * 32 * 32 + 1;
         let mut vector = Vector::new();
         let mut expected = limit - 1;
@@ -193,7 +193,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_backwards() -> () {
+    fn test_iter_backwards() {
         let vector = Vector::new()
             .push_back(0)
             .push_back(1)
@@ -215,7 +215,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_both_directions() -> () {
+    fn test_iter_both_directions() {
         let vector = Vector::new()
             .push_back(0)
             .push_back(1)
@@ -236,7 +236,7 @@ mod iter {
     }
 
     #[test]
-    fn test_iter_size_hint() -> () {
+    fn test_iter_size_hint() {
         let vector = Vector::new().push_back(0).push_back(1).push_back(2);
         let mut iterator = vector.iter();
 
@@ -256,7 +256,7 @@ mod iter {
     }
 
     #[test]
-    fn test_into_iterator() -> () {
+    fn test_into_iterator() {
         let vector = Vector::new()
             .push_back(0)
             .push_back(1)
@@ -288,16 +288,18 @@ mod internal {
     }
 
     #[test]
-    fn test_degree() -> () {
-        assert_eq!(Vector::<u8>::new_with_bits(1).degree(), 2);
-        assert_eq!(Vector::<u8>::new_with_bits(2).degree(), 4);
-        assert_eq!(Vector::<u8>::new_with_bits(3).degree(), 8);
-        assert_eq!(Vector::<u8>::new_with_bits(4).degree(), 16);
-        assert_eq!(Vector::<u8>::new_with_bits(5).degree(), 32);
+    fn test_degree() {
+        use self::vector_utils::degree;
+
+        assert_eq!(degree(1), 2);
+        assert_eq!(degree(2), 4);
+        assert_eq!(degree(3), 8);
+        assert_eq!(degree(4), 16);
+        assert_eq!(degree(5), 32);
     }
 
     #[test]
-    fn test_height() -> () {
+    fn test_height() {
         assert_eq!(dummy_vector_with_length(0).height(), 0);
         assert_eq!(dummy_vector_with_length(5).height(), 0);
         assert_eq!(dummy_vector_with_length(32).height(), 0);
@@ -314,36 +316,28 @@ mod internal {
     }
 
     #[test]
-    fn test_mask() -> () {
-        assert_eq!(Vector::<u8>::new_with_bits(1).mask(), 0b00001);
-        assert_eq!(Vector::<u8>::new_with_bits(2).mask(), 0b00011);
-        assert_eq!(Vector::<u8>::new_with_bits(3).mask(), 0b00111);
-        assert_eq!(Vector::<u8>::new_with_bits(4).mask(), 0b01111);
-        assert_eq!(Vector::<u8>::new_with_bits(5).mask(), 0b11111);
+    fn test_mask() {
+        use self::vector_utils::mask;
+
+        assert_eq!(mask(1), 0b00001);
+        assert_eq!(mask(2), 0b00011);
+        assert_eq!(mask(3), 0b00111);
+        assert_eq!(mask(4), 0b01111);
+        assert_eq!(mask(5), 0b11111);
     }
 
     #[test]
-    fn test_bucket() -> () {
-        assert_eq!(
-            Vector::<u8>::new_with_bits(5).bucket(0b_00100_00011_00010_00001, 0),
-            0b00001
-        );
-        assert_eq!(
-            Vector::<u8>::new_with_bits(5).bucket(0b_00100_00011_00010_00001, 1),
-            0b00010
-        );
-        assert_eq!(
-            Vector::<u8>::new_with_bits(5).bucket(0b_00100_00011_00010_00001, 2),
-            0b00011
-        );
-        assert_eq!(
-            Vector::<u8>::new_with_bits(5).bucket(0b_00100_00011_00010_00001, 3),
-            0b00100
-        );
+    fn test_bucket() {
+        use self::vector_utils::bucket;
+
+        assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 0), 0b00001);
+        assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 1), 0b00010);
+        assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 2), 0b00011);
+        assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 3), 0b00100);
     }
 
     #[test]
-    fn test_compress_root() -> () {
+    fn test_compress_root() {
         let empty_leaf: Node<u32> = Node::new_empty_leaf();
         let empty_branch: Node<u32> = Node::new_empty_branch();
         let singleton_leaf: Node<u32> = Vector::new().push_back(0).root.as_ref().clone();
@@ -371,24 +365,18 @@ mod internal {
             (Node::Branch(a_branch), leaf)
         };
 
-        assert_eq!(empty_leaf.clone(), *Vector::compress_root(empty_leaf));
-        assert_eq!(empty_branch.clone(), *Vector::compress_root(empty_branch));
+        assert_eq!(Vector::compress_root(&mut empty_leaf.clone()), None);
+        assert_eq!(Vector::compress_root(&mut empty_branch.clone()), None);
+        assert_eq!(Vector::compress_root(&mut singleton_leaf.clone()), None);
+        assert_eq!(Vector::compress_root(&mut compressed_branch.clone()), None);
         assert_eq!(
-            singleton_leaf.clone(),
-            *Vector::compress_root(singleton_leaf)
-        );
-        assert_eq!(
-            compressed_branch.clone(),
-            *Vector::compress_root(compressed_branch)
-        );
-        assert_eq!(
-            uncompressed_branch_leaf,
-            *Vector::compress_root(uncompressed_branch)
+            Vector::compress_root(&mut uncompressed_branch.clone()),
+            Some(Arc::new(uncompressed_branch_leaf.clone())),
         );
     }
 
     #[test]
-    fn test_root_max_capacity() -> () {
+    fn test_root_max_capacity() {
         assert_eq!(dummy_vector_with_length(0).root_max_capacity(), 32);
         assert_eq!(dummy_vector_with_length(5).root_max_capacity(), 32);
         assert_eq!(dummy_vector_with_length(32).root_max_capacity(), 32);
@@ -400,7 +388,7 @@ mod internal {
     }
 
     #[test]
-    fn test_is_root_full() -> () {
+    fn test_is_root_full() {
         assert!(!dummy_vector_with_length(0).is_root_full());
         assert!(!dummy_vector_with_length(5).is_root_full());
         assert!(dummy_vector_with_length(32).is_root_full());
@@ -416,18 +404,18 @@ mod compile_time {
     use super::*;
 
     #[test]
-    fn test_is_send() -> () {
+    fn test_is_send() {
         let _: Box<Send> = Box::new(Vector::<i32>::new());
     }
 
     #[test]
-    fn test_is_sync() -> () {
+    fn test_is_sync() {
         let _: Box<Sync> = Box::new(Vector::<i32>::new());
     }
 }
 
 #[test]
-fn test_macro_vector() -> () {
+fn test_macro_vector() {
     let vector_1 = Vector::new().push_back(1);
     let vector_1_2_3 = Vector::new().push_back(1).push_back(2).push_back(3);
 
@@ -437,7 +425,7 @@ fn test_macro_vector() -> () {
 }
 
 #[test]
-fn test_push_back_adds_element() -> () {
+fn test_push_back_adds_element() {
     let limit = 32 * 32 * 32 + 1;
     let mut vector: Vector<i32> = Vector::new();
 
@@ -448,7 +436,7 @@ fn test_push_back_adds_element() -> () {
 }
 
 #[test]
-fn test_push_back_maintains_size() -> () {
+fn test_push_back_maintains_size() {
     let limit = 128;
     let mut vector: Vector<i32> = Vector::new();
 
@@ -461,7 +449,7 @@ fn test_push_back_maintains_size() -> () {
 }
 
 #[test]
-fn test_drop_last_drops_last_element() -> () {
+fn test_drop_last_drops_last_element() {
     let limit = 4 * 4 * 4 * 4 + 1;
     let mut vector: Vector<i32> = Vector::new_with_bits(2);
     let mut vectors = Vec::with_capacity(limit);
@@ -481,7 +469,7 @@ fn test_drop_last_drops_last_element() -> () {
 }
 
 #[test]
-fn test_drop_last_keeps_vector_consistent() -> () {
+fn test_drop_last_keeps_vector_consistent() {
     let limit = 4 * 4 * 4 * 4 * 4 * 4 + 1;
     let mut vector: Vector<i32> = Vector::new_with_bits(2);
 
@@ -503,7 +491,7 @@ fn test_drop_last_keeps_vector_consistent() -> () {
 }
 
 #[test]
-fn test_drop_last_maintains_size() -> () {
+fn test_drop_last_maintains_size() {
     let limit = 128;
     let mut vector: Vector<i32> = Vector::new();
 
@@ -520,14 +508,14 @@ fn test_drop_last_maintains_size() -> () {
 }
 
 #[test]
-fn test_drop_last_on_empty_vector() -> () {
+fn test_drop_last_on_empty_vector() {
     let vector: Vector<i32> = Vector::new();
 
     assert_eq!(vector.drop_last(), None);
 }
 
 #[test]
-fn test_set_overwrites() -> () {
+fn test_set_overwrites() {
     let limit = 32 * 32 + 1;
     let mut vector: Vector<i32> = Vector::new();
 
@@ -544,7 +532,7 @@ fn test_set_overwrites() -> () {
 }
 
 #[test]
-fn test_set_maintains_size() -> () {
+fn test_set_maintains_size() {
     let limit = 32 * 32 * 32 * 1;
     let mut vector: Vector<i32> = Vector::new();
 
@@ -559,7 +547,7 @@ fn test_set_maintains_size() -> () {
 }
 
 #[test]
-fn test_set_out_of_bounds() -> () {
+fn test_set_out_of_bounds() {
     let empty_vector: Vector<i32> = Vector::new();
     let singleton_vector: Vector<i32> = Vector::new().push_back(0);
 
@@ -568,7 +556,7 @@ fn test_set_out_of_bounds() -> () {
 }
 
 #[test]
-fn test_get() -> () {
+fn test_get() {
     let limit = 32 * 32 * 32 + 1;
     let mut vector = Vector::new();
 
@@ -583,7 +571,7 @@ fn test_get() -> () {
 }
 
 #[test]
-fn test_index() -> () {
+fn test_index() {
     let vector = Vector::new().push_back(10).push_back(11).push_back(12);
 
     assert_eq!(vector[0], 10);
@@ -592,7 +580,7 @@ fn test_index() -> () {
 }
 
 #[test]
-fn test_first() -> () {
+fn test_first() {
     let empty_vector: Vector<i32> = Vector::new();
     let vector = Vector::new().push_back(1);
 
@@ -601,7 +589,7 @@ fn test_first() -> () {
 }
 
 #[test]
-fn test_last() -> () {
+fn test_last() {
     let empty_vector: Vector<i32> = Vector::new();
     let vector = Vector::new().push_back(1).push_back(2);
 
@@ -610,7 +598,7 @@ fn test_last() -> () {
 }
 
 #[test]
-fn test_from_iterator() -> () {
+fn test_from_iterator() {
     let vec: Vec<u32> = vec![10, 11, 12, 13];
     let vector: Vector<u32> = vec.iter().map(|v| *v).collect();
 
@@ -618,14 +606,14 @@ fn test_from_iterator() -> () {
 }
 
 #[test]
-fn test_default() -> () {
+fn test_default() {
     let vector: Vector<i32> = Vector::default();
 
     assert_eq!(vector.len(), 0);
 }
 
 #[test]
-fn test_display() -> () {
+fn test_display() {
     let empty_vector: Vector<i32> = Vector::new();
     let singleton_vector = Vector::new().push_back("hello");
     let vector = Vector::new()
@@ -640,7 +628,7 @@ fn test_display() -> () {
 }
 
 #[test]
-fn test_eq() -> () {
+fn test_eq() {
     let vector_1 = Vector::new().push_back("a").push_back("a");
     let vector_1_prime = Vector::new().push_back("a").push_back("a");
     let vector_2 = Vector::new().push_back("a").push_back("b");
@@ -658,7 +646,7 @@ fn test_eq() -> () {
 }
 
 #[test]
-fn test_partial_ord() -> () {
+fn test_partial_ord() {
     let vector_1 = Vector::new().push_back("a");
     let vector_1_prime = Vector::new().push_back("a");
     let vector_2 = Vector::new().push_back("b");
@@ -672,7 +660,7 @@ fn test_partial_ord() -> () {
 }
 
 #[test]
-fn test_ord() -> () {
+fn test_ord() {
     let vector_1 = Vector::new().push_back("a");
     let vector_1_prime = Vector::new().push_back("a");
     let vector_2 = Vector::new().push_back("b");
@@ -691,7 +679,7 @@ fn hash<T: Hash>(vector: &Vector<T>) -> u64 {
 }
 
 #[test]
-fn test_hash() -> () {
+fn test_hash() {
     let vector_1 = Vector::new().push_back("a");
     let vector_1_prime = Vector::new().push_back("a");
     let vector_2 = Vector::new().push_back("a").push_back("b");
@@ -702,7 +690,7 @@ fn test_hash() -> () {
 }
 
 #[test]
-fn test_clone() -> () {
+fn test_clone() {
     let vector = Vector::new().push_back("hello").push_back("there");
     let clone = vector.clone();
 
@@ -712,7 +700,7 @@ fn test_clone() -> () {
 
 #[cfg(feature = "serde")]
 #[test]
-fn test_serde() -> () {
+fn test_serde() {
     use bincode::{deserialize, serialize};
     let vector: Vector<i32> = vector![5, 6, 7, 8];
     let encoded = serialize(&vector).unwrap();

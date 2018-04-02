@@ -16,7 +16,7 @@ use rpds::Vector;
 use utils::BencherNoDrop;
 use utils::iterations;
 
-fn vector_push_back(bench: &mut Bencher) -> () {
+fn rpds_vector_push_back(bench: &mut Bencher) {
     let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
@@ -30,7 +30,7 @@ fn vector_push_back(bench: &mut Bencher) -> () {
     });
 }
 
-fn vector_push_back_mut(bench: &mut Bencher) -> () {
+fn rpds_vector_push_back_mut(bench: &mut Bencher) {
     let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
@@ -44,7 +44,7 @@ fn vector_push_back_mut(bench: &mut Bencher) -> () {
     });
 }
 
-fn vector_drop_last(bench: &mut Bencher) -> () {
+fn rpds_vector_drop_last(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut full_vector: Vector<usize> = Vector::new();
 
@@ -63,7 +63,7 @@ fn vector_drop_last(bench: &mut Bencher) -> () {
     });
 }
 
-fn vector_drop_last_mut(bench: &mut Bencher) -> () {
+fn rpds_vector_drop_last_mut(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut full_vector: Vector<usize> = Vector::new();
 
@@ -75,14 +75,14 @@ fn vector_drop_last_mut(bench: &mut Bencher) -> () {
         let mut vector: Vector<usize> = full_vector.clone();
 
         for _ in 0..limit {
-            vector.drop_last_mut().unwrap();
+            vector.drop_last_mut();
         }
 
         vector
     });
 }
 
-fn vector_get(bench: &mut Bencher) -> () {
+fn rpds_vector_get(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut vector: Vector<usize> = Vector::new();
 
@@ -97,7 +97,7 @@ fn vector_get(bench: &mut Bencher) -> () {
     });
 }
 
-fn vector_iterate(bench: &mut Bencher) -> () {
+fn rpds_vector_iterate(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut vector: Vector<usize> = Vector::new();
 
@@ -114,11 +114,11 @@ fn vector_iterate(bench: &mut Bencher) -> () {
 
 benchmark_group!(
     benches,
-    vector_push_back,
-    vector_push_back_mut,
-    vector_drop_last,
-    vector_drop_last_mut,
-    vector_get,
-    vector_iterate
+    rpds_vector_push_back,
+    rpds_vector_push_back_mut,
+    rpds_vector_drop_last,
+    rpds_vector_drop_last_mut,
+    rpds_vector_get,
+    rpds_vector_iterate
 );
 benchmark_main!(benches);

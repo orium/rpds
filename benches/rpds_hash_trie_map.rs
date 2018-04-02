@@ -16,7 +16,7 @@ use rpds::HashTrieMap;
 use utils::BencherNoDrop;
 use utils::iterations;
 
-fn hash_trie_map_insert(bench: &mut Bencher) -> () {
+fn rpds_hash_trie_map_insert(bench: &mut Bencher) {
     let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
@@ -30,7 +30,7 @@ fn hash_trie_map_insert(bench: &mut Bencher) -> () {
     });
 }
 
-fn hash_trie_map_remove(bench: &mut Bencher) -> () {
+fn rpds_hash_trie_map_remove(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut full_map = HashTrieMap::new();
 
@@ -49,7 +49,7 @@ fn hash_trie_map_remove(bench: &mut Bencher) -> () {
     });
 }
 
-fn hash_trie_map_get(bench: &mut Bencher) -> () {
+fn rpds_hash_trie_map_get(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut map = HashTrieMap::new();
 
@@ -64,7 +64,7 @@ fn hash_trie_map_get(bench: &mut Bencher) -> () {
     });
 }
 
-fn hash_trie_map_iterate(bench: &mut Bencher) -> () {
+fn rpds_hash_trie_map_iterate(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut map = HashTrieMap::new();
 
@@ -81,9 +81,9 @@ fn hash_trie_map_iterate(bench: &mut Bencher) -> () {
 
 benchmark_group!(
     benches,
-    hash_trie_map_insert,
-    hash_trie_map_remove,
-    hash_trie_map_get,
-    hash_trie_map_iterate
+    rpds_hash_trie_map_insert,
+    rpds_hash_trie_map_remove,
+    rpds_hash_trie_map_get,
+    rpds_hash_trie_map_iterate
 );
 benchmark_main!(benches);

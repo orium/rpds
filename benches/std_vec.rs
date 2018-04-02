@@ -14,7 +14,7 @@ use bencher::{black_box, Bencher};
 use utils::BencherNoDrop;
 use utils::iterations;
 
-fn rust_vec_push(bench: &mut Bencher) -> () {
+fn std_vec_push(bench: &mut Bencher) {
     let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
@@ -31,7 +31,7 @@ fn rust_vec_push(bench: &mut Bencher) -> () {
 // TODO implement rust_vec_pop in the same style as the test of `Vector::drop_last()` once we can
 // do per-iteration initialization.
 
-fn rust_vec_get(bench: &mut Bencher) -> () {
+fn std_vec_get(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut vector: Vec<usize> = Vec::new();
 
@@ -46,7 +46,7 @@ fn rust_vec_get(bench: &mut Bencher) -> () {
     });
 }
 
-fn rust_vec_iterate(bench: &mut Bencher) -> () {
+fn std_vec_iterate(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut vector: Vec<usize> = Vec::new();
 
@@ -61,5 +61,5 @@ fn rust_vec_iterate(bench: &mut Bencher) -> () {
     });
 }
 
-benchmark_group!(benches, rust_vec_push, rust_vec_get, rust_vec_iterate);
+benchmark_group!(benches, std_vec_push, std_vec_get, std_vec_iterate);
 benchmark_main!(benches);

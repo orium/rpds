@@ -46,8 +46,7 @@ macro_rules! rbt_map {
 }
 
 /// A persistent map with structural sharing.  This implementation uses a
-/// [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree)
-/// and supports fast `insert()`, `remove()`, and `get()`.
+/// [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree).
 ///
 /// # Complexity
 ///
@@ -1022,7 +1021,7 @@ impl<K: Hash, V: Hash> Hash for RedBlackTreeMap<K, V>
 where
     K: Ord,
 {
-    fn hash<H: Hasher>(&self, state: &mut H) -> () {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         // Add the hash of length so that if two collections are added one after the other it
         // doesn't hash to the same thing as a single collection with the same elements in the same
         // order.
@@ -1133,7 +1132,7 @@ where
         }
     }
 
-    fn dig(stack: &mut Vec<&Node<K, V>>, backwards: bool) -> () {
+    fn dig(stack: &mut Vec<&Node<K, V>>, backwards: bool) {
         let child = stack.last().and_then(|node| {
             let c = if backwards {
                 &node.right
@@ -1149,7 +1148,7 @@ where
         }
     }
 
-    fn init_if_needed(&mut self, backwards: bool) -> () {
+    fn init_if_needed(&mut self, backwards: bool) {
         let stack_field = if backwards {
             &mut self.stack_backward
         } else {
@@ -1173,7 +1172,7 @@ where
         self.left_index < self.right_index
     }
 
-    fn advance(stack: &mut Vec<&Node<K, V>>, backwards: bool) -> () {
+    fn advance(stack: &mut Vec<&Node<K, V>>, backwards: bool) {
         match stack.pop() {
             Some(node) => {
                 let child = if backwards {
@@ -1196,7 +1195,7 @@ where
         stack.last().map(|node| &node.entry)
     }
 
-    fn advance_forward(&mut self) -> () {
+    fn advance_forward(&mut self) {
         if self.non_empty() {
             IterArc::advance(&mut self.stack_forward.as_mut().unwrap(), false);
 
@@ -1212,7 +1211,7 @@ where
         }
     }
 
-    fn advance_backward(&mut self) -> () {
+    fn advance_backward(&mut self) {
         if self.non_empty() {
             IterArc::advance(&mut self.stack_backward.as_mut().unwrap(), true);
 

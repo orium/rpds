@@ -4,7 +4,6 @@
  */
 
 use List;
-use sequence::list;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::Display;
@@ -13,7 +12,7 @@ use std::iter::FromIterator;
 use std::sync::Arc;
 
 // TODO Use impl trait instead of this when available.
-pub type IterArc<'a, T> = ::std::iter::Chain<list::IterArc<'a, T>, LazilyReversedListIter<'a, T>>;
+type IterArc<'a, T> = ::std::iter::Chain<::list::IterArc<'a, T>, LazilyReversedListIter<'a, T>>;
 pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
 
 /// Creates a [`Queue`](queue/struct.Queue.html) containing the given arguments:
@@ -35,15 +34,14 @@ macro_rules! queue {
             #[allow(unused_mut)]
             let mut q = $crate::Queue::new();
             $(
-                q = q.enqueue($e);
+                q.enqueue_mut($e);
             )*
             q
         }
     };
 }
 
-/// A persistent queue with structural sharing.  This data structure supports fast `enqueue()`,
-/// `dequeue()`, and `peek()`.
+/// A persistent queue with structural sharing.
 ///
 /// # Complexity
 ///
@@ -91,26 +89,40 @@ impl<T> Queue<T> {
     }
 
     pub fn dequeue(&self) -> Option<Queue<T>> {
-        if !self.out_list.is_empty() {
-            Some(Queue {
-                in_list:  self.in_list.clone(),
-                out_list: self.out_list.drop_first().unwrap(),
-            })
-        } else if !self.in_list.is_empty() {
-            Some(Queue {
-                in_list:  List::new(),
-                out_list: self.in_list.reverse().drop_first().unwrap(),
-            })
+        let mut new_queue = self.clone();
+
+        if new_queue.dequeue_mut() {
+            Some(new_queue)
         } else {
             None
         }
     }
 
-    pub fn enqueue(&self, v: T) -> Queue<T> {
-        Queue {
-            in_list:  self.in_list.push_front(v),
-            out_list: self.out_list.clone(),
+    pub fn dequeue_mut(&mut self) -> bool {
+        if !self.out_list.is_empty() {
+            self.out_list.drop_first_mut();
+            true
+        } else if !self.in_list.is_empty() {
+            ::std::mem::swap(&mut self.in_list, &mut self.out_list);
+
+            self.out_list.reverse_mut();
+            self.out_list.drop_first_mut();
+            true
+        } else {
+            false
         }
+    }
+
+    pub fn enqueue(&self, v: T) -> Queue<T> {
+        let mut new_queue = self.clone();
+
+        new_queue.enqueue_mut(v);
+
+        new_queue
+    }
+
+    pub fn enqueue_mut(&mut self, v: T) {
+        self.in_list.push_front_mut(v);
     }
 
     #[inline]
@@ -161,7 +173,7 @@ impl<T: Ord> Ord for Queue<T> {
 }
 
 impl<T: Hash> Hash for Queue<T> {
-    fn hash<H: Hasher>(&self, state: &mut H) -> () {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         // Add the hash of length so that if two collections are added one after the other it
         // doesn't hash to the same thing as a single collection with the same elements in the same
         // order.
@@ -307,8 +319,7 @@ pub mod serde {
         T: Deserialize<'de>,
     {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Queue<T>, D::Error> {
-            let list: List<T> = Deserialize::deserialize(deserializer)?;
-            Ok(Queue {
+            Deserialize::deserialize(deserializer).map(|list| Queue {
                 out_list: list,
                 in_list:  List::new(),
             })

@@ -15,7 +15,7 @@ use std::collections::BTreeMap;
 use utils::BencherNoDrop;
 use utils::iterations;
 
-fn rust_btreemap_insert(bench: &mut Bencher) -> () {
+fn std_btreemap_insert(bench: &mut Bencher) {
     let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
@@ -32,7 +32,7 @@ fn rust_btreemap_insert(bench: &mut Bencher) -> () {
 // TODO implement rust_btreemap_remove in the same style as the test of `RedBlackTreeMap::remove()`
 // once we can do per-iteration initialization.
 
-fn rust_btreemap_get(bench: &mut Bencher) -> () {
+fn std_btreemap_get(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut map: BTreeMap<usize, isize> = BTreeMap::new();
 
@@ -47,7 +47,7 @@ fn rust_btreemap_get(bench: &mut Bencher) -> () {
     });
 }
 
-fn rust_btreemap_iterate(bench: &mut Bencher) -> () {
+fn std_btreemap_iterate(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut map: BTreeMap<usize, isize> = BTreeMap::new();
 
@@ -64,8 +64,8 @@ fn rust_btreemap_iterate(bench: &mut Bencher) -> () {
 
 benchmark_group!(
     benches,
-    rust_btreemap_insert,
-    rust_btreemap_get,
-    rust_btreemap_iterate
+    std_btreemap_insert,
+    std_btreemap_get,
+    std_btreemap_iterate
 );
 benchmark_main!(benches);

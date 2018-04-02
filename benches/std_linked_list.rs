@@ -15,7 +15,7 @@ use std::collections::LinkedList;
 use utils::BencherNoDrop;
 use utils::iterations;
 
-fn rust_linked_list_push_front(bench: &mut Bencher) -> () {
+fn std_linked_list_push_front(bench: &mut Bencher) {
     let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
@@ -29,7 +29,7 @@ fn rust_linked_list_push_front(bench: &mut Bencher) -> () {
     });
 }
 
-fn rust_linked_list_push_back(bench: &mut Bencher) -> () {
+fn std_linked_list_push_back(bench: &mut Bencher) {
     let limit = iterations(100_000);
 
     bench.iter_no_drop(|| {
@@ -43,7 +43,7 @@ fn rust_linked_list_push_back(bench: &mut Bencher) -> () {
     });
 }
 
-fn rust_linked_list_iterate(bench: &mut Bencher) -> () {
+fn std_linked_list_iterate(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut linked_list: LinkedList<usize> = LinkedList::new();
 
@@ -60,8 +60,8 @@ fn rust_linked_list_iterate(bench: &mut Bencher) -> () {
 
 benchmark_group!(
     benches,
-    rust_linked_list_push_front,
-    rust_linked_list_push_back,
-    rust_linked_list_iterate
+    std_linked_list_push_front,
+    std_linked_list_push_back,
+    std_linked_list_iterate
 );
 benchmark_main!(benches);
