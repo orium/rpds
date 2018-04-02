@@ -143,8 +143,9 @@ impl<T> Node<T> {
 
                 if let Some(subtree) = a.get_mut(b) {
                     Arc::make_mut(subtree).assoc(value, height - 1, bucket);
-                    return;
+                    return; // TODO avoid return when NLL are ready.
                 }
+
                 let mut subtree = if height > 1 {
                     Node::new_empty_branch()
                 } else {
@@ -370,6 +371,7 @@ impl<T> Vector<T> {
         match *root {
             Node::Leaf(_) => None,
             Node::Branch(_) => if root.is_singleton() {
+                // TODO Simplify once we have NLL.
                 if let Node::Branch(ref mut a) = *root {
                     a.pop()
                 } else {

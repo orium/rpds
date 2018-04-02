@@ -27,20 +27,20 @@ fn test_set() {
     assert_eq!(array.get(0), None);
     assert_eq!(array.get(63), None);
 
-    array = array.set(3, 'a');
+    array.set(3, 'a');
     assert_eq!(array.size(), 1);
 
     assert_eq!(array.get(2), None);
     assert_eq!(array.get(3), Some(&'a'));
     assert_eq!(array.get(4), None);
 
-    array = array.set(60, 'b');
+    array.set(60, 'b');
     assert_eq!(array.size(), 2);
 
     assert_eq!(array.get(3), Some(&'a'));
     assert_eq!(array.get(60), Some(&'b'));
 
-    array = array.set(3, 'c');
+    array.set(3, 'c');
     assert_eq!(array.size(), 2);
 
     assert_eq!(array.get(3), Some(&'c'));
@@ -49,24 +49,27 @@ fn test_set() {
 
 #[test]
 fn test_remove() {
-    let mut array = SparseArrayUsize::new().set(3, 'a').set(60, 'b');
+    let mut array = SparseArrayUsize::new();
+
+    array.set(3, 'a');
+    array.set(60, 'b');
 
     assert_eq!(array.get(3), Some(&'a'));
     assert_eq!(array.get(60), Some(&'b'));
 
-    array = array.remove(32);
+    array.remove(32);
 
     assert_eq!(array.get(3), Some(&'a'));
     assert_eq!(array.get(60), Some(&'b'));
     assert_eq!(array.size(), 2);
 
-    array = array.remove(3);
+    array.remove(3);
 
     assert_eq!(array.get(3), None);
     assert_eq!(array.get(60), Some(&'b'));
     assert_eq!(array.size(), 1);
 
-    array = array.remove(60);
+    array.remove(60);
 
     assert_eq!(array.get(3), None);
     assert_eq!(array.get(60), None);
@@ -79,27 +82,29 @@ fn test_first() {
 
     assert_eq!(array.first(), None);
 
-    array = array.set(31, 'a');
+    array.set(31, 'a');
     assert_eq!(array.first(), Some(&'a'));
 
-    array = array.set(60, 'b');
+    array.set(60, 'b');
     assert_eq!(array.first(), Some(&'a'));
 
-    array = array.set(2, 'c');
+    array.set(2, 'c');
     assert_eq!(array.first(), Some(&'c'));
 
-    array = array.set(0, 'c');
+    array.set(0, 'c');
     assert_eq!(array.first(), Some(&'c'));
 }
 
 #[test]
-fn test_move_first() {
+fn test_pop() {
     let mut array = SparseArrayUsize::new();
 
-    array = array.set(60, 'b');
-    array = array.set(31, 'a');
+    array.set(60, 'b');
+    array.set(31, 'a');
 
-    assert_eq!(array.move_first(), Some('a'));
+    assert_eq!(array.pop(), Some('b'));
+    assert_eq!(array.pop(), Some('a'));
+    assert_eq!(array.pop(), None);
 }
 
 #[test]

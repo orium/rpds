@@ -52,7 +52,7 @@ macro_rules! ht_map {
             #[allow(unused_mut)]
             let mut m = $crate::HashTrieMap::new();
             $(
-                m = m.insert($k, $v);
+                m.insert_mut($k, $v);
             )*
             m
         }
@@ -235,158 +235,211 @@ where
     }
 
     /// Returns a pair with the node with the new entry and whether the key is new.
-    fn insert(&self, entry: EntryWithHash<K, V>, depth: usize, degree: u8) -> (Node<K, V>, bool) {
+    fn insert(&mut self, entry: EntryWithHash<K, V>, depth: usize, degree: u8) -> bool {
         match *self {
-            Node::Branch(ref subtrees) => {
+            Node::Branch(ref mut subtrees) => {
                 let index: usize = node_utils::index_from_hash(entry.key_hash, depth, degree)
                     .expect("hash cannot be exhausted if we are on a branch");
 
                 match subtrees.get(index) {
-                    Some(subtree) => {
-                        let (new_subtree, is_new_key) = subtree.insert(entry, depth + 1, degree);
-                        let new_subtrees = subtrees.set(index, Arc::new(new_subtree));
-                        let new_node = Node::Branch(new_subtrees);
-
-                        (new_node, is_new_key)
+                    Some(_) => {
+                        // TODO simplify once we have NLL.
+                        match subtrees.get_mut(index) {
+                            Some(subtree) =>
+                                Arc::make_mut(subtree).insert(entry, depth + 1, degree),
+                            None => unreachable!(),
+                        }
                     }
-
                     None => {
                         let new_subtree = Node::Leaf(Bucket::Single(entry));
-                        let new_subtrees = subtrees.set(index, Arc::new(new_subtree));
-                        let new_node = Node::Branch(new_subtrees);
-
-                        (new_node, true)
+                        subtrees.set(index, Arc::new(new_subtree));
+                        true
                     }
                 }
             }
-            Node::Leaf(ref bucket) => {
+            Node::Leaf(_) => {
                 // If we are at maximum depth then the hash was totally consumed and we have a
                 // collision.
                 let maximum_depth =
                     node_utils::index_from_hash(entry.key_hash, depth, degree).is_none();
 
+                // TODO simplify once we have NLL.
+                let bucket_contains_key: bool = {
+                    match *self {
+                        Node::Leaf(ref bucket) => bucket.contains_key(entry.key(), entry.key_hash),
+                        Node::Branch(_) => unreachable!(),
+                    }
+                };
+
                 match maximum_depth {
                     // We reached a bucket.  If the bucket contains the key we are inserting then
                     // we just need to replace it.
-                    false if bucket.contains_key(entry.key(), entry.key_hash) => {
-                        let (new_bucket, _) = bucket.insert(entry);
-                        let new_node = Node::Leaf(new_bucket);
-
-                        (new_node, false)
+                    false if bucket_contains_key => {
+                        // TODO simplify once we have NLL.
+                        match *self {
+                            Node::Leaf(ref mut bucket) => bucket.insert(entry),
+                            Node::Branch(_) => unreachable!(),
+                        }
                     }
 
                     // We reached a bucket and the key we will insert is not there.  We need to
                     // create a `Node::Branch` and insert the elements of the bucket there, as well
                     // as the new element.
                     false => {
-                        let old_entry: EntryWithHash<K, V> = match *bucket {
-                            Bucket::Single(ref e) => EntryWithHash::clone(e),
-                            Bucket::Collision(_) => unreachable!(
+                        // TODO This clone should not be needed.
+                        let old_entry: EntryWithHash<K, V> = match *self {
+                            Node::Leaf(Bucket::Single(ref e)) => e.clone(),
+                            Node::Leaf(Bucket::Collision(_)) => unreachable!(
                                 "hash is not exhausted, so there cannot be a collision here"
                             ),
+                            Node::Branch(_) => unreachable!(),
                         };
 
-                        let (new_node, _) = Node::new_empty_branch()
-                            .insert(old_entry, depth, degree)
-                            .0
-                            .insert(entry, depth, degree);
+                        *self = Node::new_empty_branch();
 
-                        (new_node, true)
+                        self.insert(old_entry, depth, degree);
+                        self.insert(entry, depth, degree);
+
+                        true
                     }
 
                     // Hash was already totally consumed.  This is a collision.
                     true => {
-                        let (new_bucket, is_new_key) = bucket.insert(entry);
-                        let new_node = Node::Leaf(new_bucket);
-
-                        (new_node, is_new_key)
+                        // TODO simplify once we have NLL.
+                        match *self {
+                            Node::Leaf(ref mut bucket) => bucket.insert(entry),
+                            Node::Branch(_) => unreachable!(),
+                        }
                     }
                 }
             }
         }
     }
 
-    /// Compresses a node.  This returns the shallowest tree that is well-formed.
-    ///
-    /// For branches with a single entry this will return a leaf with it.  For branches with no
-    /// entries this returns `None.`
-    fn compress(self) -> Option<Arc<Node<K, V>>> {
-        match self {
-            Node::Branch(subtrees) => match subtrees.size() {
-                0 => None,
+    /// Compresses a node.  This makes the shallowest tree that is well-formed, i.e. branches with
+    /// a single entry become a leaf with it.
+    fn compress(&mut self) {
+        let mut new_node = match *self {
+            Node::Branch(ref mut subtrees) => {
+                match subtrees.size() {
+                    1 => {
+                        let compress: bool = {
+                            let subtree = subtrees.first().unwrap();
 
-                1 => {
-                    let compress: bool = {
-                        let subtree = subtrees.first().unwrap();
+                            // Keep collision at the bottom of the tree.
+                            match *subtree.borrow() {
+                                Node::Leaf(Bucket::Single(_)) => true,
+                                _ => false,
+                            }
+                        };
 
-                        // Keep collision at the bottom of the tree.
-                        match *subtree.borrow() {
-                            Node::Leaf(Bucket::Single(_)) => true,
-                            _ => false,
+                        match compress {
+                            true => subtrees.pop(),
+                            false => None,
                         }
-                    };
-
-                    match compress {
-                        true => subtrees.move_first(),
-                        false => Some(Arc::new(Node::Branch(subtrees))),
                     }
+                    _ => None,
                 }
+            }
+            Node::Leaf(_) => None,
+        };
 
-                _ => Some(Arc::new(Node::Branch(subtrees))),
-            },
-            Node::Leaf(_) => Some(Arc::new(self)),
+        if let Some(ref mut node) = new_node {
+            // We have to assign node to self.  To avoid unnecessary cloning we do this trick:
+            // If we have exclusive ownership of `node` no clone is done.
+            let node = Arc::make_mut(node);
+            ::std::mem::swap(self, node);
         }
     }
 
-    /// Returns a pair with the node without the entry matching `key` and whether the key was
-    /// present.
-    ///
-    /// If the node becomes empty it will return `None` in the first component of the pair.
-    fn remove<Q: ?Sized>(
-        node: &Arc<Node<K, V>>,
-        key: &Q,
-        key_hash: HashValue,
-        depth: usize,
-        degree: u8,
-    ) -> (Option<Arc<Node<K, V>>>, bool)
+    /// Returns `true` if the key was present.
+    fn remove<Q: ?Sized>(&mut self, key: &Q, key_hash: HashValue, depth: usize, degree: u8) -> bool
     where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        match **node {
-            Node::Branch(ref subtrees) => {
+        let (removed, needs_compression) = match *self {
+            Node::Branch(ref mut subtrees) => {
                 let index: usize = node_utils::index_from_hash(key_hash, depth, degree)
                     .expect("hash cannot be exhausted if we are on a branch");
 
                 match subtrees.get(index) {
-                    Some(subtree) => {
-                        match Node::remove(subtree, key, key_hash, depth + 1, degree) {
-                            (_, false) => (Some(Arc::clone(node)), false),
-                            (Some(new_subtree), true) => {
-                                let new_subtrees = subtrees.set(index, new_subtree);
+                    // TODO Simplify once we have NLL.
+                    Some(_) => {
+                        let (subtree_is_empty, removed) = {
+                            let subtree = subtrees.get_mut(index).unwrap();
+                            let subtree = Arc::make_mut(subtree);
+                            let removed = subtree.remove(key, key_hash, depth + 1, degree);
 
+                            (subtree.is_empty(), removed)
+                        };
+
+                        match (subtree_is_empty, removed) {
+                            (_, false) => (false, false),
+                            (false, true) => {
                                 // Note that we still must call compress because it is possible that
                                 // we had a node with just one entry, which was not compressed
                                 // because it had a collision.  Maybe now we do not have a collision
                                 // and we can compress it.
-                                (Node::Branch(new_subtrees).compress(), true)
+                                (true, true)
                             }
-                            (None, true) => {
-                                let new_subtrees = subtrees.remove(index);
+                            (true, true) => {
+                                subtrees.remove(index);
 
-                                (Node::Branch(new_subtrees).compress(), true)
+                                (true, true)
                             }
                         }
                     }
 
-                    None => (Some(Arc::clone(node)), false),
+                    None => (false, false),
                 }
             }
-            Node::Leaf(ref bucket) => match bucket.remove(key, key_hash) {
-                (_, false) => (Some(Arc::clone(node)), false),
-                (Some(new_bucket), true) => (Some(Arc::new(Node::Leaf(new_bucket))), true),
-                (None, true) => (None, true),
-            },
+
+            // TODO Simplify once we have NLL.
+            Node::Leaf(_) => {
+                let (removed, is_empty) = match *self {
+                    Node::Leaf(ref mut bucket) => {
+                        let mut bucket_ref = Some(bucket);
+                        let rem = Bucket::remove(&mut bucket_ref, key, key_hash);
+
+                        (rem, bucket_ref.is_none())
+                    }
+                    Node::Branch(_) => unreachable!(),
+                };
+
+                if is_empty {
+                    // TODO Most of these empty branches will be dropped very soon.  We might
+                    //      gain some speed if we avoid this.  (However, currently no heap
+                    //      allocation happen anyway.)
+                    //      We can do something similar to Bucket::remove() where we receive
+                    //      a `&mut Option<&mut Bucket<_, _>>`.
+                    *self = Node::new_empty_branch();
+                }
+
+                (removed, false)
+            }
+        };
+
+        // TODO When we have NLL we can drop the `needs_compression` and just compress when we need
+        // it.
+        if needs_compression {
+            self.compress();
+        }
+
+        removed
+    }
+
+    fn is_empty(&self) -> bool {
+        match *self {
+            Node::Branch(ref subtrees) => subtrees.size() == 0,
+            Node::Leaf(Bucket::Single(_)) => false,
+            Node::Leaf(Bucket::Collision(ref entries)) => {
+                debug_assert!(
+                    entries.len() >= 2,
+                    "collisions must have at least two entries"
+                );
+                false
+            }
         }
     }
 }
@@ -406,19 +459,19 @@ where
 mod bucket_utils {
     use super::*;
 
-    /// Returns a pair with the bucket with the new entry and whether an element was removed.
+    /// Returns `true` if an element was removed.
     pub fn list_remove_first<T: Clone, F: Fn(&T) -> bool>(
-        list: &List<T>,
+        list: &mut List<T>,
         predicate: F,
-    ) -> (List<T>, bool) {
+    ) -> bool {
         let mut before_needle: Vec<T> = Vec::with_capacity(list.len());
-        let mut remaining: List<T> = list.clone();
+        let remaining: &mut List<T> = list;
         let mut removed = false;
 
         while !remaining.is_empty() {
             let e: T = remaining.first().unwrap().clone();
 
-            remaining = remaining.drop_first().unwrap();
+            remaining.drop_first_mut();
 
             if predicate(&e) {
                 removed = true;
@@ -428,13 +481,13 @@ mod bucket_utils {
             before_needle.push(e);
         }
 
-        let mut new_entries = remaining;
+        let new_entries = remaining;
 
         while let Some(e) = before_needle.pop() {
-            new_entries = new_entries.push_front(e);
+            new_entries.push_front_mut(e);
         }
 
-        (new_entries, removed)
+        removed
     }
 }
 
@@ -466,62 +519,107 @@ where
         self.get(key, key_hash).is_some()
     }
 
-    /// Returns a pair with the bucket with the new entry and whether the key is new.
+    /// Returns `true` if the key is new.
     ///
     /// If there is a collision then `entry` will be put on the front of the entries list to
     /// improve performance with high temporal locality (since `get()` will try to match according
     /// to the list order).  The order of the rest of the list must be preserved for the same
     /// reason.
-    fn insert(&self, entry: EntryWithHash<K, V>) -> (Bucket<K, V>, bool) {
+    fn insert(&mut self, entry: EntryWithHash<K, V>) -> bool {
         match *self {
-            Bucket::Single(ref existing_entry)
+            Bucket::Single(ref mut existing_entry)
                 if existing_entry.matches(entry.key(), entry.key_hash) =>
-                (Bucket::Single(entry), false),
-            Bucket::Single(ref existing_entry) => {
-                let entries: List<EntryWithHash<K, V>> = List::new()
-                    .push_front(EntryWithHash::clone(existing_entry))
-                    .push_front(entry);
-
-                (Bucket::Collision(entries), true)
+            {
+                *existing_entry = entry;
+                false
             }
-            Bucket::Collision(ref entries) => {
-                let (mut new_entries, key_existed) = bucket_utils::list_remove_first(
-                    entries,
-                    |e| e.matches(entry.key(), entry.key_hash),
-                );
+            Bucket::Single(_) => {
+                // TODO Maybe we can simplify this with NLL.
+                // TODO In theory we should not need to clone `existing_entry`.
+                let entries = match *self {
+                    Bucket::Single(ref existing_entry) => list!(entry, existing_entry.clone()),
+                    _ => unreachable!(),
+                };
 
-                new_entries = new_entries.push_front(entry);
+                *self = Bucket::Collision(entries);
 
-                (Bucket::Collision(new_entries), !key_existed)
+                true
+            }
+            Bucket::Collision(ref mut entries) => {
+                let key_existed = bucket_utils::list_remove_first(entries, |e| {
+                    e.matches(entry.key(), entry.key_hash)
+                });
+
+                entries.push_front_mut(entry);
+
+                !key_existed
             }
         }
     }
 
-    /// Returns a pair with the bucket without the entry matching `key` and whether the key was
-    /// present.
+    /// Returns `true` if the key was present.
     ///
-    /// If the bucket becomes empty it will return `None` in the first component of the pair.
-    fn remove<Q: ?Sized>(&self, key: &Q, key_hash: HashValue) -> (Option<Bucket<K, V>>, bool)
+    /// If the bucket becomes empty `bucket` it be set to `None`.
+    fn remove<Q: ?Sized>(
+        bucket: &mut Option<&mut Bucket<K, V>>,
+        key: &Q,
+        key_hash: HashValue,
+    ) -> bool
     where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        match *self {
-            Bucket::Single(ref existing_entry) if existing_entry.matches(key, key_hash) =>
-                (None, true),
-            Bucket::Single(_) => (Some(self.clone()), false),
-            Bucket::Collision(ref entries) => {
-                let (new_entries, removed) =
-                    bucket_utils::list_remove_first(entries, |e| e.matches(key, key_hash));
+        match bucket.take() {
+            Some(b) => {
+                match b {
+                    &mut Bucket::Single(ref existing_entry)
+                        if existing_entry.matches(key, key_hash) =>
+                    {
+                        // bucket is already `None`.
+                        true
+                    }
+                    &mut Bucket::Single(_) => {
+                        // Nothing to change.
+                        *bucket = Some(b);
+                        false
+                    }
 
-                let new_bucket = match new_entries.len() {
-                    0 => unreachable!("impossible to have collision with a single or no entry"),
-                    1 => Bucket::Single(EntryWithHash::clone(new_entries.first().unwrap())),
-                    _ => Bucket::Collision(new_entries),
-                };
+                    // TODO Simplify when we have NLL.
+                    &mut Bucket::Collision(_) => {
+                        let (removed, new_len) = match b {
+                            &mut Bucket::Collision(ref mut entries) => {
+                                let rem = bucket_utils::list_remove_first(entries, |e| {
+                                    e.matches(key, key_hash)
+                                });
 
-                (Some(new_bucket), removed)
+                                (rem, entries.len())
+                            }
+                            _ => unreachable!(),
+                        };
+
+                        match new_len {
+                            0 => unreachable!(
+                                "impossible to have collision with a single or no entry"
+                            ),
+                            1 => {
+                                let entry = match b {
+                                    &mut Bucket::Collision(ref entries) =>
+                                        entries.first().unwrap().clone(),
+                                    _ => unreachable!(),
+                                };
+
+                                *b = Bucket::Single(entry);
+                            }
+                            _ => (),
+                        };
+
+                        *bucket = Some(b);
+
+                        removed
+                    }
+                }
             }
+            None => false,
         }
     }
 }
@@ -631,14 +729,19 @@ where
     }
 
     pub fn insert(&self, key: K, value: V) -> HashTrieMap<K, V, H> {
-        let entry = EntryWithHash::new(key, value, &self.hasher_builder);
-        let (new_root, is_new_key) = self.root.insert(entry, 0, self.degree);
+        let mut new_map = self.clone();
 
-        HashTrieMap {
-            root: Arc::new(new_root),
-            size: self.size + if is_new_key { 1 } else { 0 },
-            hasher_builder: self.hasher_builder.clone(),
-            degree: self.degree,
+        new_map.insert_mut(key, value);
+
+        new_map
+    }
+
+    pub fn insert_mut(&mut self, key: K, value: V) {
+        let entry = EntryWithHash::new(key, value, &self.hasher_builder);
+        let is_new_key = Arc::make_mut(&mut self.root).insert(entry, 0, self.degree);
+
+        if is_new_key {
+            self.size += 1;
         }
     }
 
@@ -647,14 +750,23 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let key_hash = node_utils::hash(key, &self.hasher_builder);
-        let (new_root, removed) = Node::remove(&self.root, key, key_hash, 0, self.degree);
+        let mut new_map = self.clone();
 
-        HashTrieMap {
-            root: new_root.unwrap_or_else(|| Arc::new(Node::new_empty_branch())),
-            size: self.size - if removed { 1 } else { 0 },
-            hasher_builder: self.hasher_builder.clone(),
-            degree: self.degree,
+        new_map.remove_mut(key);
+
+        new_map
+    }
+
+    pub fn remove_mut<Q: ?Sized>(&mut self, key: &Q)
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        let key_hash = node_utils::hash(key, &self.hasher_builder);
+        let removed = Arc::make_mut(&mut self.root).remove(key, key_hash, 0, self.degree);
+
+        if removed {
+            self.size -= 1;
         }
     }
 
@@ -797,7 +909,7 @@ where
         let mut map = HashTrieMap::new_with_hasher(Default::default());
 
         for (k, v) in into_iter {
-            map = map.insert(k, v);
+            map.insert_mut(k, v);
         }
 
         map
@@ -1006,13 +1118,13 @@ pub mod serde {
         where
             A: MapAccess<'de>,
         {
-            let mut hashtriemap = HashTrieMap::new_with_hasher(Default::default());
+            let mut hash_trie_map = HashTrieMap::new_with_hasher(Default::default());
 
             while let Some((k, v)) = map.next_entry()? {
-                hashtriemap = hashtriemap.insert(k, v);
+                hash_trie_map.insert_mut(k, v);
             }
 
-            Ok(hashtriemap)
+            Ok(hash_trie_map)
         }
     }
 }

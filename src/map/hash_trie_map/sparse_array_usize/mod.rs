@@ -7,12 +7,10 @@ use std::mem::size_of_val;
 use std::slice;
 use std::vec::Vec;
 
-use utils::vec_utils::VecUtils;
-
 /// Sparse array of size `8⋅size_of::<usize>()`.  The space used is proportional to the number of
 /// elements set.
 #[derive(Debug, PartialEq, Eq)]
-pub struct SparseArrayUsize<T: Clone> {
+pub struct SparseArrayUsize<T> {
     bitmap: usize,
     array:  Vec<T>,
 }
@@ -30,7 +28,7 @@ mod sparse_array_usize_utils {
     }
 }
 
-impl<T: Clone> SparseArrayUsize<T> {
+impl<T> SparseArrayUsize<T> {
     pub fn new() -> SparseArrayUsize<T> {
         SparseArrayUsize {
             bitmap: 0,
@@ -46,46 +44,41 @@ impl<T: Clone> SparseArrayUsize<T> {
     }
 
     #[inline]
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+        debug_assert!(index < 8 * size_of_val(&self.bitmap));
+
+        sparse_array_usize_utils::map_index(self.bitmap, index).map(move |i| &mut self.array[i])
+    }
+
+    #[inline]
     pub fn first(&self) -> Option<&T> {
         self.array.first()
     }
 
     #[inline]
-    pub fn move_first(mut self) -> Option<T> {
-        if !self.array.is_empty() {
-            Some(self.array.swap_remove(0))
-        } else {
-            None
-        }
+    pub fn pop(&mut self) -> Option<T> {
+        self.array.pop()
     }
 
-    pub fn set(&self, index: usize, value: T) -> SparseArrayUsize<T> {
+    pub fn set(&mut self, index: usize, value: T) {
         debug_assert!(index < 8 * size_of_val(&self.bitmap));
 
         match sparse_array_usize_utils::map_index(self.bitmap, index) {
-            Some(i) => SparseArrayUsize {
-                bitmap: self.bitmap,
-                array:  self.array.cloned_set(i, value),
-            },
+            Some(i) => self.array[i] = value,
             None => {
                 let new_bitmap = self.bitmap | (1 << index);
                 let i = sparse_array_usize_utils::map_index(new_bitmap, index).unwrap();
 
-                SparseArrayUsize {
-                    bitmap: new_bitmap,
-                    array:  self.array.cloned_insert(i, value),
-                }
+                self.bitmap = new_bitmap;
+                self.array.insert(i, value);
             }
         }
     }
 
-    pub fn remove(&self, index: usize) -> SparseArrayUsize<T> {
-        match sparse_array_usize_utils::map_index(self.bitmap, index) {
-            Some(i) => SparseArrayUsize {
-                bitmap: self.bitmap ^ (1 << index),
-                array:  self.array.cloned_remove(i),
-            },
-            None => self.clone(),
+    pub fn remove(&mut self, index: usize) {
+        if let Some(i) = sparse_array_usize_utils::map_index(self.bitmap, index) {
+            self.bitmap = self.bitmap ^ (1 << index);
+            self.array.remove(i);
         }
     }
 

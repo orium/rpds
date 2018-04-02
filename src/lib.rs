@@ -261,8 +261,6 @@ extern crate serde;
 #[cfg(feature = "serde")]
 extern crate bincode;
 
-mod utils;
-
 #[macro_use]
 pub mod list;
 pub mod map;
