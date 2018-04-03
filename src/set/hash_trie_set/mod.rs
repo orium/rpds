@@ -35,7 +35,7 @@ macro_rules! ht_set {
             #[allow(unused_mut)]
             let mut s = $crate::HashTrieSet::new();
             $(
-                s = s.insert($e);
+                s.insert_mut($e);
             )*
             s
         }
@@ -113,6 +113,10 @@ where
         }
     }
 
+    pub fn insert_mut(&mut self, v: T) {
+        self.map.insert_mut(v, ());
+    }
+
     pub fn remove<V: ?Sized>(&self, v: &V) -> HashTrieSet<T, H>
     where
         T: Borrow<V>,
@@ -121,6 +125,14 @@ where
         HashTrieSet {
             map: self.map.remove(v),
         }
+    }
+
+    pub fn remove_mut<V: ?Sized>(&mut self, v: &V)
+    where
+        T: Borrow<V>,
+        V: Hash + Eq,
+    {
+        self.map.remove_mut(v);
     }
 
     pub fn contains<V: ?Sized>(&self, v: &V) -> bool
@@ -238,13 +250,13 @@ where
     H: BuildHasher + Clone + Default,
 {
     fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> HashTrieSet<T, H> {
-        let mut map = HashTrieSet::new_with_hasher(Default::default());
+        let mut set = HashTrieSet::new_with_hasher(Default::default());
 
         for v in into_iter {
-            map = map.insert(v);
+            set.insert_mut(v);
         }
 
-        map
+        set
     }
 }
 
@@ -299,13 +311,13 @@ pub mod serde {
         where
             A: SeqAccess<'de>,
         {
-            let mut hashtrieset = HashTrieSet::new_with_hasher(Default::default());
+            let mut set = HashTrieSet::new_with_hasher(Default::default());
 
             while let Some(value) = seq.next_element()? {
-                hashtrieset = hashtrieset.insert(value);
+                set.insert_mut(value);
             }
 
-            Ok(hashtrieset)
+            Ok(set)
         }
     }
 }

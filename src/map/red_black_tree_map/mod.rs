@@ -1319,13 +1319,13 @@ pub mod serde {
         where
             A: MapAccess<'de>,
         {
-            let mut rbtreemap = RedBlackTreeMap::new();
+            let mut rb_tree_map = RedBlackTreeMap::new();
 
             while let Some((k, v)) = map.next_entry()? {
-                rbtreemap = rbtreemap.insert(k, v);
+                rb_tree_map = rb_tree_map.insert(k, v);
             }
 
-            Ok(rbtreemap)
+            Ok(rb_tree_map)
         }
     }
 }

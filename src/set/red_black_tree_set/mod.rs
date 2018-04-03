@@ -303,13 +303,13 @@ pub mod serde {
         where
             A: SeqAccess<'de>,
         {
-            let mut rbtreeset = RedBlackTreeSet::new();
+            let mut set = RedBlackTreeSet::new();
 
             while let Some(value) = seq.next_element()? {
-                rbtreeset = rbtreeset.insert(value);
+                set = set.insert(value);
             }
 
-            Ok(rbtreeset)
+            Ok(set)
         }
     }
 }
