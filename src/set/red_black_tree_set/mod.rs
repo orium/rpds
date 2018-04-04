@@ -3,12 +3,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use RedBlackTreeMap;
 use map::red_black_tree_map;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::Display;
 use std::iter::FromIterator;
+use RedBlackTreeMap;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = red_black_tree_map::IterKeys<'a, T, ()>;

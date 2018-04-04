@@ -12,8 +12,8 @@ mod utils;
 
 use bencher::{black_box, Bencher};
 use std::collections::LinkedList;
-use utils::BencherNoDrop;
 use utils::iterations;
+use utils::BencherNoDrop;
 
 fn std_linked_list_push_front(bench: &mut Bencher) {
     let limit = iterations(100_000);

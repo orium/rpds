@@ -13,8 +13,8 @@ mod utils;
 
 use bencher::{black_box, Bencher};
 use rpds::HashTrieMap;
-use utils::BencherNoDrop;
 use utils::iterations;
+use utils::BencherNoDrop;
 
 fn rpds_hash_trie_map_insert(bench: &mut Bencher) {
     let limit = iterations(100_000);

@@ -1018,7 +1018,7 @@ fn test_remove_simple_mut() {
 
     assert_eq!(map.size(), 4);
 
-    map.remove_mut("not-there");
+    assert!(!map.remove_mut("not-there"));
     assert_eq!(map.size(), 4);
 
     assert_eq!(map.get("foo"), Some(&4));
@@ -1026,7 +1026,7 @@ fn test_remove_simple_mut() {
     assert_eq!(map.get("mumble"), Some(&13));
     assert_eq!(map.get("baz"), Some(&42));
 
-    map.remove_mut("mumble");
+    assert!(map.remove_mut("mumble"));
     assert_eq!(map.size(), 3);
 
     assert_eq!(map.get("foo"), Some(&4));
@@ -1034,17 +1034,17 @@ fn test_remove_simple_mut() {
     assert_eq!(map.get("mumble"), None);
     assert_eq!(map.get("baz"), Some(&42));
 
-    map.remove_mut("foo");
+    assert!(map.remove_mut("foo"));
     assert_eq!(map.size(), 2);
 
     assert_eq!(map.get("foo"), None);
 
-    map.remove_mut("baz");
+    assert!(map.remove_mut("baz"));
     assert_eq!(map.size(), 1);
 
     assert_eq!(map.get("baz"), None);
 
-    map.remove_mut("bar");
+    assert!(map.remove_mut("bar"));
     assert_eq!(map.size(), 0);
 
     assert_eq!(map.get("bar"), None);

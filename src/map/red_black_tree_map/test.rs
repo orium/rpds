@@ -17,15 +17,6 @@ enum InvariantViolation {
 }
 
 impl<K, V> Node<K, V> {
-    fn new_black(entry: Entry<K, V>) -> Node<K, V> {
-        Node {
-            entry: Arc::new(entry),
-            color: Color::Black,
-            left:  None,
-            right: None,
-        }
-    }
-
     fn count(&self) -> usize {
         1 + self.left.as_ref().map_or(0, |l| l.count())
             + self.right.as_ref().map_or(0, |r| r.count())
@@ -86,6 +77,18 @@ impl<K, V> Node<K, V> {
 
         go(self, &mut last)
     }
+
+    fn make_black(self) -> Node<K, V> {
+        let mut node = self;
+        node.color = Color::Black;
+        node
+    }
+
+    fn make_red(self) -> Node<K, V> {
+        let mut node = self;
+        node.color = Color::Red;
+        node
+    }
 }
 
 impl<K, V> RedBlackTreeMap<K, V>
@@ -121,11 +124,14 @@ where
 mod node {
     use super::*;
 
-    fn dummy_entry(v: i32) -> Entry<i32, i32> {
-        Entry { key:   v, value: v }
+    fn dummy_entry<T: Clone>(v: T) -> Entry<T, T> {
+        Entry {
+            key:   v.clone(),
+            value: v,
+        }
     }
 
-    fn dummy_leaf(v: i32) -> Node<i32, i32> {
+    fn dummy_node<T: Clone>(v: T) -> Node<T, T> {
         Node {
             entry: Arc::new(dummy_entry(v)),
             color: Color::Red,
@@ -134,11 +140,11 @@ mod node {
         }
     }
 
-    fn dummy_leaf_with_children(
-        v: i32,
-        left: Option<Node<i32, i32>>,
-        right: Option<Node<i32, i32>>,
-    ) -> Node<i32, i32> {
+    fn dummy_node_with_children<T: Clone>(
+        v: T,
+        left: Option<Node<T, T>>,
+        right: Option<Node<T, T>>,
+    ) -> Node<T, T> {
         Node {
             entry: Arc::new(dummy_entry(v)),
             color: Color::Red,
@@ -165,10 +171,10 @@ mod node {
     ///                     ╰───╯
     /// ```
     fn dummy_tree_0_1_2_3() -> Node<i32, i32> {
-        let node_0 = dummy_leaf(0);
-        let node_3 = dummy_leaf(3);
-        let node_2 = dummy_leaf_with_children(2, None, Some(node_3));
-        let node_1 = dummy_leaf_with_children(1, Some(node_0), Some(node_2));
+        let node_0 = dummy_node(0);
+        let node_3 = dummy_node(3);
+        let node_2 = dummy_node_with_children(2, None, Some(node_3));
+        let node_1 = dummy_node_with_children(1, Some(node_0), Some(node_2));
 
         node_1
     }
@@ -275,7 +281,7 @@ mod node {
         let tree_c = Arc::new(Node::new_black(Entry::new('c', ())));
         let tree_d = Arc::new(Node::new_black(Entry::new('d', ())));
 
-        let tree_case_1 = Node {
+        let mut tree_case_1 = Node {
             entry: Arc::clone(&entry_z),
             color: Color::Black,
             left:  Some(Arc::new(Node {
@@ -292,7 +298,7 @@ mod node {
             right: Some(Arc::clone(&tree_d)),
         };
 
-        let tree_case_2 = Node {
+        let mut tree_case_2 = Node {
             entry: Arc::clone(&entry_z),
             color: Color::Black,
             left:  Some(Arc::new(Node {
@@ -309,7 +315,7 @@ mod node {
             right: Some(Arc::clone(&tree_d)),
         };
 
-        let tree_case_3 = Node {
+        let mut tree_case_3 = Node {
             entry: Arc::clone(&entry_x),
             color: Color::Black,
             left:  Some(Arc::clone(&tree_a)),
@@ -326,7 +332,7 @@ mod node {
             })),
         };
 
-        let tree_case_4 = Node {
+        let mut tree_case_4 = Node {
             entry: Arc::clone(&entry_x),
             color: Color::Black,
             left:  Some(Arc::clone(&tree_a)),
@@ -343,7 +349,7 @@ mod node {
             })),
         };
 
-        let tree_none_of_the_above = Node {
+        let mut tree_none_of_the_above = Node {
             entry: Arc::clone(&entry_z),
             color: Color::Black,
             left:  Some(Arc::new(Node {
@@ -360,7 +366,7 @@ mod node {
             right: Some(Arc::clone(&tree_d)),
         };
 
-        let tree_balanced = Node {
+        let mut tree_balanced = Node {
             entry: Arc::clone(&entry_y),
             color: Color::Red,
             left:  Some(Arc::new(Node {
@@ -377,32 +383,43 @@ mod node {
             })),
         };
 
-        assert_eq!(tree_case_1.clone().balance(), tree_balanced.clone());
-        assert_eq!(tree_case_2.clone().balance(), tree_balanced.clone());
-        assert_eq!(tree_case_3.clone().balance(), tree_balanced.clone());
-        assert_eq!(tree_case_4.clone().balance(), tree_balanced.clone());
-        assert_eq!(
-            tree_none_of_the_above.clone().balance(),
-            tree_none_of_the_above.clone()
-        );
-        assert_eq!(tree_balanced.clone().balance(), tree_balanced.clone());
+        tree_case_1.balance();
+        assert_eq!(tree_case_1, tree_balanced.clone());
+
+        tree_case_2.balance();
+        assert_eq!(tree_case_2, tree_balanced.clone());
+
+        tree_case_3.balance();
+        assert_eq!(tree_case_3, tree_balanced.clone());
+
+        tree_case_4.balance();
+        assert_eq!(tree_case_4, tree_balanced.clone());
+
+        let tree_none_of_the_above_original = tree_none_of_the_above.clone();
+        tree_none_of_the_above.balance();
+        assert_eq!(tree_none_of_the_above, tree_none_of_the_above_original);
+
+        let tree_balanced_original = tree_balanced.clone();
+        tree_balanced.balance();
+        assert_eq!(tree_balanced, tree_balanced_original);
     }
 
     #[test]
     fn test_insert() {
-        let (node, is_new_key) = Node::insert(None, 0, 1);
+        let mut node = None;
+        let is_new_key = Node::insert(&mut node, 0, 1);
         let expected_node = Node::new_black(Entry::new(0, 1));
 
         assert!(is_new_key);
-        assert_eq!(node, expected_node);
+        assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
 
-        let (node, is_new_key) = Node::insert(Some(&node), 0, 2);
+        let is_new_key = Node::insert(&mut node, 0, 2);
         let expected_node = Node::new_black(Entry::new(0, 2));
 
         assert!(!is_new_key);
-        assert_eq!(node, expected_node);
+        assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
 
-        let (node, is_new_key) = Node::insert(Some(&node), 10, 3);
+        let is_new_key = Node::insert(&mut node, 10, 3);
         let expected_node = Node {
             entry: Arc::new(Entry::new(0, 2)),
             color: Color::Black,
@@ -416,9 +433,9 @@ mod node {
         };
 
         assert!(is_new_key);
-        assert_eq!(node, expected_node);
+        assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
 
-        let (node, is_new_key) = Node::insert(Some(&node), 10, 4);
+        let is_new_key = Node::insert(&mut node, 10, 4);
         let expected_node = Node {
             entry: Arc::new(Entry::new(0, 2)),
             color: Color::Black,
@@ -432,9 +449,9 @@ mod node {
         };
 
         assert!(!is_new_key);
-        assert_eq!(node, expected_node);
+        assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
 
-        let (node, is_new_key) = Node::insert(Some(&node), 5, 5);
+        let is_new_key = Node::insert(&mut node, 5, 5);
         // It is going to get rebalanced (by case 3).
         let expected_node = Node {
             entry: Arc::new(Entry::new(5, 5)),
@@ -454,9 +471,9 @@ mod node {
         };
 
         assert!(is_new_key);
-        assert_eq!(node, expected_node);
+        assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
 
-        let (node, is_new_key) = Node::insert(Some(&node), 0, 1);
+        let is_new_key = Node::insert(&mut node, 0, 1);
         // It is going to get rebalanced (by case 3).
         let expected_node = Node {
             entry: Arc::new(Entry::new(5, 5)),
@@ -476,6 +493,466 @@ mod node {
         };
 
         assert!(!is_new_key);
+        assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
+    }
+
+    #[test]
+    fn test_remove_fuse() {
+        let mut node = dummy_node("");
+
+        assert!(!Node::remove_fuse(&mut node, None, None));
+
+        let right = dummy_node("x");
+        let expected_node = right.clone();
+
+        assert!(Node::remove_fuse(&mut node, None, Some(Arc::new(right))));
+        assert_eq!(node, expected_node);
+
+        let left = dummy_node("x");
+        let expected_node = left.clone();
+
+        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), None));
+        assert_eq!(node, expected_node);
+
+        let left = Node {
+            entry: Arc::new(dummy_entry("a")),
+            color: Color::Black,
+            left:  None,
+            right: None,
+        };
+        let right = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Red,
+            left:  None,
+            right: Some(Arc::new(dummy_node("c"))),
+        };
+        let expected_node = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Red,
+            left:  Some(Arc::new(left.clone())),
+            right: Some(Arc::new(dummy_node("c"))),
+        };
+
+        assert!(Node::remove_fuse(
+            &mut node,
+            Some(Arc::new(left)),
+            Some(Arc::new(right))
+        ));
+        assert_eq!(node, expected_node);
+
+        let left = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Red,
+            left:  Some(Arc::new(dummy_node("a"))),
+            right: None,
+        };
+        let right = Node {
+            entry: Arc::new(dummy_entry("c")),
+            color: Color::Black,
+            left:  None,
+            right: None,
+        };
+        let expected_node = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Red,
+            left:  Some(Arc::new(dummy_node("a"))),
+            right: Some(Arc::new(right.clone())),
+        };
+
+        assert!(Node::remove_fuse(
+            &mut node,
+            Some(Arc::new(left)),
+            Some(Arc::new(right))
+        ));
+        assert_eq!(node, expected_node);
+
+        let left = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Red,
+            left:  Some(Arc::new(dummy_node("a"))),
+            right: None,
+        };
+        let right = Node {
+            entry: Arc::new(dummy_entry("y")),
+            color: Color::Red,
+            left:  Some(Arc::new(dummy_node("c").make_red())),
+            right: Some(Arc::new(dummy_node("d"))),
+        };
+        let expected_node = Node {
+            entry: Arc::new(dummy_entry("c")),
+            color: Color::Red,
+            left:  Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("x")),
+                color: Color::Red,
+                left:  Some(Arc::new(dummy_node("a"))),
+                right: None,
+            })),
+            right: Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("y")),
+                color: Color::Red,
+                left:  None,
+                right: Some(Arc::new(dummy_node("d"))),
+            })),
+        };
+
+        assert!(Node::remove_fuse(
+            &mut node,
+            Some(Arc::new(left)),
+            Some(Arc::new(right))
+        ));
+        assert_eq!(node, expected_node);
+
+        let left = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Red,
+            left:  Some(Arc::new(dummy_node("a"))),
+            right: None,
+        };
+        let right = Node {
+            entry: Arc::new(dummy_entry("y")),
+            color: Color::Red,
+            left:  Some(Arc::new(dummy_node("c").make_black())),
+            right: Some(Arc::new(dummy_node("d"))),
+        };
+        let expected_node = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Red,
+            left:  Some(Arc::new(dummy_node("a"))),
+            right: Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("y")),
+                color: Color::Red,
+                left:  Some(Arc::new(dummy_node("c").make_black())),
+                right: Some(Arc::new(dummy_node("d"))),
+            })),
+        };
+
+        assert!(Node::remove_fuse(
+            &mut node,
+            Some(Arc::new(left)),
+            Some(Arc::new(right))
+        ));
+        assert_eq!(node, expected_node);
+
+        let left = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Black,
+            left:  Some(Arc::new(dummy_node("a"))),
+            right: None,
+        };
+        let right = Node {
+            entry: Arc::new(dummy_entry("y")),
+            color: Color::Black,
+            left:  Some(Arc::new(dummy_node("c").make_red())),
+            right: Some(Arc::new(dummy_node("d"))),
+        };
+        let expected_node = Node {
+            entry: Arc::new(dummy_entry("c")),
+            color: Color::Red,
+            left:  Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("x")),
+                color: Color::Black,
+                left:  Some(Arc::new(dummy_node("a"))),
+                right: None,
+            })),
+            right: Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("y")),
+                color: Color::Black,
+                left:  None,
+                right: Some(Arc::new(dummy_node("d"))),
+            })),
+        };
+
+        assert!(Node::remove_fuse(
+            &mut node,
+            Some(Arc::new(left)),
+            Some(Arc::new(right))
+        ));
+        assert_eq!(node, expected_node);
+
+        let left = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Black,
+            left:  Some(Arc::new(dummy_node("a"))),
+            right: None,
+        };
+        let right = Node {
+            entry: Arc::new(dummy_entry("y")),
+            color: Color::Black,
+            left:  Some(Arc::new(dummy_node("c").make_black())),
+            right: Some(Arc::new(dummy_node("d"))),
+        };
+        let expected_node = {
+            let mut n = Node {
+                entry: Arc::new(dummy_entry("x")),
+                color: Color::Red,
+                left:  Some(Arc::new(dummy_node("a"))),
+                right: Some(Arc::new(Node {
+                    entry: Arc::new(dummy_entry("y")),
+                    color: Color::Black,
+                    left:  Some(Arc::new(dummy_node("c").make_black())),
+                    right: Some(Arc::new(dummy_node("d"))),
+                })),
+            };
+            n.remove_balance_left();
+            n
+        };
+
+        assert!(Node::remove_fuse(
+            &mut node,
+            Some(Arc::new(left)),
+            Some(Arc::new(right))
+        ));
+        assert_eq!(node, expected_node);
+    }
+
+    #[test]
+    fn test_remove_balance() {
+        let mut node = Node {
+            entry: Arc::new(dummy_entry("y")),
+            color: Color::Black, // Irrelevant
+            left:  Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("x")),
+                color: Color::Red,
+                left:  Some(Arc::new(dummy_node("a"))),
+                right: Some(Arc::new(dummy_node("b"))),
+            })),
+            right: Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("z")),
+                color: Color::Red,
+                left:  Some(Arc::new(dummy_node("c"))),
+                right: Some(Arc::new(dummy_node("d"))),
+            })),
+        };
+        let expected_node = Node {
+            entry: Arc::new(dummy_entry("y")),
+            color: Color::Red,
+            left:  Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("x")),
+                color: Color::Black,
+                left:  Some(Arc::new(dummy_node("a"))),
+                right: Some(Arc::new(dummy_node("b"))),
+            })),
+            right: Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("z")),
+                color: Color::Black,
+                left:  Some(Arc::new(dummy_node("c"))),
+                right: Some(Arc::new(dummy_node("d"))),
+            })),
+        };
+
+        node.remove_balance();
+        assert_eq!(node, expected_node);
+    }
+
+    #[test]
+    fn test_remove_balance_left() {
+        let bl = Node {
+            entry: Arc::new(dummy_entry("bl")),
+            color: Color::Black,
+            left:  None,
+            right: None,
+        };
+
+        let mut node = Node {
+            entry: Arc::new(dummy_entry("y")),
+            color: Color::Black, // Irrelevant
+            left:  Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("x")),
+                color: Color::Red,
+                left:  Some(Arc::new(dummy_node("a"))),
+                right: Some(Arc::new(dummy_node("b"))),
+            })),
+            right: Some(Arc::new(dummy_node("c"))),
+        };
+        let expected_node = Node {
+            entry: Arc::new(dummy_entry("y")),
+            color: Color::Red,
+            left:  Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("x")),
+                color: Color::Black,
+                left:  Some(Arc::new(dummy_node("a"))),
+                right: Some(Arc::new(dummy_node("b"))),
+            })),
+            right: Some(Arc::new(dummy_node("c"))),
+        };
+
+        node.remove_balance_left();
+        assert_eq!(node, expected_node);
+
+        let mut node = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Black, // Irrelevant
+            left:  Some(Arc::new(bl.clone())),
+            right: Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("y")),
+                color: Color::Black,
+                left:  Some(Arc::new(dummy_node("a"))),
+                right: Some(Arc::new(dummy_node("b"))),
+            })),
+        };
+        let expected_node = {
+            let mut n = Node {
+                entry: Arc::new(dummy_entry("x")),
+                color: Color::Black,
+                left:  Some(Arc::new(bl.clone())),
+                right: Some(Arc::new(Node {
+                    entry: Arc::new(dummy_entry("y")),
+                    color: Color::Red,
+                    left:  Some(Arc::new(dummy_node("a"))),
+                    right: Some(Arc::new(dummy_node("b"))),
+                })),
+            };
+            n.remove_balance();
+            n
+        };
+
+        node.remove_balance_left();
+        assert_eq!(node, expected_node);
+
+        let mut node = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Black, // Irrelevant
+            left:  Some(Arc::new(bl.clone())),
+            right: Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("z")),
+                color: Color::Red,
+                left:  Some(Arc::new(Node {
+                    entry: Arc::new(dummy_entry("y")),
+                    color: Color::Black,
+                    left:  Some(Arc::new(dummy_node("a"))),
+                    right: Some(Arc::new(dummy_node("b"))),
+                })),
+                right: Some(Arc::new(dummy_node("c").make_black())),
+            })),
+        };
+        let expected_node = Node {
+            entry: Arc::new(dummy_entry("y")),
+            color: Color::Red,
+            left:  Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("x")),
+                color: Color::Black,
+                left:  Some(Arc::new(bl.clone())),
+                right: Some(Arc::new(dummy_node("a"))),
+            })),
+            right: Some(Arc::new({
+                let mut n = Node {
+                    entry: Arc::new(dummy_entry("z")),
+                    color: Color::Black,
+                    left:  Some(Arc::new(dummy_node("b"))),
+                    right: Some(Arc::new(dummy_node("c").make_red())),
+                };
+                n.remove_balance();
+                n
+            })),
+        };
+
+        node.remove_balance_left();
+        assert_eq!(node, expected_node);
+    }
+
+    #[test]
+    fn test_remove_balance_right() {
+        let bl = Node {
+            entry: Arc::new(dummy_entry("bl")),
+            color: Color::Black,
+            left:  None,
+            right: None,
+        };
+
+        let mut node = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Black, // Irrelevant
+            left:  Some(Arc::new(dummy_node("a"))),
+            right: Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("y")),
+                color: Color::Red,
+                left:  Some(Arc::new(dummy_node("b"))),
+                right: Some(Arc::new(dummy_node("c"))),
+            })),
+        };
+        let expected_node = Node {
+            entry: Arc::new(dummy_entry("x")),
+            color: Color::Red,
+            left:  Some(Arc::new(dummy_node("a"))),
+            right: Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("y")),
+                color: Color::Black,
+                left:  Some(Arc::new(dummy_node("b"))),
+                right: Some(Arc::new(dummy_node("c"))),
+            })),
+        };
+
+        node.remove_balance_right();
+        assert_eq!(node, expected_node);
+
+        let mut node = Node {
+            entry: Arc::new(dummy_entry("y")),
+            color: Color::Black, // Irrelevant
+            left:  Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("x")),
+                color: Color::Black,
+                left:  Some(Arc::new(dummy_node("a"))),
+                right: Some(Arc::new(dummy_node("b"))),
+            })),
+            right: Some(Arc::new(bl.clone())),
+        };
+        let expected_node = {
+            let mut n = Node {
+                entry: Arc::new(dummy_entry("y")),
+                color: Color::Black,
+                left:  Some(Arc::new(Node {
+                    entry: Arc::new(dummy_entry("x")),
+                    color: Color::Red,
+                    left:  Some(Arc::new(dummy_node("a"))),
+                    right: Some(Arc::new(dummy_node("b"))),
+                })),
+                right: Some(Arc::new(bl.clone())),
+            };
+            n.remove_balance();
+            n
+        };
+
+        node.remove_balance_right();
+        assert_eq!(node, expected_node);
+
+        let mut node = Node {
+            entry: Arc::new(dummy_entry("z")),
+            color: Color::Black, // Irrelevant
+            left:  Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("x")),
+                color: Color::Red,
+                left:  Some(Arc::new(dummy_node("a").make_black())),
+                right: Some(Arc::new(Node {
+                    entry: Arc::new(dummy_entry("y")),
+                    color: Color::Black,
+                    left:  Some(Arc::new(dummy_node("b"))),
+                    right: Some(Arc::new(dummy_node("c"))),
+                })),
+            })),
+            right: Some(Arc::new(bl.clone())),
+        };
+        let expected_node = Node {
+            entry: Arc::new(dummy_entry("y")),
+            color: Color::Red,
+            left:  Some(Arc::new({
+                let mut n = Node {
+                    entry: Arc::new(dummy_entry("x")),
+                    color: Color::Black,
+                    left:  Some(Arc::new(dummy_node("a").make_red())),
+                    right: Some(Arc::new(dummy_node("b"))),
+                };
+                n.remove_balance();
+                n
+            })),
+            right: Some(Arc::new(Node {
+                entry: Arc::new(dummy_entry("z")),
+                color: Color::Black,
+                left:  Some(Arc::new(dummy_node("c"))),
+                right: Some(Arc::new(bl.clone())),
+            })),
+        };
+
+        node.remove_balance_right();
         assert_eq!(node, expected_node);
     }
 }
@@ -487,7 +964,12 @@ mod internal {
         let mut map = RedBlackTreeMap::new();
 
         for (i, &v) in values.iter().enumerate() {
-            map = map.insert(v, 2 * v);
+            map.insert_mut(v, 2 * v);
+
+            let other_v = values[i / 2];
+
+            assert_eq!(map.get(&v), Some(&(2 * v)));
+            assert_eq!(map.get(&other_v), Some(&(2 * other_v)));
 
             if let Err(error) = map.check_consistent() {
                 panic!(
@@ -496,11 +978,6 @@ mod internal {
                     &values[0..(i + 1)]
                 );
             }
-
-            let other_v = values[i / 2];
-
-            assert_eq!(map.get(&v), Some(&(2 * v)));
-            assert_eq!(map.get(&other_v), Some(&(2 * other_v)));
         }
     }
 
@@ -539,18 +1016,18 @@ mod internal {
         let mut map = RedBlackTreeMap::new();
 
         for &v in values_insert.iter() {
-            map = map.insert(v, 2 * v);
+            map.insert_mut(v, 2 * v);
         }
 
         for (i, v) in values_remove.iter().enumerate() {
-            map = map.remove(v);
+            map.remove_mut(v);
+
+            assert!(!map.contains_key(v));
 
             if let Err(error) = map.check_consistent() {
                 panic!(format!("Consistency error in red-black tree ({:?}).  Insertions: {:?}.  Removals: {:?}",
                                error, &values_insert, &values_remove[0..(i + 1)]));
             }
-
-            assert!(!map.contains_key(v));
         }
     }
 
@@ -676,13 +1153,14 @@ mod iter {
 
     #[test]
     fn test_iter_both_directions() {
-        let map = RedBlackTreeMap::new()
-            .insert(0, 10)
-            .insert(1, 11)
-            .insert(2, 12)
-            .insert(3, 13)
-            .insert(4, 14)
-            .insert(5, 15);
+        let map = rbt_map![
+            0 => 10,
+            1 => 11,
+            2 => 12,
+            3 => 13,
+            4 => 14,
+            5 => 15
+        ];
         let mut iterator = map.iter();
 
         assert_eq!(iterator.next(), Some((&0, &10)));
@@ -697,10 +1175,11 @@ mod iter {
 
     #[test]
     fn test_iter_size_hint() {
-        let map = RedBlackTreeMap::new()
-            .insert(0, 10)
-            .insert(1, 11)
-            .insert(2, 12);
+        let map = rbt_map![
+            0 => 10,
+            1 => 11,
+            2 => 12
+        ];
         let mut iterator = map.iter();
 
         assert_eq!(iterator.size_hint(), (3, Some(3)));
@@ -720,11 +1199,12 @@ mod iter {
 
     #[test]
     fn test_iter_sorted() {
-        let map = RedBlackTreeMap::new()
-            .insert(5, ())
-            .insert(6, ())
-            .insert(2, ())
-            .insert(1, ());
+        let map = rbt_map![
+            5 => (),
+            6 => (),
+            2 => (),
+            1 => ()
+        ];
         let mut iterator = map.iter();
 
         assert_eq!(iterator.next(), Some((&1, &())));
@@ -736,10 +1216,11 @@ mod iter {
 
     #[test]
     fn test_iter_keys() {
-        let map = RedBlackTreeMap::new()
-            .insert(0, 10)
-            .insert(1, 11)
-            .insert(2, 12);
+        let map = rbt_map![
+            0 => 10,
+            1 => 11,
+            2 => 12
+        ];
         let mut iter = map.keys();
 
         assert_eq!(iter.next(), Some(&0));
@@ -750,10 +1231,11 @@ mod iter {
 
     #[test]
     fn test_iter_values() {
-        let map = RedBlackTreeMap::new()
-            .insert(10, 0)
-            .insert(11, 1)
-            .insert(12, 2);
+        let map = rbt_map![
+            10 => 0,
+            11 => 1,
+            12 => 2
+        ];
         let mut iter = map.values();
 
         assert_eq!(iter.next(), Some(&0));
@@ -764,11 +1246,12 @@ mod iter {
 
     #[test]
     fn test_into_iterator() {
-        let map = RedBlackTreeMap::new()
-            .insert(0, 0)
-            .insert(1, 2)
-            .insert(2, 4)
-            .insert(3, 6);
+        let map = rbt_map![
+            0 => 0,
+            1 => 2,
+            2 => 4,
+            3 => 6
+        ];
         let mut expected = 0;
         let mut left = 4;
 
@@ -845,8 +1328,11 @@ fn test_insert_simple() {
 #[test]
 fn test_insert() {
     let mut map = RedBlackTreeMap::new();
-    let limit = 50_000;
-    let overwrite_limit = 10_000;
+
+    // These are relatively small limits.  We prefer to do a more hardcore test in the mutable
+    // version.
+    let limit = 10_000;
+    let overwrite_limit = 2_000;
 
     for i in 0..limit {
         map = map.insert(i, -(i as i32));
@@ -872,8 +1358,66 @@ fn test_insert() {
 }
 
 #[test]
+fn test_insert_mut_simple() {
+    let mut map = RedBlackTreeMap::new();
+    assert_eq!(map.size(), 0);
+
+    map.insert_mut("foo", 4);
+    assert_eq!(map.size(), 1);
+    assert_eq!(map.get("foo"), Some(&4));
+
+    map.insert_mut("bar", 2);
+    assert_eq!(map.size(), 2);
+    assert_eq!(map.get("foo"), Some(&4));
+    assert_eq!(map.get("bar"), Some(&2));
+
+    map.insert_mut("baz", 12);
+    assert_eq!(map.size(), 3);
+    assert_eq!(map.get("foo"), Some(&4));
+    assert_eq!(map.get("bar"), Some(&2));
+    assert_eq!(map.get("baz"), Some(&12));
+
+    map.insert_mut("foo", 7);
+    assert_eq!(map.size(), 3);
+    assert_eq!(map.get("foo"), Some(&7));
+    assert_eq!(map.get("bar"), Some(&2));
+    assert_eq!(map.get("baz"), Some(&12));
+
+    assert!(map.contains_key("baz"));
+}
+
+#[test]
+fn test_insert_mut() {
+    let mut map = RedBlackTreeMap::new();
+    let limit = 50_000;
+    let overwrite_limit = 10_000;
+
+    for i in 0..limit {
+        map.insert_mut(i, -(i as i32));
+
+        assert_eq!(map.size(), (i as usize) + 1);
+        assert_eq!(map.get(&i), Some(&-(i as i32)));
+
+        // Lets also check a previous value.
+        let prev_key = i / 2;
+        assert_eq!(map.get(&prev_key), Some(&-(prev_key as i32)));
+    }
+
+    // Now we test some overwrites.
+
+    for i in 0..overwrite_limit {
+        assert_eq!(map.get(&i), Some(&-(i as i32)));
+
+        map.insert_mut(i, 2 * i as i32);
+
+        assert_eq!(map.size(), limit as usize);
+        assert_eq!(map.get(&i), Some(&(2 * i as i32)));
+    }
+}
+
+#[test]
 fn test_contains_key() {
-    let map = RedBlackTreeMap::new().insert("foo", 7);
+    let map = rbt_map!["foo" => 7];
 
     assert!(map.contains_key("foo"));
     assert!(!map.contains_key("baz"));
@@ -881,11 +1425,12 @@ fn test_contains_key() {
 
 #[test]
 fn test_remove_simple() {
-    let mut map = RedBlackTreeMap::new()
-        .insert("foo", 4)
-        .insert("bar", 12)
-        .insert("mumble", 13)
-        .insert("baz", 42);
+    let mut map = rbt_map![
+        "foo" => 4,
+        "bar" => 12,
+        "mumble" => 13,
+        "baz" => 42
+    ];
     let empty_map: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::new();
 
     assert_eq!(empty_map.remove(&3), empty_map);
@@ -927,7 +1472,10 @@ fn test_remove_simple() {
 #[test]
 fn test_remove() {
     let mut map = RedBlackTreeMap::new();
-    let limit = 50_000;
+
+    // These are relatively small limits.  We prefer to do a more hardcore test in the mutable
+    // version.
+    let limit = 10_000;
 
     for i in 0..limit {
         map = map.insert(i, -(i as i32));
@@ -951,28 +1499,91 @@ fn test_remove() {
 }
 
 #[test]
+fn test_remove_mut_simple() {
+    let mut map = rbt_map![
+        "foo" => 4,
+        "bar" => 12,
+        "mumble" => 13,
+        "baz" => 42
+    ];
+
+    assert_eq!(map.size(), 4);
+
+    assert!(!map.remove_mut("not-there"));
+    assert_eq!(map.size(), 4);
+
+    assert_eq!(map.get("foo"), Some(&4));
+    assert_eq!(map.get("bar"), Some(&12));
+    assert_eq!(map.get("mumble"), Some(&13));
+    assert_eq!(map.get("baz"), Some(&42));
+
+    assert!(map.remove_mut("mumble"));
+    assert_eq!(map.size(), 3);
+
+    assert_eq!(map.get("foo"), Some(&4));
+    assert_eq!(map.get("bar"), Some(&12));
+    assert_eq!(map.get("mumble"), None);
+    assert_eq!(map.get("baz"), Some(&42));
+
+    assert!(map.remove_mut("foo"));
+    assert_eq!(map.size(), 2);
+
+    assert_eq!(map.get("foo"), None);
+
+    assert!(map.remove_mut("baz"));
+    assert_eq!(map.size(), 1);
+
+    assert_eq!(map.get("baz"), None);
+
+    assert!(map.remove_mut("bar"));
+    assert_eq!(map.size(), 0);
+
+    assert_eq!(map.get("bar"), None);
+}
+
+#[test]
+fn test_remove_mut() {
+    let mut map = RedBlackTreeMap::new();
+    let limit = 50_000;
+
+    for i in 0..limit {
+        map.insert_mut(i, -(i as i32));
+    }
+
+    // Now lets remove half of it.
+
+    for i in (0..limit / 2).map(|i| 2 * i) {
+        assert_eq!(map.get(&i), Some(&-(i as i32)));
+
+        map.remove_mut(&i);
+
+        assert!(!map.contains_key(&i));
+        assert_eq!(map.size(), (limit - i / 2 - 1) as usize);
+
+        // Also check than the previous one is ok.
+        if i > 0 {
+            assert_eq!(map.get(&(i - 1)), Some(&-((i - 1) as i32)));
+        }
+    }
+}
+
+#[test]
 fn test_first() {
-    let map = RedBlackTreeMap::new()
-        .insert(5, "hello")
-        .insert(12, "there");
+    let map = rbt_map![5 => "hello", 12 => "there"];
 
     assert_eq!(map.first(), Some((&5, &"hello")));
 }
 
 #[test]
 fn test_last() {
-    let map = RedBlackTreeMap::new()
-        .insert(5, "hello")
-        .insert(12, "there");
+    let map = rbt_map![5 => "hello", 12 => "there"];
 
     assert_eq!(map.last(), Some((&12, &"there")));
 }
 
 #[test]
 fn test_index() {
-    let map = RedBlackTreeMap::new()
-        .insert(5, "hello")
-        .insert(12, "there");
+    let map = rbt_map![5 => "hello", 12 => "there"];
 
     assert_eq!(map[&5], "hello");
     assert_eq!(map[&12], "there");
@@ -982,7 +1593,7 @@ fn test_index() {
 fn test_from_iterator() {
     let vec: Vec<(i32, &str)> = vec![(2, "two"), (5, "five")];
     let map: RedBlackTreeMap<i32, &str> = vec.iter().map(|v| *v).collect();
-    let expected_map = RedBlackTreeMap::new().insert(2, "two").insert(5, "five");
+    let expected_map = rbt_map![2 => "two", 5 => "five"];
 
     assert_eq!(map, expected_map);
 }
@@ -998,10 +1609,8 @@ fn test_default() {
 #[test]
 fn test_display() {
     let empty_map: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::new();
-    let singleton_map = RedBlackTreeMap::new().insert("hi", "hello");
-    let map = RedBlackTreeMap::new()
-        .insert(5, "hello")
-        .insert(12, "there");
+    let singleton_map = rbt_map!["hi" => "hello"];
+    let map = rbt_map![5 => "hello", 12 => "there"];
 
     assert_eq!(format!("{}", empty_map), "{}");
     assert_eq!(format!("{}", singleton_map), "{hi: hello}");
@@ -1010,17 +1619,11 @@ fn test_display() {
 
 #[test]
 fn test_eq() {
-    let map_1 = RedBlackTreeMap::new().insert("a", 0xa).insert("b", 0xb);
-    let map_1_prime = RedBlackTreeMap::new().insert("a", 0xa).insert("b", 0xb);
-    let map_1_prime_2 = RedBlackTreeMap::new()
-        .insert("a", 0xa)
-        .insert("b", 0xb)
-        .insert("b", 0xb);
-    let map_2 = RedBlackTreeMap::new().insert("a", 0xa).insert("b", 0xb + 1);
-    let map_3 = RedBlackTreeMap::new()
-        .insert("a", 0xa)
-        .insert("b", 0xb + 1)
-        .insert("c", 0xc);
+    let map_1 = rbt_map!["a" => 0xa, "b" => 0xb];
+    let map_1_prime = rbt_map!["a" => 0xa, "b" => 0xb];
+    let map_1_prime_2 = rbt_map!["a" => 0xa, "b" => 0xb, "b" => 0xb];
+    let map_2 = rbt_map!["a" => 0xa, "b" => 0xb + 1];
+    let map_3 = rbt_map!["a" => 0xa, "b" => 0xb + 1, "c" => 0xc];
 
     assert_eq!(map_1, map_1_prime);
     assert_eq!(map_1, map_1_prime_2);
@@ -1034,11 +1637,11 @@ fn test_eq() {
 
 #[test]
 fn test_partial_ord() {
-    let map_1 = RedBlackTreeMap::new().insert("a", 0xa);
-    let map_1_prime = RedBlackTreeMap::new().insert("a", 0xa);
-    let map_2 = RedBlackTreeMap::new().insert("b", 0xb);
-    let map_3 = RedBlackTreeMap::new().insert(0, 0.0);
-    let map_4 = RedBlackTreeMap::new().insert(0, ::std::f32::NAN);
+    let map_1 = rbt_map!["a" => 0xa];
+    let map_1_prime = rbt_map!["a" => 0xa];
+    let map_2 = rbt_map!["b" => 0xb];
+    let map_3 = rbt_map![0 => 0.0];
+    let map_4 = rbt_map![0 => ::std::f32::NAN];
 
     assert_eq!(map_1.partial_cmp(&map_1_prime), Some(Ordering::Equal));
     assert_eq!(map_1.partial_cmp(&map_2), Some(Ordering::Less));
@@ -1048,9 +1651,9 @@ fn test_partial_ord() {
 
 #[test]
 fn test_ord() {
-    let map_1 = RedBlackTreeMap::new().insert("a", 0xa);
-    let map_1_prime = RedBlackTreeMap::new().insert("a", 0xa);
-    let map_2 = RedBlackTreeMap::new().insert("b", 0xb);
+    let map_1 = rbt_map!["a" => 0xa];
+    let map_1_prime = rbt_map!["a" => 0xa];
+    let map_2 = rbt_map!["b" => 0xb];
 
     assert_eq!(map_1.cmp(&map_1_prime), Ordering::Equal);
     assert_eq!(map_1.cmp(&map_2), Ordering::Less);
@@ -1067,9 +1670,9 @@ fn hash<K: Ord + Hash, V: Hash>(map: &RedBlackTreeMap<K, V>) -> u64 {
 
 #[test]
 fn test_hash() {
-    let map_1 = RedBlackTreeMap::new().insert("a", 0xa);
-    let map_1_prime = RedBlackTreeMap::new().insert("a", 0xa);
-    let map_2 = RedBlackTreeMap::new().insert("b", 0xb).insert("a", 0xa);
+    let map_1 = rbt_map!["a" => 0xa];
+    let map_1_prime = rbt_map!["a" => 0xa];
+    let map_2 = rbt_map!["b" => 0xb, "a" => 0xa];
 
     assert_eq!(hash(&map_1), hash(&map_1));
     assert_eq!(hash(&map_1), hash(&map_1_prime));
@@ -1078,7 +1681,7 @@ fn test_hash() {
 
 #[test]
 fn test_clone() {
-    let map = RedBlackTreeMap::new().insert("hello", 4).insert("there", 5);
+    let map = rbt_map!["hello" => 4, "there" => 5];
     let clone = map.clone();
 
     assert_eq!(clone.size(), map.size());

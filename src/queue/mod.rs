@@ -3,13 +3,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use List;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::sync::Arc;
+use List;
 
 // TODO Use impl trait instead of this when available.
 type IterArc<'a, T> = ::std::iter::Chain<::list::IterArc<'a, T>, LazilyReversedListIter<'a, T>>;

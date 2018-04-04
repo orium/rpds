@@ -13,8 +13,8 @@ mod utils;
 
 use bencher::{black_box, Bencher};
 use rpds::RedBlackTreeMap;
-use utils::BencherNoDrop;
 use utils::iterations;
+use utils::BencherNoDrop;
 
 fn rpds_red_black_tree_map_insert(bench: &mut Bencher) {
     let limit = iterations(100_000);
@@ -24,6 +24,20 @@ fn rpds_red_black_tree_map_insert(bench: &mut Bencher) {
 
         for i in 0..limit {
             map = map.insert(i, -(i as isize));
+        }
+
+        map
+    });
+}
+
+fn rpds_red_black_tree_map_insert_mut(bench: &mut Bencher) {
+    let limit = iterations(100_000);
+
+    bench.iter_no_drop(|| {
+        let mut map = RedBlackTreeMap::new();
+
+        for i in 0..limit {
+            map.insert_mut(i, -(i as isize));
         }
 
         map
@@ -43,6 +57,25 @@ fn rpds_red_black_tree_map_remove(bench: &mut Bencher) {
 
         for i in 0..limit {
             map = map.remove(&i);
+        }
+
+        map
+    });
+}
+
+fn rpds_red_black_tree_map_remove_mut(bench: &mut Bencher) {
+    let limit = iterations(100_000);
+    let mut full_map = RedBlackTreeMap::new();
+
+    for i in 0..limit {
+        full_map = full_map.insert(i, -(i as isize));
+    }
+
+    bench.iter_no_drop(|| {
+        let mut map = full_map.clone();
+
+        for i in 0..limit {
+            map.remove_mut(&i);
         }
 
         map
@@ -82,7 +115,9 @@ fn rpds_red_black_tree_map_iterate(bench: &mut Bencher) {
 benchmark_group!(
     benches,
     rpds_red_black_tree_map_insert,
+    rpds_red_black_tree_map_insert_mut,
     rpds_red_black_tree_map_remove,
+    rpds_red_black_tree_map_remove_mut,
     rpds_red_black_tree_map_get,
     rpds_red_black_tree_map_iterate
 );
