@@ -28,19 +28,9 @@
 //! extern crate rpds;
 //! ```
 //!
-//! ### Enable serialization
-//!
-//! To enable serialization (using [serde](https://crates.io/crates/serde)) you need to enable the
-//! `serde` feature in rpds.  To do so change the rpds dependency in `Cargo.toml` to
-//!
-//! ```toml
-//! [dependencies]
-//! rpds = { version = "<version>", features = ["serde"] }
-//! ```
-//!
 //! ## Data Structures
 //!
-//! This crate implements the following data structures:
+//! This crate offers the following data structures:
 //!
 //!   1. [`List`](#list)
 //!   2. [`Vector`](#vector)
@@ -87,7 +77,7 @@
 //! use rpds::Vector;
 //!
 //! let vector = Vector::new()
-//!     .push_back("I'm")
+//!     .push_back("I’m")
 //!     .push_back("a")
 //!     .push_back("vector");
 //!
@@ -253,6 +243,48 @@
 //! assert!(!set_positive.contains(&"zero"));
 //!
 //! assert_eq!(set_positive.first(), Some(&"one"));
+//! ```
+//!
+//! ## Other Features
+//!
+//! ### Mutable Methods
+//!
+//! When you change a data structure you often do not need its previous versions.  For those cases
+//! rpds offers you mutable methods which are generally faster:
+//!
+//! ```rust
+//! use rpds::HashTrieSet;
+//!
+//! let mut set = HashTrieSet::new();
+//!
+//! set.insert_mut("zero");
+//! set.insert_mut("one");
+//!
+//! let set_0_1 = set.clone();
+//! let set_0_1_2 = set.insert("two");
+//! ```
+//!
+//! ### Initialization Macros
+//!
+//! There are convenient initialization macros for all data structures:
+//!
+//! ```rust
+//! use rpds::*;
+//!
+//! let vector = vector![3, 1, 4, 1, 5];
+//! let map = ht_map!["orange" => "orange", "banana" => "yellow"];
+//! ```
+//!
+//! Check the documentation for initialization macros of other data structures.
+//!
+//! ### Serialization
+//!
+//! We support serialization through [serde](https://crates.io/crates/serde).  To use it
+//! enable the `serde` feature.  To do so change the rpds dependency in your `Cargo.toml` to
+//!
+//! ```toml
+//! [dependencies]
+//! rpds = { version = "<version>", features = ["serde"] }
 //! ```
 
 #[cfg(feature = "serde")]
