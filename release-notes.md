@@ -1,5 +1,10 @@
 # Release notes
 
+## 0.5.0
+
+* Mutable methods galore.  Now all data structures offer mutable methods.  These are generally much faster!
+* Implemented `Extend` for `Vector`.
+
 ## 0.4.0
 
 * Added macros to create data structures with the given values (analog to `vec![]`).
