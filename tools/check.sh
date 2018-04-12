@@ -9,7 +9,7 @@ set -e
 cd $(dirname "$0")
 cd "$(git rev-parse --show-toplevel)"
 
-cargo build --features fatal-warnings,serde
+cargo build --features fatal-warnings,serde --all-targets
 cargo test  --features fatal-warnings,serde
 QUICK_BENCH=true cargo bench --features fatal-warnings,serde
 cargo doc   --features fatal-warnings,serde

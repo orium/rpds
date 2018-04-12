@@ -38,7 +38,7 @@ macro_rules! rbt_map {
             #[allow(unused_mut)]
             let mut m = $crate::RedBlackTreeMap::new();
             $(
-                m = m.insert($k, $v);
+                m.insert_mut($k, $v);
             )*
             m
         }
@@ -117,6 +117,15 @@ where
         }
     }
 
+    fn new_black(entry: Entry<K, V>) -> Node<K, V> {
+        Node {
+            entry: Arc::new(entry),
+            color: Color::Black,
+            left:  None,
+            right: None,
+        }
+    }
+
     fn borrow(node: &Option<Arc<Node<K, V>>>) -> Option<&Node<K, V>> {
         node.as_ref().map(|n| n.borrow())
     }
@@ -127,45 +136,6 @@ where
 
     fn right_color(&self) -> Option<Color> {
         self.right.as_ref().map(|r| r.color)
-    }
-
-    fn with_entry(&self, entry: Entry<K, V>) -> Node<K, V> {
-        Node {
-            entry: Arc::new(entry),
-            color: self.color,
-            left:  self.left.clone(),
-            right: self.right.clone(),
-        }
-    }
-
-    fn with_left(&self, left: Node<K, V>) -> Node<K, V> {
-        Node {
-            entry: Arc::clone(&self.entry),
-            color: self.color,
-            left:  Some(Arc::new(left)),
-            right: self.right.clone(),
-        }
-    }
-
-    fn with_right(&self, right: Node<K, V>) -> Node<K, V> {
-        Node {
-            entry: Arc::clone(&self.entry),
-            color: self.color,
-            left:  self.left.clone(),
-            right: Some(Arc::new(right)),
-        }
-    }
-
-    fn make_black(self) -> Node<K, V> {
-        let mut node = self;
-        node.color = Color::Black;
-        node
-    }
-
-    fn make_red(self) -> Node<K, V> {
-        let mut node = self;
-        node.color = Color::Red;
-        node
     }
 
     fn get<Q: ?Sized>(&self, key: &Q) -> Option<&Entry<K, V>>
@@ -266,9 +236,10 @@ where
     ///                   ╱ ╲
     ///                  c   d
     /// ```
-    fn balance(self) -> Node<K, V> {
+    fn balance(&mut self) {
         use self::Color::Black as B;
         use self::Color::Red as R;
+        use std::mem::swap;
 
         match self.color {
             B => {
@@ -282,576 +253,529 @@ where
                 match (color_l, color_l_l, color_l_r, color_r, color_r_l, color_r_r) {
                     // Case 1
                     (Some(R), Some(R), ..) => {
-                        let node_l: Arc<Node<K, V>> = self.left.unwrap();
-                        let node_l_l: Arc<Node<K, V>> = node_l.left.clone().unwrap();
+                        // TODO Simplify this and other cases once NLL is stable.
+                        let mut node_l_arc = self.left.take().unwrap();
+                        {
+                            let node_l: &mut Node<K, V> = Arc::make_mut(&mut node_l_arc);
+                            let mut node_l_l_arc = node_l.left.take().unwrap();
+                            {
+                                let node_l_l: &mut Node<K, V> = Arc::make_mut(&mut node_l_l_arc);
 
-                        let tree_l_l_l: Option<Arc<Node<K, V>>> = node_l_l.left.clone();
-                        let tree_l_l_r: Option<Arc<Node<K, V>>> = node_l_l.right.clone();
-                        let tree_l_r: Option<Arc<Node<K, V>>> = node_l.right.clone();
-                        let tree_r: Option<Arc<Node<K, V>>> = self.right;
+                                self.color = Color::Red;
+                                node_l.color = Color::Black;
+                                node_l_l.color = Color::Black;
 
-                        let new_left = Node {
-                            entry: Arc::clone(&node_l_l.entry),
-                            color: Color::Black,
-                            left:  tree_l_l_l,
-                            right: tree_l_l_r,
-                        };
-                        let new_right = Node {
-                            entry: self.entry,
-                            color: Color::Black,
-                            left:  tree_l_r,
-                            right: tree_r,
-                        };
-
-                        Node {
-                            entry: Arc::clone(&node_l.entry),
-                            color: Color::Red,
-                            left:  Some(Arc::new(new_left)),
-                            right: Some(Arc::new(new_right)),
+                                swap(&mut self.entry, &mut node_l.entry);
+                                swap(&mut node_l.left, &mut node_l.right);
+                                swap(&mut self.right, &mut node_l.right);
+                            }
+                            self.left = Some(node_l_l_arc);
                         }
+                        self.right = Some(node_l_arc);
                     }
 
                     // Case 2
                     (Some(R), _, Some(R), ..) => {
-                        let node_l: Arc<Node<K, V>> = self.left.unwrap();
-                        let node_l_r: Arc<Node<K, V>> = node_l.right.clone().unwrap();
+                        let mut node_l_arc = self.left.take().unwrap();
+                        {
+                            let node_l: &mut Node<K, V> = Arc::make_mut(&mut node_l_arc);
+                            let mut node_l_r_arc = node_l.right.take().unwrap();
+                            {
+                                let node_l_r: &mut Node<K, V> = Arc::make_mut(&mut node_l_r_arc);
 
-                        let tree_l_l: Option<Arc<Node<K, V>>> = node_l.left.clone();
-                        let tree_l_r_l: Option<Arc<Node<K, V>>> = node_l_r.left.clone();
-                        let tree_l_r_r: Option<Arc<Node<K, V>>> = node_l_r.right.clone();
-                        let tree_r: Option<Arc<Node<K, V>>> = self.right;
+                                self.color = Color::Red;
+                                node_l.color = Color::Black;
+                                node_l_r.color = Color::Black;
 
-                        let new_left = Node {
-                            entry: Arc::clone(&node_l.entry),
-                            color: Color::Black,
-                            left:  tree_l_l,
-                            right: tree_l_r_l,
-                        };
-                        let new_right = Node {
-                            entry: self.entry,
-                            color: Color::Black,
-                            left:  tree_l_r_r,
-                            right: tree_r,
-                        };
-
-                        Node {
-                            entry: Arc::clone(&node_l_r.entry),
-                            color: Color::Red,
-                            left:  Some(Arc::new(new_left)),
-                            right: Some(Arc::new(new_right)),
+                                swap(&mut self.entry, &mut node_l_r.entry);
+                                swap(&mut node_l_r.left, &mut node_l_r.right);
+                                swap(&mut node_l.right, &mut node_l_r.right);
+                                swap(&mut self.right, &mut node_l_r.right);
+                            }
+                            self.right = Some(node_l_r_arc);
                         }
+                        self.left = Some(node_l_arc);
                     }
 
                     // Case 3
                     (.., Some(R), Some(R), _) => {
-                        let node_r: Arc<Node<K, V>> = self.right.unwrap();
-                        let node_r_l: Arc<Node<K, V>> = node_r.left.clone().unwrap();
+                        let mut node_r_arc = self.right.take().unwrap();
+                        {
+                            let node_r: &mut Node<K, V> = Arc::make_mut(&mut node_r_arc);
+                            let mut node_r_l_arc = node_r.left.take().unwrap();
+                            {
+                                let node_r_l: &mut Node<K, V> = Arc::make_mut(&mut node_r_l_arc);
 
-                        let tree_l: Option<Arc<Node<K, V>>> = self.left;
-                        let tree_r_l_l: Option<Arc<Node<K, V>>> = node_r_l.left.clone();
-                        let tree_r_l_r: Option<Arc<Node<K, V>>> = node_r_l.right.clone();
-                        let tree_r_r: Option<Arc<Node<K, V>>> = node_r.right.clone();
+                                self.color = Color::Red;
+                                node_r.color = Color::Black;
+                                node_r_l.color = Color::Black;
 
-                        let new_left = Node {
-                            entry: self.entry,
-                            color: Color::Black,
-                            left:  tree_l,
-                            right: tree_r_l_l,
-                        };
-                        let new_right = Node {
-                            entry: Arc::clone(&node_r.entry),
-                            color: Color::Black,
-                            left:  tree_r_l_r,
-                            right: tree_r_r,
-                        };
-
-                        Node {
-                            entry: Arc::clone(&node_r_l.entry),
-                            color: Color::Red,
-                            left:  Some(Arc::new(new_left)),
-                            right: Some(Arc::new(new_right)),
+                                swap(&mut self.entry, &mut node_r_l.entry);
+                                swap(&mut node_r.left, &mut node_r_l.right);
+                                swap(&mut node_r_l.left, &mut node_r_l.right);
+                                swap(&mut self.left, &mut node_r_l.left);
+                            }
+                            self.left = Some(node_r_l_arc);
                         }
+                        self.right = Some(node_r_arc);
                     }
 
                     // Case 4
                     (.., Some(R), _, Some(R)) => {
-                        let node_r: Arc<Node<K, V>> = self.right.unwrap();
-                        let node_r_r: Arc<Node<K, V>> = node_r.right.clone().unwrap();
+                        let mut node_r_arc = self.right.take().unwrap();
+                        {
+                            let node_r: &mut Node<K, V> = Arc::make_mut(&mut node_r_arc);
+                            let mut node_r_r_arc = node_r.right.take().unwrap();
+                            {
+                                let node_r_r: &mut Node<K, V> = Arc::make_mut(&mut node_r_r_arc);
 
-                        let tree_l: Option<Arc<Node<K, V>>> = self.left;
-                        let tree_r_l: Option<Arc<Node<K, V>>> = node_r.left.clone();
-                        let tree_r_r_l: Option<Arc<Node<K, V>>> = node_r_r.left.clone();
-                        let tree_r_r_r: Option<Arc<Node<K, V>>> = node_r_r.right.clone();
+                                self.color = Color::Red;
+                                node_r.color = Color::Black;
+                                node_r_r.color = Color::Black;
 
-                        let new_left = Node {
-                            entry: self.entry,
-                            color: Color::Black,
-                            left:  tree_l,
-                            right: tree_r_l,
-                        };
-                        let new_right = Node {
-                            entry: Arc::clone(&node_r_r.entry),
-                            color: Color::Black,
-                            left:  tree_r_r_l,
-                            right: tree_r_r_r,
-                        };
-
-                        Node {
-                            entry: Arc::clone(&node_r.entry),
-                            color: Color::Red,
-                            left:  Some(Arc::new(new_left)),
-                            right: Some(Arc::new(new_right)),
+                                swap(&mut self.entry, &mut node_r.entry);
+                                swap(&mut node_r.left, &mut node_r.right);
+                                swap(&mut self.left, &mut node_r.left);
+                            }
+                            self.right = Some(node_r_r_arc);
                         }
+                        self.left = Some(node_r_arc);
                     }
 
-                    _ => self,
+                    _ => (),
                 }
             }
-            R => self,
+            R => (),
         }
     }
 
-    /// Returns a pair with the node with the new entry and whether the key is new.
-    fn insert(root: Option<&Node<K, V>>, key: K, value: V) -> (Node<K, V>, bool) {
-        fn ins<K: Ord, V>(node: Option<&Node<K, V>>, k: K, v: V) -> (Node<K, V>, bool) {
-            match node {
-                Some(node) => {
-                    match k.cmp(&node.entry.key) {
+    /// Inserts the entry and returns whether the key is new.
+    fn insert(root: &mut Option<Arc<Node<K, V>>>, key: K, value: V) -> bool {
+        fn ins<K: Ord, V>(node: &mut Option<Arc<Node<K, V>>>, k: K, v: V, is_root: bool) -> bool {
+            match *node {
+                Some(ref mut n) => {
+                    let node = Arc::make_mut(n);
+
+                    let ret = match k.cmp(&node.entry.key) {
                         Ordering::Less => {
-                            let left = Node::borrow(&node.left);
-                            let (new_left, is_new_key) = ins(left, k, v);
-                            let unbalanced_new_node = node.with_left(new_left);
+                            let is_new_key = ins(&mut node.left, k, v, false);
 
                             // Small optimization: avoid unnecessary calls to balance.
-                            let new_node = match is_new_key {
-                                true => unbalanced_new_node.balance(),
-                                false => unbalanced_new_node,
-                            };
+                            if is_new_key {
+                                node.balance();
+                            }
 
-                            (new_node, is_new_key)
+                            is_new_key
                         }
                         Ordering::Equal => {
-                            let new_node = node.with_entry(Entry::new(k, v));
+                            node.entry = Arc::new(Entry::new(k, v));
 
-                            (new_node, false)
+                            false
                         }
                         Ordering::Greater => {
-                            let right = Node::borrow(&node.right);
-                            let (new_right, is_new_key) = ins(right, k, v);
-                            let unbalanced_new_node = node.with_right(new_right);
+                            let is_new_key = ins(&mut node.right, k, v, false);
 
                             // Small optimization: avoid unnecessary calls to balance.
-                            let new_node = match is_new_key {
-                                true => unbalanced_new_node.balance(),
-                                false => unbalanced_new_node,
-                            };
+                            if is_new_key {
+                                node.balance();
+                            }
 
-                            (new_node, is_new_key)
+                            is_new_key
                         }
+                    };
+
+                    if is_root {
+                        node.color = Color::Black;
                     }
+
+                    ret
                 }
                 None => {
-                    let new_node = Node::new_red(Entry::new(k, v));
+                    *node = if is_root {
+                        Some(Arc::new(Node::new_black(Entry::new(k, v))))
+                    } else {
+                        Some(Arc::new(Node::new_red(Entry::new(k, v))))
+                    };
 
-                    (new_node, true)
+                    true
                 }
             }
         }
 
-        let (new_root, is_new_key) = ins(root, key, value);
-        let new_root = new_root.make_black();
-
-        (new_root, is_new_key)
+        ins(root, key, value, true)
     }
 
-    /// Returns a pair with the node without the entry matching `key` and whether the key was
-    /// present.
+    /// Returns `false` if node has no children to merge.
+    fn remove_fuse(
+        node: &mut Node<K, V>,
+        left: Option<Arc<Node<K, V>>>,
+        right: Option<Arc<Node<K, V>>>,
+    ) -> bool {
+        use self::Color::Black as B;
+        use self::Color::Red as R;
+
+        use std::mem::swap;
+
+        match (left, right) {
+            (None, None) => false,
+            (None, Some(r_arc)) => {
+                ::utils::replace(node, r_arc);
+                true
+            }
+            (Some(l_arc), None) => {
+                ::utils::replace(node, l_arc);
+                true
+            }
+            (Some(mut l_arc), Some(mut r_arc)) => {
+                match (l_arc.color, r_arc.color) {
+                    (B, R) => {
+                        // TODO Simplify this once we have NLL.
+                        {
+                            let r = Arc::make_mut(&mut r_arc);
+                            let rl = r.left.take();
+
+                            // This will always return `true`.
+                            Node::remove_fuse(node, Some(l_arc), rl);
+
+                            swap(node, r);
+                        }
+                        node.left = Some(r_arc);
+                    }
+                    (R, B) => {
+                        // TODO Simplify this once we have NLL.
+                        {
+                            let l = Arc::make_mut(&mut l_arc);
+                            let lr = l.right.take();
+
+                            // This will always return `true`.
+                            Node::remove_fuse(node, lr, Some(r_arc));
+
+                            swap(node, l);
+                        }
+                        node.right = Some(l_arc);
+                    }
+                    (R, R) => {
+                        // TODO Simplify this once we have NLL.
+                        let fused = {
+                            let r = Arc::make_mut(&mut r_arc);
+                            let rl = r.left.take();
+                            let l = Arc::make_mut(&mut l_arc);
+                            let lr = l.right.take();
+
+                            Node::remove_fuse(node, lr, rl)
+                        };
+
+                        match node.color {
+                            R if fused => {
+                                let fl = node.left.take();
+                                let fr = node.right.take();
+
+                                // TODO Simplify this once we have NLL.
+                                {
+                                    let r = Arc::make_mut(&mut r_arc);
+                                    let l = Arc::make_mut(&mut l_arc);
+
+                                    l.right = fl;
+                                    r.left = fr;
+                                }
+
+                                node.left = Some(l_arc);
+                                node.right = Some(r_arc);
+                            }
+                            _ => {
+                                // TODO Simplify this once we have NLL.
+                                {
+                                    let l = Arc::make_mut(&mut l_arc);
+                                    swap(l, node);
+                                }
+
+                                if fused {
+                                    let r = Arc::make_mut(&mut r_arc);
+                                    r.left = Some(l_arc);
+                                }
+
+                                node.right = Some(r_arc);
+                            }
+                        }
+                    }
+                    (B, B) => {
+                        // TODO Simplify this once we have NLL.
+                        let fused = {
+                            let r = Arc::make_mut(&mut r_arc);
+                            let rl = r.left.take();
+                            let l = Arc::make_mut(&mut l_arc);
+                            let lr = l.right.take();
+
+                            Node::remove_fuse(node, lr, rl)
+                        };
+
+                        match node.color {
+                            R if fused => {
+                                let fl = node.left.take();
+                                let fr = node.right.take();
+
+                                // TODO Simplify this once we have NLL.
+                                {
+                                    let r = Arc::make_mut(&mut r_arc);
+                                    let l = Arc::make_mut(&mut l_arc);
+
+                                    l.right = fl;
+                                    r.left = fr;
+                                }
+
+                                node.left = Some(l_arc);
+                                node.right = Some(r_arc);
+                            }
+                            _ => {
+                                // TODO Simplify this once we have NLL.
+                                {
+                                    let l = Arc::make_mut(&mut l_arc);
+                                    swap(l, node);
+                                }
+
+                                if fused {
+                                    let r = Arc::make_mut(&mut r_arc);
+                                    r.left = Some(l_arc);
+                                }
+
+                                node.color = Color::Red;
+                                node.right = Some(r_arc);
+
+                                node.remove_balance_left();
+                            }
+                        }
+                    }
+                };
+
+                true
+            }
+        }
+    }
+
+    fn remove_balance(&mut self) {
+        match (self.left_color(), self.right_color()) {
+            (Some(Color::Red), Some(Color::Red)) => {
+                Arc::make_mut(self.left.as_mut().unwrap()).color = Color::Black;
+                Arc::make_mut(self.right.as_mut().unwrap()).color = Color::Black;
+
+                self.color = Color::Red;
+            }
+            _ => {
+                // Our `balance()` does nothing unless the color is black, which the caller
+                // must ensure.
+                debug_assert_eq!(self.color, Color::Black);
+                self.balance();
+            }
+        }
+    }
+
+    fn remove_balance_left(&mut self) {
+        use self::Color::Black as B;
+        use self::Color::Red as R;
+
+        use std::mem::swap;
+
+        let color_l: Option<Color> = self.left_color();
+        let color_r: Option<Color> = self.right_color();
+        let color_r_l: Option<Color> = self.right.as_ref().and_then(|r| r.left_color());
+
+        match (color_l, color_r, color_r_l) {
+            (Some(R), ..) => {
+                let self_l = Arc::make_mut(self.left.as_mut().unwrap());
+
+                self.color = Color::Red;
+                self_l.color = Color::Black;
+            }
+            (_, Some(B), _) => {
+                // TODO Remove scope when NLL is stable.
+                {
+                    let self_r = Arc::make_mut(self.right.as_mut().unwrap());
+
+                    self.color = Color::Black;
+                    self_r.color = Color::Red;
+                }
+
+                self.remove_balance();
+            }
+            (_, Some(R), Some(B)) => {
+                let self_r = Arc::make_mut(self.right.as_mut().unwrap());
+
+                let mut self_r_l_arc = self_r.left.take().unwrap();
+                // TODO Simplify once NLL is stable.
+                let new_r_l = {
+                    let self_r_l = Arc::make_mut(&mut self_r_l_arc);
+
+                    self_r_l.right.take()
+                };
+
+                self_r.color = Color::Black;
+                self_r.left = new_r_l;
+                Arc::make_mut(self_r.right.as_mut().unwrap()).color = Color::Red;
+
+                self_r.remove_balance();
+
+                self.color = Color::Red;
+
+                // TODO Simplify once NLL is stable.
+                {
+                    let self_r_l = Arc::make_mut(&mut self_r_l_arc);
+
+                    self_r_l.right = self_r_l.left.take();
+                    self_r_l.left = self.left.take();
+
+                    swap(&mut self.entry, &mut self_r_l.entry);
+                }
+                self.left = Some(self_r_l_arc);
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    fn remove_balance_right(&mut self) {
+        use self::Color::Black as B;
+        use self::Color::Red as R;
+
+        use std::mem::swap;
+
+        let color_r: Option<Color> = self.right_color();
+        let color_l: Option<Color> = self.left_color();
+        let color_l_r: Option<Color> = self.left.as_ref().and_then(|l| l.right_color());
+
+        match (color_l, color_l_r, color_r) {
+            (.., Some(R)) => {
+                let self_r = Arc::make_mut(self.right.as_mut().unwrap());
+
+                self.color = Color::Red;
+                self_r.color = Color::Black;
+            }
+            (Some(B), ..) => {
+                // TODO Remove scope when NLL is stable.
+                {
+                    let self_l = Arc::make_mut(self.left.as_mut().unwrap());
+
+                    self.color = Color::Black;
+                    self_l.color = Color::Red;
+                }
+
+                self.remove_balance();
+            }
+            (Some(R), Some(B), _) => {
+                let self_l = Arc::make_mut(self.left.as_mut().unwrap());
+
+                let mut self_l_r_arc = self_l.right.take().unwrap();
+                // TODO Simplify once NLL is stable.
+                let new_l_r = {
+                    let self_l_r = Arc::make_mut(&mut self_l_r_arc);
+
+                    self_l_r.left.take()
+                };
+
+                self_l.color = Color::Black;
+                self_l.right = new_l_r;
+                Arc::make_mut(self_l.left.as_mut().unwrap()).color = Color::Red;
+
+                self_l.remove_balance();
+
+                self.color = Color::Red;
+
+                // TODO Simplify once NLL is stable.
+                {
+                    let self_l_r = Arc::make_mut(&mut self_l_r_arc);
+
+                    self_l_r.left = self_l_r.right.take();
+                    self_l_r.right = self.right.take();
+
+                    swap(&mut self.entry, &mut self_l_r.entry);
+                }
+                self.right = Some(self_l_r_arc);
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    /// Returns `true` if the key was present.
     ///
-    /// If the node becomes empty it will return `None` in the first component of the pair.
-    fn remove<Q: ?Sized>(root: Option<&Node<K, V>>, key: &Q) -> (Option<Node<K, V>>, bool)
+    /// If the node becomes empty `*root` will be set to `None`.
+    fn remove<Q: ?Sized>(root: &mut Option<Arc<Node<K, V>>>, key: &Q) -> bool
     where
         K: Borrow<Q>,
         Q: Ord,
     {
-        fn fuse<K, V>(left: Option<&Node<K, V>>, right: Option<&Node<K, V>>) -> Option<Node<K, V>>
-        where
-            K: Ord,
-        {
-            use self::Color::Black as B;
-            use self::Color::Red as R;
-
-            match (left, right) {
-                (None, r) => r.map(Node::clone),
-                (l, None) => l.map(Node::clone),
-                (Some(l), Some(r)) => {
-                    let tree_l_r = Node::borrow(&l.right);
-                    let tree_r_l = Node::borrow(&r.left);
-
-                    let new_node = match (l.color, r.color) {
-                        (B, R) => {
-                            let new_left = fuse(Some(l), tree_r_l);
-                            Node {
-                                entry: Arc::clone(&r.entry),
-                                color: Color::Red,
-                                left:  new_left.map(Arc::new),
-                                right: r.right.clone(),
-                            }
-                        }
-                        (R, B) => {
-                            let new_right = fuse(tree_l_r, Some(r));
-                            Node {
-                                entry: Arc::clone(&l.entry),
-                                color: Color::Red,
-                                left:  l.left.clone(),
-                                right: new_right.map(Arc::new),
-                            }
-                        }
-                        (R, R) => {
-                            let fused = fuse(tree_l_r, tree_r_l);
-
-                            match fused {
-                                Some(Node {
-                                    color: R,
-                                    entry: f_entry,
-                                    left: f_left,
-                                    right: f_right,
-                                }) => {
-                                    let left_child = Node {
-                                        entry: Arc::clone(&l.entry),
-                                        color: Color::Red,
-                                        left:  l.left.clone(),
-                                        right: f_left,
-                                    };
-                                    let right_child = Node {
-                                        entry: Arc::clone(&r.entry),
-                                        color: Color::Red,
-                                        left:  f_right,
-                                        right: r.right.clone(),
-                                    };
-
-                                    Node {
-                                        entry: f_entry,
-                                        color: Color::Red,
-                                        left:  Some(Arc::new(left_child)),
-                                        right: Some(Arc::new(right_child)),
-                                    }
-                                }
-                                fused => Node {
-                                    entry: Arc::clone(&l.entry),
-                                    color: Color::Red,
-                                    left:  l.left.clone(),
-                                    right: Some(Arc::new(Node {
-                                        entry: Arc::clone(&r.entry),
-                                        color: Color::Red,
-                                        left:  fused.map(Arc::new),
-                                        right: r.right.clone(),
-                                    })),
-                                },
-                            }
-                        }
-                        (B, B) => {
-                            let fused = fuse(tree_l_r, tree_r_l);
-
-                            match fused {
-                                Some(Node {
-                                    color: R,
-                                    entry: f_entry,
-                                    left: f_left,
-                                    right: f_right,
-                                }) => {
-                                    let left_child = Node {
-                                        entry: Arc::clone(&l.entry),
-                                        color: Color::Black,
-                                        left:  l.left.clone(),
-                                        right: f_left,
-                                    };
-                                    let right_child = Node {
-                                        entry: Arc::clone(&r.entry),
-                                        color: Color::Black,
-                                        left:  f_right,
-                                        right: r.right.clone(),
-                                    };
-
-                                    Node {
-                                        entry: f_entry,
-                                        color: Color::Red,
-                                        left:  Some(Arc::new(left_child)),
-                                        right: Some(Arc::new(right_child)),
-                                    }
-                                }
-                                fused => {
-                                    let new_node = Node {
-                                        entry: Arc::clone(&l.entry),
-                                        color: Color::Red,
-                                        left:  l.left.clone(),
-                                        right: Some(Arc::new(Node {
-                                            entry: Arc::clone(&r.entry),
-                                            color: Color::Black,
-                                            left:  fused.map(Arc::new),
-                                            right: r.right.clone(),
-                                        })),
-                                    };
-
-                                    balance_left(new_node)
-                                }
-                            }
-                        }
-                    };
-
-                    Some(new_node)
-                }
-            }
-        }
-
-        fn balance<K, V>(node: Node<K, V>) -> Node<K, V>
-        where
-            K: Ord,
-        {
-            match (node.left_color(), node.right_color()) {
-                (Some(Color::Red), Some(Color::Red)) => {
-                    let new_left = node.left
-                        .map(|l| Arc::new(Node::clone(l.borrow()).make_black()));
-                    let new_right = node.right
-                        .map(|r| Arc::new(Node::clone(r.borrow()).make_black()));
-                    Node {
-                        entry: Arc::clone(&node.entry),
-                        color: Color::Red,
-                        left:  new_left,
-                        right: new_right,
-                    }
-                }
-                _ => {
-                    // Our `balance()` does nothing unless the color is red, which the caller
-                    // must ensure.
-                    debug_assert!(node.color == Color::Black);
-                    node.balance()
-                }
-            }
-        }
-
-        fn balance_left<K, V>(node: Node<K, V>) -> Node<K, V>
-        where
-            K: Ord,
-        {
-            use self::Color::Black as B;
-            use self::Color::Red as R;
-
-            let color_l: Option<Color> = node.left_color();
-            let color_r: Option<Color> = node.right_color();
-            let color_r_l: Option<Color> = node.right.as_ref().and_then(|r| r.left_color());
-
-            let tree_l = Node::borrow(&node.left);
-            let tree_r = Node::borrow(&node.right);
-
-            match (color_l, color_r, color_r_l) {
-                (Some(R), ..) => {
-                    let left = tree_l.unwrap();
-
-                    Node {
-                        entry: Arc::clone(&node.entry),
-                        color: Color::Red,
-                        left:  Some(Arc::new(Node {
-                            entry: Arc::clone(&left.entry),
-                            color: Color::Black,
-                            left:  left.left.clone(),
-                            right: left.right.clone(),
-                        })),
-                        right: node.right.clone(),
-                    }
-                }
-                (_, Some(B), _) => {
-                    let right = tree_r.unwrap();
-
-                    let new_node = Node {
-                        entry: Arc::clone(&node.entry),
-                        color: Color::Black,
-                        left:  node.left.clone(),
-                        right: Some(Arc::new(Node {
-                            entry: Arc::clone(&right.entry),
-                            color: Color::Red,
-                            left:  right.left.clone(),
-                            right: right.right.clone(),
-                        })),
-                    };
-
-                    balance(new_node)
-                }
-                (_, Some(R), Some(B)) => {
-                    let right = tree_r.unwrap();
-                    let right_left = Node::borrow(&right.left).unwrap();
-
-                    let unbalanced_new_right = Node {
-                        entry: Arc::clone(&right.entry),
-                        color: Color::Black,
-                        left:  right_left.right.clone(),
-                        right: Some(Arc::new(
-                            Node::borrow(&right.right).unwrap().clone().make_red(),
-                        )),
-                    };
-
-                    let new_right = balance(unbalanced_new_right);
-
-                    Node {
-                        entry: Arc::clone(&right_left.entry),
-                        color: Color::Red,
-                        left:  Some(Arc::new(Node {
-                            entry: Arc::clone(&node.entry),
-                            color: Color::Black,
-                            left:  node.left.clone(),
-                            right: right_left.left.clone(),
-                        })),
-                        right: Some(Arc::new(new_right)),
-                    }
-                }
-                _ => unreachable!(),
-            }
-        }
-
-        fn balance_right<K, V>(node: Node<K, V>) -> Node<K, V>
-        where
-            K: Ord,
-        {
-            use self::Color::Black as B;
-            use self::Color::Red as R;
-
-            let color_r: Option<Color> = node.right_color();
-            let color_l: Option<Color> = node.left_color();
-            let color_l_r: Option<Color> = node.left.as_ref().and_then(|l| l.right_color());
-
-            let tree_l = Node::borrow(&node.left);
-            let tree_r = Node::borrow(&node.right);
-
-            match (color_l, color_l_r, color_r) {
-                (.., Some(R)) => {
-                    let right = tree_r.unwrap();
-
-                    Node {
-                        entry: Arc::clone(&node.entry),
-                        color: Color::Red,
-                        left:  node.left.clone(),
-                        right: Some(Arc::new(Node {
-                            entry: Arc::clone(&right.entry),
-                            color: Color::Black,
-                            left:  right.left.clone(),
-                            right: right.right.clone(),
-                        })),
-                    }
-                }
-                (Some(B), ..) => {
-                    let left = tree_l.unwrap();
-
-                    let new_node = Node {
-                        entry: Arc::clone(&node.entry),
-                        color: Color::Black,
-                        left:  Some(Arc::new(Node {
-                            entry: Arc::clone(&left.entry),
-                            color: Color::Red,
-                            left:  left.left.clone(),
-                            right: left.right.clone(),
-                        })),
-                        right: node.right.clone(),
-                    };
-
-                    balance(new_node)
-                }
-                (Some(R), Some(B), _) => {
-                    let left = tree_l.unwrap();
-                    let left_right = Node::borrow(&left.right).unwrap();
-
-                    let unbalanced_new_left = Node {
-                        entry: Arc::clone(&left.entry),
-                        color: Color::Black,
-                        left:  Some(Arc::new(
-                            Node::borrow(&left.left).unwrap().clone().make_red(),
-                        )),
-                        right: left_right.left.clone(),
-                    };
-
-                    let new_left = balance(unbalanced_new_left);
-
-                    Node {
-                        entry: Arc::clone(&left_right.entry),
-                        color: Color::Red,
-                        left:  Some(Arc::new(new_left)),
-                        right: Some(Arc::new(Node {
-                            entry: Arc::clone(&node.entry),
-                            color: Color::Black,
-                            left:  left_right.right.clone(),
-                            right: node.right.clone(),
-                        })),
-                    }
-                }
-                _ => unreachable!(),
-            }
-        }
-
-        fn del_left<K, V, Q: ?Sized>(node: &Node<K, V>, k: &Q) -> (Option<Node<K, V>>, bool)
+        fn del_left<K, V, Q: ?Sized>(node: &mut Node<K, V>, k: &Q) -> bool
         where
             K: Borrow<Q> + Ord,
             Q: Ord,
         {
-            let (new_left, removed) = del(Node::borrow(&node.left), k);
-            let new_node = Node {
-                entry: Arc::clone(&node.entry),
-                color: Color::Red, // In case of rebalance the color does not matter.
-                left:  new_left.map(Arc::new),
-                right: node.right.clone(),
-            };
+            let original_left_color = node.left_color();
+            let removed = del(&mut node.left, k, false);
 
-            let balanced_new_node = match node.left_color() {
-                Some(Color::Black) => balance_left(new_node),
-                _ => new_node,
-            };
+            node.color = Color::Red; // In case of rebalance the color does not matter.
 
-            (Some(balanced_new_node), removed)
-        }
-
-        fn del_right<K, V, Q: ?Sized>(node: &Node<K, V>, k: &Q) -> (Option<Node<K, V>>, bool)
-        where
-            K: Borrow<Q> + Ord,
-            Q: Ord,
-        {
-            let (new_right, removed) = del(Node::borrow(&node.right), k);
-            let new_node = Node {
-                entry: Arc::clone(&node.entry),
-                color: Color::Red, // In case of rebalance the color does not matter.
-                left:  node.left.clone(),
-                right: new_right.map(Arc::new),
-            };
-
-            let balanced_new_node = match node.right_color() {
-                Some(Color::Black) => balance_right(new_node),
-                _ => new_node,
-            };
-
-            (Some(balanced_new_node), removed)
-        }
-
-        fn del<K, V, Q: ?Sized>(node: Option<&Node<K, V>>, k: &Q) -> (Option<Node<K, V>>, bool)
-        where
-            K: Borrow<Q> + Ord,
-            Q: Ord,
-        {
-            match node {
-                Some(node) => match k.cmp(node.entry.key.borrow()) {
-                    Ordering::Less => del_left(node, k),
-                    Ordering::Equal => {
-                        let left = Node::borrow(&node.left);
-                        let right = Node::borrow(&node.right);
-                        let new_node = fuse(left, right);
-
-                        (new_node, true)
-                    }
-                    Ordering::Greater => del_right(node, k),
-                },
-                None => (None, false),
+            if let Some(Color::Black) = original_left_color {
+                node.remove_balance_left();
             }
+
+            removed
         }
 
-        let (new_root, removed) = del(root, key);
-        let new_root = new_root.map(|r| r.make_black());
+        fn del_right<K, V, Q: ?Sized>(node: &mut Node<K, V>, k: &Q) -> bool
+        where
+            K: Borrow<Q> + Ord,
+            Q: Ord,
+        {
+            let original_right_color = node.right_color();
 
-        (new_root, removed)
+            let removed = del(&mut node.right, k, false);
+
+            node.color = Color::Red; // In case of rebalance the color does not matter.
+
+            if let Some(Color::Black) = original_right_color {
+                node.remove_balance_right();
+            }
+
+            removed
+        }
+
+        fn del<K, V, Q: ?Sized>(node: &mut Option<Arc<Node<K, V>>>, k: &Q, is_root: bool) -> bool
+        where
+            K: Borrow<Q> + Ord,
+            Q: Ord,
+        {
+            // TODO Simplify this once we have NLL.
+            let (removed, make_node_none) = match *node {
+                Some(ref mut node_arc) => {
+                    let node = Arc::make_mut(node_arc);
+
+                    let ret = match k.cmp(node.entry.key.borrow()) {
+                        Ordering::Less => (del_left(node, k), false),
+                        Ordering::Equal => {
+                            let left = node.left.take();
+                            let right = node.right.take();
+
+                            let make_node_none = !Node::remove_fuse(node, left, right);
+
+                            (true, make_node_none)
+                        }
+                        Ordering::Greater => (del_right(node, k), false),
+                    };
+
+                    if is_root {
+                        node.color = Color::Black;
+                    }
+
+                    ret
+                }
+                None => (false, false),
+            };
+
+            if make_node_none {
+                *node = None;
+            }
+
+            removed
+        }
+
+        del(root, key, true)
     }
 }
 
@@ -892,12 +816,18 @@ where
     }
 
     pub fn insert(&self, key: K, value: V) -> RedBlackTreeMap<K, V> {
-        let root = Node::borrow(&self.root);
-        let (new_root, is_new_key) = Node::insert(root, key, value);
+        let mut new_map = self.clone();
 
-        RedBlackTreeMap {
-            root: Some(Arc::new(new_root)),
-            size: self.size + if is_new_key { 1 } else { 0 },
+        new_map.insert_mut(key, value);
+
+        new_map
+    }
+
+    pub fn insert_mut(&mut self, key: K, value: V) {
+        let is_new_key = Node::insert(&mut self.root, key, value);
+
+        if is_new_key {
+            self.size += 1;
         }
     }
 
@@ -906,18 +836,31 @@ where
         K: Borrow<Q>,
         Q: Ord,
     {
-        let root = Node::borrow(&self.root);
-        let (new_root, removed) = Node::remove(root, key);
+        let mut new_map = self.clone();
 
-        // We want to keep maximum sharing so in case of no change we just `clone()` ourselves.
-        if removed {
-            RedBlackTreeMap {
-                root: new_root.map(Arc::new),
-                size: self.size - 1,
-            }
+        if new_map.remove_mut(key) {
+            new_map
         } else {
+            // We want to keep maximum sharing so in case of no change we just `clone()` ourselves.
             self.clone()
         }
+    }
+
+    pub fn remove_mut<Q: ?Sized>(&mut self, key: &Q) -> bool
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        let removed = Node::remove(&mut self.root, key);
+
+        // Note that unfortunately, even if nothing was removed, we still might have cloned some
+        // part of the tree unnecessarily.
+
+        if removed {
+            self.size -= 1;
+        }
+
+        removed
     }
 
     pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
@@ -1078,7 +1021,7 @@ where
         let mut map = RedBlackTreeMap::new();
 
         for (k, v) in into_iter {
-            map = map.insert(k, v);
+            map.insert_mut(k, v);
         }
 
         map
@@ -1107,7 +1050,7 @@ mod iter_utils {
         c - 1
     }
 
-    pub fn pessimistic_height(size: usize) -> usize {
+    pub fn conservative_height(size: usize) -> usize {
         if size > 0 {
             2 * lg_floor(size + 1)
         } else {
@@ -1156,9 +1099,9 @@ where
         };
 
         if stack_field.is_none() {
-            let mut stack = Vec::with_capacity(iter_utils::pessimistic_height(self.map.size()) + 1);
+            let mut stack =
+                Vec::with_capacity(iter_utils::conservative_height(self.map.size()) + 1);
 
-            // TODO Use foreach when stable.
             Node::borrow(&self.map.root).map(|r| stack.push(r));
 
             IterArc::dig(&mut stack, backwards);
@@ -1322,7 +1265,7 @@ pub mod serde {
             let mut rb_tree_map = RedBlackTreeMap::new();
 
             while let Some((k, v)) = map.next_entry()? {
-                rb_tree_map = rb_tree_map.insert(k, v);
+                rb_tree_map.insert_mut(k, v);
             }
 
             Ok(rb_tree_map)

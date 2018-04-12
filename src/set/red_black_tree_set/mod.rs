@@ -3,12 +3,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use RedBlackTreeMap;
 use map::red_black_tree_map;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::Display;
 use std::iter::FromIterator;
+use RedBlackTreeMap;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = red_black_tree_map::IterKeys<'a, T, ()>;
@@ -33,7 +33,7 @@ macro_rules! rbt_set {
             #[allow(unused_mut)]
             let mut s = $crate::RedBlackTreeSet::new();
             $(
-                s = s.insert($e);
+                s.insert_mut($e);
             )*
             s
         }
@@ -89,6 +89,10 @@ where
         }
     }
 
+    pub fn insert_mut(&mut self, v: T) {
+        self.map.insert_mut(v, ());
+    }
+
     pub fn remove<V: ?Sized>(&self, v: &V) -> RedBlackTreeSet<T>
     where
         T: Borrow<V>,
@@ -97,6 +101,14 @@ where
         RedBlackTreeSet {
             map: self.map.remove(v),
         }
+    }
+
+    pub fn remove_mut<V: ?Sized>(&mut self, v: &V) -> bool
+    where
+        T: Borrow<V>,
+        V: Ord,
+    {
+        self.map.remove_mut(v)
     }
 
     pub fn contains<V: ?Sized>(&self, v: &V) -> bool

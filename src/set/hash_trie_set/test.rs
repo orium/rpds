@@ -195,7 +195,7 @@ fn test_remove_mut() {
 
     assert_eq!(set.size(), 4);
 
-    set.remove_mut("not-there");
+    assert!(!set.remove_mut("not-there"));
     assert_eq!(set.size(), 4);
 
     assert!(set.contains("foo"));
@@ -203,7 +203,7 @@ fn test_remove_mut() {
     assert!(set.contains("mumble"));
     assert!(set.contains("baz"));
 
-    set.remove_mut("mumble");
+    assert!(set.remove_mut("mumble"));
     assert_eq!(set.size(), 3);
 
     assert!(set.contains("foo"));
@@ -211,17 +211,17 @@ fn test_remove_mut() {
     assert!(!set.contains("mumble"));
     assert!(set.contains("baz"));
 
-    set.remove_mut("foo");
+    assert!(set.remove_mut("foo"));
     assert_eq!(set.size(), 2);
 
     assert!(!set.contains("foo"));
 
-    set.remove_mut("baz");
+    assert!(set.remove_mut("baz"));
     assert_eq!(set.size(), 1);
 
     assert!(!set.contains("baz"));
 
-    set.remove_mut("bar");
+    assert!(set.remove_mut("bar"));
     assert_eq!(set.size(), 0);
 
     assert!(!set.contains("bar"));

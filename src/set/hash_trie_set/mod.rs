@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use HashTrieMap;
 use map::hash_trie_map;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
@@ -11,6 +10,7 @@ use std::fmt::Display;
 use std::hash::BuildHasher;
 use std::hash::Hash;
 use std::iter::FromIterator;
+use HashTrieMap;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = hash_trie_map::IterKeys<'a, T, ()>;
@@ -127,12 +127,12 @@ where
         }
     }
 
-    pub fn remove_mut<V: ?Sized>(&mut self, v: &V)
+    pub fn remove_mut<V: ?Sized>(&mut self, v: &V) -> bool
     where
         T: Borrow<V>,
         V: Hash + Eq,
     {
-        self.map.remove_mut(v);
+        self.map.remove_mut(v)
     }
 
     pub fn contains<V: ?Sized>(&self, v: &V) -> bool

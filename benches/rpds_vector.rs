@@ -13,8 +13,8 @@ mod utils;
 
 use bencher::{black_box, Bencher};
 use rpds::Vector;
-use utils::BencherNoDrop;
 use utils::iterations;
+use utils::BencherNoDrop;
 
 fn rpds_vector_push_back(bench: &mut Bencher) {
     let limit = iterations(100_000);

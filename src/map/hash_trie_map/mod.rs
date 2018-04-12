@@ -7,7 +7,6 @@ mod sparse_array_usize;
 
 use self::sparse_array_usize::SparseArrayUsize;
 use super::entry::Entry;
-use List;
 use list;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
@@ -21,6 +20,7 @@ use std::ops::Index;
 use std::slice;
 use std::sync::Arc;
 use std::vec::Vec;
+use List;
 
 type HashValue = u64;
 
@@ -319,7 +319,7 @@ where
     /// Compresses a node.  This makes the shallowest tree that is well-formed, i.e. branches with
     /// a single entry become a leaf with it.
     fn compress(&mut self) {
-        let mut new_node = match *self {
+        let new_node = match *self {
             Node::Branch(ref mut subtrees) => {
                 match subtrees.size() {
                     1 => {
@@ -344,11 +344,8 @@ where
             Node::Leaf(_) => None,
         };
 
-        if let Some(ref mut node) = new_node {
-            // We have to assign node to self.  To avoid unnecessary cloning we do this trick:
-            // If we have exclusive ownership of `node` no clone is done.
-            let node = Arc::make_mut(node);
-            ::std::mem::swap(self, node);
+        if let Some(node) = new_node {
+            ::utils::replace(self, node);
         }
     }
 
@@ -752,12 +749,15 @@ where
     {
         let mut new_map = self.clone();
 
-        new_map.remove_mut(key);
-
-        new_map
+        if new_map.remove_mut(key) {
+            new_map
+        } else {
+            // We want to keep maximum sharing so in case of no change we just `clone()` ourselves.
+            self.clone()
+        }
     }
 
-    pub fn remove_mut<Q: ?Sized>(&mut self, key: &Q)
+    pub fn remove_mut<Q: ?Sized>(&mut self, key: &Q) -> bool
     where
         K: Borrow<Q>,
         Q: Hash + Eq,
@@ -765,9 +765,14 @@ where
         let key_hash = node_utils::hash(key, &self.hasher_builder);
         let removed = Arc::make_mut(&mut self.root).remove(key, key_hash, 0, self.degree);
 
+        // Note that unfortunately, even if nothing was removed, we still might have cloned some
+        // part of the tree unnecessarily.
+
         if removed {
             self.size -= 1;
         }
+
+        removed
     }
 
     pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
@@ -1010,7 +1015,6 @@ where
             },
         );
 
-        // TODO use for_each when stable.
         next_stack_elem.map(|e| {
             self.stack.push(e);
             self.dig();
