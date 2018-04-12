@@ -127,12 +127,12 @@ where
         }
     }
 
-    pub fn remove_mut<V: ?Sized>(&mut self, v: &V)
+    pub fn remove_mut<V: ?Sized>(&mut self, v: &V) -> bool
     where
         T: Borrow<V>,
         V: Hash + Eq,
     {
-        self.map.remove_mut(v);
+        self.map.remove_mut(v)
     }
 
     pub fn contains<V: ?Sized>(&self, v: &V) -> bool
