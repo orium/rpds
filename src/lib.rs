@@ -4,6 +4,7 @@
  */
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
+#![cfg_attr(feature = "cargo-clippy", allow(match_bool))]
 
 // Note: Keep this in sync with `README.md`.  To do so run `./tools/update-readme.sh`.
 //! # Rust Persistent Data Structures

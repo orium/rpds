@@ -1116,20 +1116,17 @@ where
     }
 
     fn advance(stack: &mut Vec<&Node<K, V>>, backwards: bool) {
-        match stack.pop() {
-            Some(node) => {
-                let child = if backwards {
-                    &node.left
-                } else {
-                    &node.right
-                };
+        if let Some(node) = stack.pop() {
+            let child = if backwards {
+                &node.left
+            } else {
+                &node.right
+            };
 
-                if let Some(c) = Node::borrow(child) {
-                    stack.push(c);
-                    IterArc::dig(stack, backwards);
-                }
+            if let Some(c) = Node::borrow(child) {
+                stack.push(c);
+                IterArc::dig(stack, backwards);
             }
-            None => (), // Reached the end.  Nothing to do.
         }
     }
 

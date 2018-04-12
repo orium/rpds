@@ -77,7 +77,7 @@ impl<T> SparseArrayUsize<T> {
 
     pub fn remove(&mut self, index: usize) {
         if let Some(i) = sparse_array_usize_utils::map_index(self.bitmap, index) {
-            self.bitmap = self.bitmap ^ (1 << index);
+            self.bitmap ^= 1 << index;
             self.array.remove(i);
         }
     }

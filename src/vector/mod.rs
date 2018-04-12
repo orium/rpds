@@ -638,19 +638,16 @@ impl<'a, T> IterArc<'a, T> {
     }
 
     fn advance(stack: &mut Vec<IterStackElement<T>>, backwards: bool) {
-        match stack.pop() {
-            Some(mut stack_element) => {
-                let finished = stack_element.advance(backwards);
+        if let Some(mut stack_element) = stack.pop() {
+            let finished = stack_element.advance(backwards);
 
-                if finished {
-                    IterArc::advance(stack, backwards);
-                } else {
-                    stack.push(stack_element);
+            if finished {
+                IterArc::advance(stack, backwards);
+            } else {
+                stack.push(stack_element);
 
-                    IterArc::dig(stack, backwards);
-                }
+                IterArc::dig(stack, backwards);
             }
-            None => (), // Reached the end.  Nothing to do.
         }
     }
 

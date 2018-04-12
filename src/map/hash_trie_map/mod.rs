@@ -568,23 +568,21 @@ where
     {
         match bucket.take() {
             Some(b) => {
-                match b {
-                    &mut Bucket::Single(ref existing_entry)
-                        if existing_entry.matches(key, key_hash) =>
-                    {
+                match *b {
+                    Bucket::Single(ref existing_entry) if existing_entry.matches(key, key_hash) => {
                         // bucket is already `None`.
                         true
                     }
-                    &mut Bucket::Single(_) => {
+                    Bucket::Single(_) => {
                         // Nothing to change.
                         *bucket = Some(b);
                         false
                     }
 
                     // TODO Simplify when we have NLL.
-                    &mut Bucket::Collision(_) => {
-                        let (removed, new_len) = match b {
-                            &mut Bucket::Collision(ref mut entries) => {
+                    Bucket::Collision(_) => {
+                        let (removed, new_len) = match *b {
+                            Bucket::Collision(ref mut entries) => {
                                 let rem = bucket_utils::list_remove_first(entries, |e| {
                                     e.matches(key, key_hash)
                                 });
@@ -599,8 +597,8 @@ where
                                 "impossible to have collision with a single or no entry"
                             ),
                             1 => {
-                                let entry = match b {
-                                    &mut Bucket::Collision(ref entries) =>
+                                let entry = match *b {
+                                    Bucket::Collision(ref entries) =>
                                         entries.first().unwrap().clone(),
                                     _ => unreachable!(),
                                 };
@@ -1022,19 +1020,16 @@ where
     }
 
     fn advance(&mut self) {
-        match self.stack.pop() {
-            Some(mut stack_element) => {
-                let finished = stack_element.advance();
+        if let Some(mut stack_element) = self.stack.pop() {
+            let finished = stack_element.advance();
 
-                if finished {
-                    self.advance();
-                } else {
-                    self.stack.push(stack_element);
+            if finished {
+                self.advance();
+            } else {
+                self.stack.push(stack_element);
 
-                    self.dig();
-                }
+                self.dig();
             }
-            None => (), // Reached the end.  Nothing to do.
         }
     }
 
