@@ -257,13 +257,13 @@ where
     T: Ord,
 {
     fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> RedBlackTreeSet<T> {
-        let mut map = RedBlackTreeSet::new();
+        let mut set = RedBlackTreeSet::new();
 
         for v in into_iter {
-            map = map.insert(v);
+            set.insert_mut(v);
         }
 
-        map
+        set
     }
 }
 
@@ -318,7 +318,7 @@ pub mod serde {
             let mut set = RedBlackTreeSet::new();
 
             while let Some(value) = seq.next_element()? {
-                set = set.insert(value);
+                set.insert_mut(value);
             }
 
             Ok(set)
