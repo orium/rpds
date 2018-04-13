@@ -49,7 +49,7 @@ fn rpds_vector_drop_last(bench: &mut Bencher) {
     let mut full_vector: Vector<usize> = Vector::new();
 
     for i in 0..limit {
-        full_vector = full_vector.push_back(i);
+        full_vector.push_back_mut(i);
     }
 
     bench.iter_no_drop(|| {
@@ -87,7 +87,7 @@ fn rpds_vector_get(bench: &mut Bencher) {
     let mut vector: Vector<usize> = Vector::new();
 
     for i in 0..limit {
-        vector = vector.push_back(i);
+        vector.push_back_mut(i);
     }
 
     bench.iter(|| {
@@ -102,7 +102,7 @@ fn rpds_vector_iterate(bench: &mut Bencher) {
     let mut vector: Vector<usize> = Vector::new();
 
     for i in 0..limit {
-        vector = vector.push_back(i);
+        vector.push_back_mut(i);
     }
 
     bench.iter(|| {

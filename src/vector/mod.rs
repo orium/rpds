@@ -87,7 +87,7 @@ macro_rules! vector {
 ///
 /// # Implementation details
 ///
-/// This vector is implemented as described in
+/// This implementation uses a bitmapped vector trie as described in
 /// [Understanding Persistent Vector Part 1](http://hypirion.com/musings/understanding-persistent-vector-pt-1)
 /// and [Understanding Persistent Vector Part 2](http://hypirion.com/musings/understanding-persistent-vector-pt-2).
 #[derive(Debug)]

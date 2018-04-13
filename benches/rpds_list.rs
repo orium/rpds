@@ -49,7 +49,7 @@ fn rpds_list_drop_first(bench: &mut Bencher) {
     let mut full_list: List<usize> = List::new();
 
     for i in 0..limit {
-        full_list = full_list.push_front(i);
+        full_list.push_front_mut(i);
     }
 
     bench.iter_no_drop(|| {
@@ -125,7 +125,7 @@ fn rpds_list_iterate(bench: &mut Bencher) {
     let mut list: List<usize> = List::new();
 
     for i in 0..limit {
-        list = list.push_front(i);
+        list.push_front_mut(i);
     }
 
     bench.iter(|| {

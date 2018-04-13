@@ -49,7 +49,7 @@ fn rpds_hash_trie_map_remove(bench: &mut Bencher) {
     let mut full_map = HashTrieMap::new();
 
     for i in 0..limit {
-        full_map = full_map.insert(i, -(i as isize));
+        full_map.insert_mut(i, -(i as isize));
     }
 
     bench.iter_no_drop(|| {
@@ -68,7 +68,7 @@ fn rpds_hash_trie_map_remove_mut(bench: &mut Bencher) {
     let mut full_map = HashTrieMap::new();
 
     for i in 0..limit {
-        full_map = full_map.insert(i, -(i as isize));
+        full_map.insert_mut(i, -(i as isize));
     }
 
     bench.iter_no_drop(|| {
@@ -87,7 +87,7 @@ fn rpds_hash_trie_map_get(bench: &mut Bencher) {
     let mut map = HashTrieMap::new();
 
     for i in 0..limit {
-        map = map.insert(i, -(i as isize));
+        map.insert_mut(i, -(i as isize));
     }
 
     bench.iter(|| {
@@ -102,7 +102,7 @@ fn rpds_hash_trie_map_iterate(bench: &mut Bencher) {
     let mut map = HashTrieMap::new();
 
     for i in 0..limit {
-        map = map.insert(i, -(i as isize));
+        map.insert_mut(i, -(i as isize));
     }
 
     bench.iter(|| {
