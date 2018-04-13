@@ -62,6 +62,14 @@ name = "std_vec"
 harness = false
 
 [[bench]]
+name = "rpds_queue"
+harness = false
+
+[[bench]]
+name = "std_vec_deque"
+harness = false
+
+[[bench]]
 name = "rpds_vector"
 harness = false
 
