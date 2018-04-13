@@ -83,7 +83,7 @@ fn rpds_list_drop_first_mut(bench: &mut Bencher) {
 }
 
 fn rpds_list_reverse(bench: &mut Bencher) {
-    let limit = iterations(10_000);
+    let limit = iterations(1_000);
     let mut full_list: List<usize> = List::new();
 
     for i in 0..limit {
@@ -102,7 +102,7 @@ fn rpds_list_reverse(bench: &mut Bencher) {
 }
 
 fn rpds_list_reverse_mut(bench: &mut Bencher) {
-    let limit = iterations(10_000);
+    let limit = iterations(1_000);
     let mut full_list: List<usize> = List::new();
 
     for i in 0..limit {

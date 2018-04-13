@@ -98,6 +98,15 @@ struct Node<T> {
     next:  Option<Arc<Node<T>>>,
 }
 
+impl<T> Clone for Node<T> {
+    fn clone(&self) -> Node<T> {
+        Node {
+            value: Arc::clone(&self.value),
+            next:  self.next.clone(),
+        }
+    }
+}
+
 impl<T> List<T> {
     pub fn new() -> List<T> {
         List {
@@ -175,13 +184,25 @@ impl<T> List<T> {
     }
 
     pub fn reverse_mut(&mut self) {
-        let mut list = List::new();
+        self.last = self.head.as_ref().map(|next| Arc::clone(&next.value));
 
-        for v in self.iter_arc() {
-            list.push_front_arc_mut(Arc::clone(v));
+        let mut prev: Option<Arc<Node<T>>> = None;
+        let mut current: Option<Arc<Node<T>>> = self.head.take();
+
+        while let Some(mut curr_arc) = current {
+            // TODO Simplify once we have NLL.
+            {
+                let curr = Arc::make_mut(&mut curr_arc);
+                let curr_next = curr.next.take();
+
+                curr.next = prev.take();
+
+                current = curr_next;
+            }
+            prev = Some(curr_arc);
         }
 
-        *self = list;
+        self.head = prev;
     }
 
     #[inline]

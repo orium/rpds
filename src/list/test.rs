@@ -184,8 +184,11 @@ fn test_reverse() {
         .push_front(3);
 
     assert_eq!(empty_list.reverse(), empty_list);
+    assert_eq!(empty_list.reverse().last(), None);
     assert_eq!(singleton_list.reverse(), singleton_list);
+    assert_eq!(singleton_list.reverse().last(), Some(&"hello"));
     assert_eq!(list.reverse(), list_reversed);
+    assert_eq!(list.reverse().last(), Some(&0));
 }
 
 #[test]
@@ -199,8 +202,10 @@ fn test_reverse_mut() {
     empty_list.reverse_mut();
 
     assert_eq!(empty_list, empty_list);
+    assert_eq!(empty_list.last(), None);
     assert_eq!(singleton_list, singleton_list);
-    assert_eq!(list, list![3, 2, 1, 0]);
+    assert_eq!(singleton_list.last(), Some(&"hello"));
+    assert_eq!(list.last(), Some(&0));
 }
 
 #[test]
