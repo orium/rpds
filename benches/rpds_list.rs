@@ -82,6 +82,44 @@ fn rpds_list_drop_first_mut(bench: &mut Bencher) {
     });
 }
 
+fn rpds_list_reverse(bench: &mut Bencher) {
+    let limit = iterations(10_000);
+    let mut full_list: List<usize> = List::new();
+
+    for i in 0..limit {
+        full_list.push_front_mut(i);
+    }
+
+    bench.iter_no_drop(|| {
+        let mut list: List<usize> = full_list.clone();
+
+        for _ in 0..limit {
+            list = list.reverse();
+        }
+
+        list
+    });
+}
+
+fn rpds_list_reverse_mut(bench: &mut Bencher) {
+    let limit = iterations(10_000);
+    let mut full_list: List<usize> = List::new();
+
+    for i in 0..limit {
+        full_list.push_front_mut(i);
+    }
+
+    bench.iter_no_drop(|| {
+        let mut list: List<usize> = full_list.clone();
+
+        for _ in 0..limit {
+            list.reverse_mut();
+        }
+
+        list
+    });
+}
+
 fn rpds_list_iterate(bench: &mut Bencher) {
     let limit = iterations(100_000);
     let mut list: List<usize> = List::new();
@@ -103,6 +141,8 @@ benchmark_group!(
     rpds_list_push_front_mut,
     rpds_list_drop_first,
     rpds_list_drop_first_mut,
+    rpds_list_reverse,
+    rpds_list_reverse_mut,
     rpds_list_iterate
 );
 benchmark_main!(benches);
