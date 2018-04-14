@@ -38,7 +38,7 @@ serde = { version = "1", optional = true }
 
 [dev-dependencies]
 # TODO This will probably be part of rust in the future (see https://github.com/rust-lang/rust/issues/29553)
-bencher = "0.1"
+criterion = "0.2"
 rand = "0.4"
 # needed to test serde
 bincode = "1"
@@ -75,7 +75,7 @@ name = "rpds_vector"
 harness = false
 
 [[bench]]
-name = "std_hashmap"
+name = "std_hash_map"
 harness = false
 
 [[bench]]
@@ -83,7 +83,7 @@ name = "rpds_hash_trie_map"
 harness = false
 
 [[bench]]
-name = "std_btreemap"
+name = "std_btree_map"
 harness = false
 
 [[bench]]

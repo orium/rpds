@@ -6,113 +6,132 @@
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
 #[macro_use]
-extern crate bencher;
+extern crate criterion;
 extern crate rpds;
 
 mod utils;
 
-use bencher::{black_box, Bencher};
+use criterion::{black_box, Criterion};
 use rpds::Vector;
-use utils::iterations;
-use utils::BencherNoDrop;
+use utils::limit;
 
-fn rpds_vector_push_back(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_vector_push_back(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    bench.iter_no_drop(|| {
-        let mut vector: Vector<usize> = Vector::new();
+    c.bench_function("rpds vector push back", move |b| {
+        b.iter(|| {
+            let mut vector: Vector<usize> = Vector::new();
 
-        for i in 0..limit {
-            vector = vector.push_back(i);
-        }
+            for i in 0..limit {
+                vector = vector.push_back(i);
+            }
 
-        vector
+            vector
+        })
     });
 }
 
-fn rpds_vector_push_back_mut(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_vector_push_back_mut(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    bench.iter_no_drop(|| {
-        let mut vector: Vector<usize> = Vector::new();
+    c.bench_function("rpds vector push back mut", move |b| {
+        b.iter(|| {
+            let mut vector: Vector<usize> = Vector::new();
 
-        for i in 0..limit {
-            vector.push_back_mut(i);
-        }
+            for i in 0..limit {
+                vector.push_back_mut(i);
+            }
 
-        vector
+            vector
+        })
     });
 }
 
-fn rpds_vector_drop_last(bench: &mut Bencher) {
-    let limit = iterations(100_000);
-    let mut full_vector: Vector<usize> = Vector::new();
+fn rpds_vector_drop_last(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    for i in 0..limit {
-        full_vector.push_back_mut(i);
-    }
+    c.bench_function("rpds vector drop last", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut vector: Vector<usize> = Vector::new();
 
-    bench.iter_no_drop(|| {
-        let mut vector: Vector<usize> = full_vector.clone();
+                for i in 0..limit {
+                    vector.push_back_mut(i);
+                }
 
-        for _ in 0..limit {
-            vector = vector.drop_last().unwrap();
-        }
+                vector
+            },
+            |mut vector| {
+                for _ in 0..limit {
+                    vector = vector.drop_last().unwrap();
+                }
 
-        vector
+                vector
+            },
+        );
     });
 }
 
-fn rpds_vector_drop_last_mut(bench: &mut Bencher) {
-    let limit = iterations(100_000);
-    let mut full_vector: Vector<usize> = Vector::new();
+fn rpds_vector_drop_last_mut(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    for i in 0..limit {
-        full_vector.push_back_mut(i);
-    }
+    c.bench_function("rpds vector drop last mut", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut vector: Vector<usize> = Vector::new();
 
-    bench.iter_no_drop(|| {
-        let mut vector: Vector<usize> = full_vector.clone();
+                for i in 0..limit {
+                    vector.push_back_mut(i);
+                }
 
-        for _ in 0..limit {
-            vector.drop_last_mut();
-        }
+                vector
+            },
+            |mut vector| {
+                for _ in 0..limit {
+                    vector.drop_last_mut();
+                }
 
-        vector
+                vector
+            },
+        );
     });
 }
 
-fn rpds_vector_get(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_vector_get(c: &mut Criterion) {
+    let limit = limit(10_000);
     let mut vector: Vector<usize> = Vector::new();
 
     for i in 0..limit {
         vector.push_back_mut(i);
     }
 
-    bench.iter(|| {
-        for i in 0..limit {
-            black_box(vector.get(i));
-        }
+    c.bench_function("rpds vector get", move |b| {
+        b.iter(|| {
+            for i in 0..limit {
+                black_box(vector.get(i));
+            }
+        })
     });
 }
 
-fn rpds_vector_iterate(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_vector_iterate(c: &mut Criterion) {
+    let limit = limit(10_000);
     let mut vector: Vector<usize> = Vector::new();
 
     for i in 0..limit {
         vector.push_back_mut(i);
     }
 
-    bench.iter(|| {
-        for i in vector.iter() {
-            black_box(i);
-        }
+    c.bench_function("rpds vector iterate", move |b| {
+        b.iter(|| {
+            for i in vector.iter() {
+                black_box(i);
+            }
+        })
     });
 }
 
-benchmark_group!(
+criterion_group!(
     benches,
     rpds_vector_push_back,
     rpds_vector_push_back_mut,
@@ -121,4 +140,4 @@ benchmark_group!(
     rpds_vector_get,
     rpds_vector_iterate
 );
-benchmark_main!(benches);
+criterion_main!(benches);

@@ -6,62 +6,67 @@
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
 #[macro_use]
-extern crate bencher;
+extern crate criterion;
 
 mod utils;
 
-use bencher::{black_box, Bencher};
+use criterion::{black_box, Criterion};
 use std::collections::LinkedList;
-use utils::iterations;
-use utils::BencherNoDrop;
+use utils::limit;
 
-fn std_linked_list_push_front(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn std_linked_list_push_front(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    bench.iter_no_drop(|| {
-        let mut linked_list: LinkedList<usize> = LinkedList::new();
+    c.bench_function("std linked list push front", move |b| {
+        b.iter(|| {
+            let mut linked_list: LinkedList<usize> = LinkedList::new();
 
-        for i in 0..limit {
-            linked_list.push_front(i);
-        }
+            for i in 0..limit {
+                linked_list.push_front(i);
+            }
 
-        linked_list
+            linked_list
+        })
     });
 }
 
-fn std_linked_list_push_back(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn std_linked_list_push_back(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    bench.iter_no_drop(|| {
-        let mut linked_list: LinkedList<usize> = LinkedList::new();
+    c.bench_function("std linked list push back", move |b| {
+        b.iter(|| {
+            let mut linked_list: LinkedList<usize> = LinkedList::new();
 
-        for i in 0..limit {
-            linked_list.push_back(i);
-        }
+            for i in 0..limit {
+                linked_list.push_back(i);
+            }
 
-        linked_list
+            linked_list
+        })
     });
 }
 
-fn std_linked_list_iterate(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn std_linked_list_iterate(c: &mut Criterion) {
+    let limit = limit(10_000);
     let mut linked_list: LinkedList<usize> = LinkedList::new();
 
     for i in 0..limit {
         linked_list.push_back(i);
     }
 
-    bench.iter(|| {
-        for i in &linked_list {
-            black_box(i);
-        }
+    c.bench_function("std linked list iterate", move |b| {
+        b.iter(|| {
+            for i in &linked_list {
+                black_box(i);
+            }
+        })
     });
 }
 
-benchmark_group!(
+criterion_group!(
     benches,
     std_linked_list_push_front,
     std_linked_list_push_back,
     std_linked_list_iterate
 );
-benchmark_main!(benches);
+criterion_main!(benches);

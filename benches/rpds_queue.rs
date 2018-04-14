@@ -6,98 +6,115 @@
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
 #[macro_use]
-extern crate bencher;
+extern crate criterion;
 extern crate rpds;
 
 mod utils;
 
-use bencher::{black_box, Bencher};
+use criterion::{black_box, Criterion};
 use rpds::Queue;
-use utils::iterations;
-use utils::BencherNoDrop;
+use utils::limit;
 
-fn rpds_queue_enqueue(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_queue_enqueue(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    bench.iter_no_drop(|| {
-        let mut queue: Queue<usize> = Queue::new();
+    c.bench_function("rpds queue enqueue", move |b| {
+        b.iter(|| {
+            let mut queue: Queue<usize> = Queue::new();
 
-        for i in 0..limit {
-            queue = queue.enqueue(i);
-        }
+            for i in 0..limit {
+                queue = queue.enqueue(i);
+            }
 
-        queue
+            queue
+        })
     });
 }
 
-fn rpds_queue_enqueue_mut(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_queue_enqueue_mut(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    bench.iter_no_drop(|| {
-        let mut queue: Queue<usize> = Queue::new();
+    c.bench_function("rpds queue enqueue mut", move |b| {
+        b.iter(|| {
+            let mut queue: Queue<usize> = Queue::new();
 
-        for i in 0..limit {
-            queue.enqueue_mut(i);
-        }
+            for i in 0..limit {
+                queue.enqueue_mut(i);
+            }
 
-        queue
+            queue
+        })
     });
 }
 
-fn rpds_queue_dequeue(bench: &mut Bencher) {
-    let limit = iterations(100_000);
-    let mut full_queue: Queue<usize> = Queue::new();
+fn rpds_queue_dequeue(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    for i in 0..limit {
-        full_queue.enqueue_mut(i);
-    }
+    c.bench_function("rpds queue dequeue", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut queue: Queue<usize> = Queue::new();
 
-    bench.iter_no_drop(|| {
-        let mut queue: Queue<usize> = full_queue.clone();
+                for i in 0..limit {
+                    queue.enqueue_mut(i);
+                }
 
-        for _ in 0..limit {
-            queue = queue.dequeue().unwrap();
-        }
+                queue
+            },
+            |mut queue| {
+                for _ in 0..limit {
+                    queue = queue.dequeue().unwrap();
+                }
 
-        queue
+                queue
+            },
+        );
     });
 }
 
-fn rpds_queue_dequeue_mut(bench: &mut Bencher) {
-    let limit = iterations(100_000);
-    let mut full_queue: Queue<usize> = Queue::new();
+fn rpds_queue_dequeue_mut(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    for i in 0..limit {
-        full_queue.enqueue_mut(i);
-    }
+    c.bench_function("rpds queue dequeue mut", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut queue: Queue<usize> = Queue::new();
 
-    bench.iter_no_drop(|| {
-        let mut queue: Queue<usize> = full_queue.clone();
+                for i in 0..limit {
+                    queue.enqueue_mut(i);
+                }
 
-        for _ in 0..limit {
-            queue.dequeue_mut();
-        }
+                queue
+            },
+            |mut queue| {
+                for _ in 0..limit {
+                    queue.dequeue_mut();
+                }
 
-        queue
+                queue
+            },
+        );
     });
 }
 
-fn rpds_queue_iterate(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_queue_iterate(c: &mut Criterion) {
+    let limit = limit(10_000);
     let mut queue: Queue<usize> = Queue::new();
 
     for i in 0..limit {
         queue.enqueue_mut(i);
     }
 
-    bench.iter(|| {
-        for i in queue.iter() {
-            black_box(i);
-        }
+    c.bench_function("rpds queue iterate", move |b| {
+        b.iter(|| {
+            for i in queue.iter() {
+                black_box(i);
+            }
+        })
     });
 }
 
-benchmark_group!(
+criterion_group!(
     benches,
     rpds_queue_enqueue,
     rpds_queue_enqueue_mut,
@@ -105,4 +122,4 @@ benchmark_group!(
     rpds_queue_dequeue_mut,
     rpds_queue_iterate
 );
-benchmark_main!(benches);
+criterion_main!(benches);

@@ -6,113 +6,132 @@
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
 #[macro_use]
-extern crate bencher;
+extern crate criterion;
 extern crate rpds;
 
 mod utils;
 
-use bencher::{black_box, Bencher};
+use criterion::{black_box, Criterion};
 use rpds::RedBlackTreeMap;
-use utils::iterations;
-use utils::BencherNoDrop;
+use utils::limit;
 
-fn rpds_red_black_tree_map_insert(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_red_black_tree_map_insert(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    bench.iter_no_drop(|| {
-        let mut map = RedBlackTreeMap::new();
+    c.bench_function("rpds red black tree map insert", move |b| {
+        b.iter(|| {
+            let mut map = RedBlackTreeMap::new();
 
-        for i in 0..limit {
-            map = map.insert(i, -(i as isize));
-        }
+            for i in 0..limit {
+                map = map.insert(i, -(i as isize));
+            }
 
-        map
+            map
+        })
     });
 }
 
-fn rpds_red_black_tree_map_insert_mut(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_red_black_tree_map_insert_mut(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    bench.iter_no_drop(|| {
-        let mut map = RedBlackTreeMap::new();
+    c.bench_function("rpds red black tree map insert mut", move |b| {
+        b.iter(|| {
+            let mut map = RedBlackTreeMap::new();
 
-        for i in 0..limit {
-            map.insert_mut(i, -(i as isize));
-        }
+            for i in 0..limit {
+                map.insert_mut(i, -(i as isize));
+            }
 
-        map
+            map
+        })
     });
 }
 
-fn rpds_red_black_tree_map_remove(bench: &mut Bencher) {
-    let limit = iterations(100_000);
-    let mut full_map = RedBlackTreeMap::new();
+fn rpds_red_black_tree_map_remove(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    for i in 0..limit {
-        full_map.insert_mut(i, -(i as isize));
-    }
+    c.bench_function("rpds red black tree map remove", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut map = RedBlackTreeMap::new();
 
-    bench.iter_no_drop(|| {
-        let mut map = full_map.clone();
+                for i in 0..limit {
+                    map.insert_mut(i, -(i as isize));
+                }
 
-        for i in 0..limit {
-            map = map.remove(&i);
-        }
+                map
+            },
+            |mut map| {
+                for i in 0..limit {
+                    map = map.remove(&i);
+                }
 
-        map
+                map
+            },
+        );
     });
 }
 
-fn rpds_red_black_tree_map_remove_mut(bench: &mut Bencher) {
-    let limit = iterations(100_000);
-    let mut full_map = RedBlackTreeMap::new();
+fn rpds_red_black_tree_map_remove_mut(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    for i in 0..limit {
-        full_map.insert_mut(i, -(i as isize));
-    }
+    c.bench_function("rpds red black tree map remove mut", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut map = RedBlackTreeMap::new();
 
-    bench.iter_no_drop(|| {
-        let mut map = full_map.clone();
+                for i in 0..limit {
+                    map.insert_mut(i, -(i as isize));
+                }
 
-        for i in 0..limit {
-            map.remove_mut(&i);
-        }
+                map
+            },
+            |mut map| {
+                for i in 0..limit {
+                    map.remove_mut(&i);
+                }
 
-        map
+                map
+            },
+        );
     });
 }
 
-fn rpds_red_black_tree_map_get(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_red_black_tree_map_get(c: &mut Criterion) {
+    let limit = limit(10_000);
     let mut map = RedBlackTreeMap::new();
 
     for i in 0..limit {
         map.insert_mut(i, -(i as isize));
     }
 
-    bench.iter(|| {
-        for i in 0..limit {
-            black_box(map.get(&i));
-        }
+    c.bench_function("rpds red black tree map get", move |b| {
+        b.iter(|| {
+            for i in 0..limit {
+                black_box(map.get(&i));
+            }
+        })
     });
 }
 
-fn rpds_red_black_tree_map_iterate(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_red_black_tree_map_iterate(c: &mut Criterion) {
+    let limit = limit(10_000);
     let mut map = RedBlackTreeMap::new();
 
     for i in 0..limit {
         map.insert_mut(i, -(i as isize));
     }
 
-    bench.iter(|| {
-        for kv in map.iter() {
-            black_box(kv);
-        }
+    c.bench_function("rpds red black tree map iterate", move |b| {
+        b.iter(|| {
+            for kv in map.iter() {
+                black_box(kv);
+            }
+        })
     });
 }
 
-benchmark_group!(
+criterion_group!(
     benches,
     rpds_red_black_tree_map_insert,
     rpds_red_black_tree_map_insert_mut,
@@ -121,4 +140,4 @@ benchmark_group!(
     rpds_red_black_tree_map_get,
     rpds_red_black_tree_map_iterate
 );
-benchmark_main!(benches);
+criterion_main!(benches);

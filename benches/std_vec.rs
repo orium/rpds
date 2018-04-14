@@ -6,60 +6,65 @@
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
 #[macro_use]
-extern crate bencher;
+extern crate criterion;
 
 mod utils;
 
-use bencher::{black_box, Bencher};
-use utils::iterations;
-use utils::BencherNoDrop;
+use criterion::{black_box, Criterion};
+use utils::limit;
 
-fn std_vec_push(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn std_vec_push(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    bench.iter_no_drop(|| {
-        let mut vector: Vec<usize> = Vec::new();
+    c.bench_function("std vec push", move |b| {
+        b.iter(|| {
+            let mut vector: Vec<usize> = Vec::new();
 
-        for i in 0..limit {
-            vector.push(i);
-        }
+            for i in 0..limit {
+                vector.push(i);
+            }
 
-        vector
+            vector
+        })
     });
 }
 
 // TODO implement rust_vec_pop in the same style as the test of `Vector::drop_last()` once we can
 // do per-iteration initialization.
 
-fn std_vec_get(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn std_vec_get(c: &mut Criterion) {
+    let limit = limit(10_000);
     let mut vector: Vec<usize> = Vec::new();
 
     for i in 0..limit {
         vector.push(i);
     }
 
-    bench.iter(|| {
-        for i in 0..limit {
-            black_box(vector.get(i as usize));
-        }
+    c.bench_function("std vec get", move |b| {
+        b.iter(|| {
+            for i in 0..limit {
+                black_box(vector.get(i as usize));
+            }
+        })
     });
 }
 
-fn std_vec_iterate(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn std_vec_iterate(c: &mut Criterion) {
+    let limit = limit(10_000);
     let mut vector: Vec<usize> = Vec::new();
 
     for i in 0..limit {
         vector.push(i);
     }
 
-    bench.iter(|| {
-        for i in &vector {
-            black_box(i);
-        }
+    c.bench_function("std vec iterate", move |b| {
+        b.iter(|| {
+            for i in &vector {
+                black_box(i);
+            }
+        })
     });
 }
 
-benchmark_group!(benches, std_vec_push, std_vec_get, std_vec_iterate);
-benchmark_main!(benches);
+criterion_group!(benches, std_vec_push, std_vec_get, std_vec_iterate);
+criterion_main!(benches);
