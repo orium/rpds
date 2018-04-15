@@ -176,9 +176,15 @@ impl<T> List<T> {
     }
 
     pub fn reverse(&self) -> List<T> {
-        let mut new_list = self.clone();
+        let mut new_list = List::new();
 
-        new_list.reverse_mut();
+        // It is significantly faster to re-implement this here than to clone and call
+        // `reverse_mut()`.  The reason is that since this is a linear data structure all nodes will
+        // need to be cloned given that the ref count would be greater than one.
+
+        for v in self.iter_arc() {
+            new_list.push_front_arc_mut(Arc::clone(v));
+        }
 
         new_list
     }

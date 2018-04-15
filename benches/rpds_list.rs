@@ -6,136 +6,165 @@
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
 #[macro_use]
-extern crate bencher;
+extern crate criterion;
 extern crate rpds;
 
 mod utils;
 
-use bencher::{black_box, Bencher};
+use criterion::{black_box, Criterion};
 use rpds::List;
-use utils::iterations;
-use utils::BencherNoDrop;
+use utils::limit;
 
-fn rpds_list_push_front(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_list_push_front(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    bench.iter_no_drop(|| {
-        let mut list: List<usize> = List::new();
+    c.bench_function("rpds list push front", move |b| {
+        b.iter(|| {
+            let mut list: List<usize> = List::new();
 
-        for i in 0..limit {
-            list = list.push_front(i);
-        }
+            for i in 0..limit {
+                list = list.push_front(i);
+            }
 
-        list
+            list
+        })
     });
 }
 
-fn rpds_list_push_front_mut(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_list_push_front_mut(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    bench.iter_no_drop(|| {
-        let mut list: List<usize> = List::new();
+    c.bench_function("rpds list push front mut", move |b| {
+        b.iter(|| {
+            let mut list: List<usize> = List::new();
 
-        for i in 0..limit {
-            list.push_front_mut(i);
-        }
+            for i in 0..limit {
+                list.push_front_mut(i);
+            }
 
-        list
+            list
+        })
     });
 }
 
-fn rpds_list_drop_first(bench: &mut Bencher) {
-    let limit = iterations(100_000);
-    let mut full_list: List<usize> = List::new();
+fn rpds_list_drop_first(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    for i in 0..limit {
-        full_list.push_front_mut(i);
-    }
+    c.bench_function("rpds list drop first", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut list: List<usize> = List::new();
 
-    bench.iter_no_drop(|| {
-        let mut list: List<usize> = full_list.clone();
+                for i in 0..limit {
+                    list.push_front_mut(i);
+                }
 
-        for _ in 0..limit {
-            list = list.drop_first().unwrap();
-        }
+                list
+            },
+            |mut list| {
+                for _ in 0..limit {
+                    list = list.drop_first().unwrap();
+                }
 
-        list
+                list
+            },
+        );
     });
 }
 
-fn rpds_list_drop_first_mut(bench: &mut Bencher) {
-    let limit = iterations(100_000);
-    let mut full_list: List<usize> = List::new();
+fn rpds_list_drop_first_mut(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    for i in 0..limit {
-        full_list.push_front_mut(i);
-    }
+    c.bench_function("rpds list drop first mut", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut list: List<usize> = List::new();
 
-    bench.iter_no_drop(|| {
-        let mut list: List<usize> = full_list.clone();
+                for i in 0..limit {
+                    list.push_front_mut(i);
+                }
 
-        for _ in 0..limit {
-            list.drop_first_mut();
-        }
+                list
+            },
+            |mut list| {
+                for _ in 0..limit {
+                    list.drop_first_mut();
+                }
 
-        list
+                list
+            },
+        );
     });
 }
 
-fn rpds_list_reverse(bench: &mut Bencher) {
-    let limit = iterations(1_000);
-    let mut full_list: List<usize> = List::new();
+fn rpds_list_reverse(c: &mut Criterion) {
+    let limit = limit(1_000);
 
-    for i in 0..limit {
-        full_list.push_front_mut(i);
-    }
+    c.bench_function("rpds list reverse", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut list: List<usize> = List::new();
 
-    bench.iter_no_drop(|| {
-        let mut list: List<usize> = full_list.clone();
+                for i in 0..limit {
+                    list.push_front_mut(i);
+                }
 
-        for _ in 0..limit {
-            list = list.reverse();
-        }
+                list
+            },
+            |mut list| {
+                for _ in 0..limit {
+                    list = list.reverse();
+                }
 
-        list
+                list
+            },
+        );
     });
 }
 
-fn rpds_list_reverse_mut(bench: &mut Bencher) {
-    let limit = iterations(1_000);
-    let mut full_list: List<usize> = List::new();
+fn rpds_list_reverse_mut(c: &mut Criterion) {
+    let limit = limit(1_000);
 
-    for i in 0..limit {
-        full_list.push_front_mut(i);
-    }
+    c.bench_function("rpds list reverse mut", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut list: List<usize> = List::new();
 
-    bench.iter_no_drop(|| {
-        let mut list: List<usize> = full_list.clone();
+                for i in 0..limit {
+                    list.push_front_mut(i);
+                }
 
-        for _ in 0..limit {
-            list.reverse_mut();
-        }
+                list
+            },
+            |mut list| {
+                for _ in 0..limit {
+                    list.reverse_mut();
+                }
 
-        list
+                list
+            },
+        );
     });
 }
 
-fn rpds_list_iterate(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn rpds_list_iterate(c: &mut Criterion) {
+    let limit = limit(10_000);
     let mut list: List<usize> = List::new();
 
     for i in 0..limit {
         list.push_front_mut(i);
     }
 
-    bench.iter(|| {
-        for i in list.iter() {
-            black_box(i);
-        }
+    c.bench_function("rpds list iterate", move |b| {
+        b.iter(|| {
+            for i in list.iter() {
+                black_box(i);
+            }
+        })
     });
 }
 
-benchmark_group!(
+criterion_group!(
     benches,
     rpds_list_push_front,
     rpds_list_push_front_mut,
@@ -145,4 +174,4 @@ benchmark_group!(
     rpds_list_reverse_mut,
     rpds_list_iterate
 );
-benchmark_main!(benches);
+criterion_main!(benches);

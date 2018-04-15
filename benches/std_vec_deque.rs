@@ -6,46 +6,76 @@
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
 #[macro_use]
-extern crate bencher;
-extern crate rpds;
+extern crate criterion;
 
 mod utils;
 
-use bencher::{black_box, Bencher};
+use criterion::{black_box, Criterion};
 use std::collections::VecDeque;
-use utils::iterations;
-use utils::BencherNoDrop;
+use utils::limit;
 
-fn std_vec_dequeue_enqueue(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+fn std_vec_dequeue_push_back(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-    bench.iter_no_drop(|| {
-        let mut deque: VecDeque<usize> = VecDeque::new();
+    c.bench_function("std vec dequeue push back", move |b| {
+        b.iter(|| {
+            let mut deque: VecDeque<usize> = VecDeque::new();
 
-        for i in 0..limit {
-            deque.push_back(i);
-        }
+            for i in 0..limit {
+                deque.push_back(i);
+            }
 
-        deque
+            deque
+        })
     });
 }
 
-// TODO implement deque_dequeue in the same style once we can do per-iteration initialization.
+fn std_vec_dequeue_pop_front(c: &mut Criterion) {
+    let limit = limit(10_000);
 
-fn std_vec_dequeue_iterate(bench: &mut Bencher) {
-    let limit = iterations(100_000);
+    c.bench_function("std vec dequeue pop front", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut queue: VecDeque<usize> = VecDeque::new();
+
+                for i in 0..limit {
+                    queue.push_back(i);
+                }
+
+                queue
+            },
+            |mut queue| {
+                for _ in 0..limit {
+                    queue.pop_front();
+                }
+
+                queue
+            },
+        );
+    });
+}
+
+fn std_vec_dequeue_iterate(c: &mut Criterion) {
+    let limit = limit(10_000);
     let mut deque: VecDeque<usize> = VecDeque::new();
 
     for i in 0..limit {
         deque.push_back(i);
     }
 
-    bench.iter(|| {
-        for i in deque.iter() {
-            black_box(i);
-        }
+    c.bench_function("std vec dequeue iterate", move |b| {
+        b.iter(|| {
+            for i in deque.iter() {
+                black_box(i);
+            }
+        })
     });
 }
 
-benchmark_group!(benches, std_vec_dequeue_enqueue, std_vec_dequeue_iterate);
-benchmark_main!(benches);
+criterion_group!(
+    benches,
+    std_vec_dequeue_push_back,
+    std_vec_dequeue_pop_front,
+    std_vec_dequeue_iterate
+);
+criterion_main!(benches);
