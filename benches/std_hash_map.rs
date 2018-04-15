@@ -30,8 +30,30 @@ fn std_hash_map_insert(c: &mut Criterion) {
     });
 }
 
-// TODO implement rust_btreemap_remove in the same style as the test of `RedBlackTreeMap::remove()`
-// once we can do per-iteration initialization.
+fn std_hash_map_remove(c: &mut Criterion) {
+    let limit = limit(10_000);
+
+    c.bench_function("std hash map remove", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut map = HashMap::new();
+
+                for i in 0..limit {
+                    map.insert(i, -(i as isize));
+                }
+
+                map
+            },
+            |mut map| {
+                for i in 0..limit {
+                    map.remove(&i);
+                }
+
+                map
+            },
+        );
+    });
+}
 
 fn std_hash_map_get(c: &mut Criterion) {
     let limit = limit(10_000);
@@ -70,6 +92,7 @@ fn std_hash_map_iterate(c: &mut Criterion) {
 criterion_group!(
     benches,
     std_hash_map_insert,
+    std_hash_map_remove,
     std_hash_map_get,
     std_hash_map_iterate
 );

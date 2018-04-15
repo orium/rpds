@@ -29,8 +29,55 @@ fn std_vec_push(c: &mut Criterion) {
     });
 }
 
-// TODO implement rust_vec_pop in the same style as the test of `Vector::drop_last()` once we can
-// do per-iteration initialization.
+fn std_vec_pop(c: &mut Criterion) {
+    let limit = limit(10_000);
+
+    c.bench_function("std vec pop", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut vector: Vec<usize> = Vec::new();
+
+                for i in 0..limit {
+                    vector.push(i);
+                }
+
+                vector
+            },
+            |mut vector| {
+                for _ in 0..limit {
+                    vector.pop();
+                }
+
+                vector
+            },
+        );
+    });
+}
+
+fn std_vec_reverse(c: &mut Criterion) {
+    let limit = limit(1_000);
+
+    c.bench_function("std vec reverse", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut vector: Vec<usize> = Vec::new();
+
+                for i in 0..limit {
+                    vector.push(i);
+                }
+
+                vector
+            },
+            |mut vector| {
+                for _ in 0..limit {
+                    vector.reverse();
+                }
+
+                vector
+            },
+        );
+    });
+}
 
 fn std_vec_get(c: &mut Criterion) {
     let limit = limit(10_000);
@@ -66,5 +113,12 @@ fn std_vec_iterate(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, std_vec_push, std_vec_get, std_vec_iterate);
+criterion_group!(
+    benches,
+    std_vec_push,
+    std_vec_pop,
+    std_vec_reverse,
+    std_vec_get,
+    std_vec_iterate
+);
 criterion_main!(benches);

@@ -30,8 +30,30 @@ fn std_btree_map_insert(c: &mut Criterion) {
     });
 }
 
-// TODO implement rust_btreemap_remove in the same style as the test of `RedBlackTreeMap::remove()`
-// once we can do per-iteration initialization.
+fn std_btree_map_remove(c: &mut Criterion) {
+    let limit = limit(10_000);
+
+    c.bench_function("std btree map remove", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut map = BTreeMap::new();
+
+                for i in 0..limit {
+                    map.insert(i, -(i as isize));
+                }
+
+                map
+            },
+            |mut map| {
+                for i in 0..limit {
+                    map.remove(&i);
+                }
+
+                map
+            },
+        );
+    });
+}
 
 fn std_btree_map_get(c: &mut Criterion) {
     let limit = limit(10_000);
@@ -70,6 +92,7 @@ fn std_btree_map_iterate(c: &mut Criterion) {
 criterion_group!(
     benches,
     std_btree_map_insert,
+    std_btree_map_remove,
     std_btree_map_get,
     std_btree_map_iterate
 );
