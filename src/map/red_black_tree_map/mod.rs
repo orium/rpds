@@ -1102,7 +1102,9 @@ where
             let mut stack =
                 Vec::with_capacity(iter_utils::conservative_height(self.map.size()) + 1);
 
-            Node::borrow(&self.map.root).map(|r| stack.push(r));
+            if let Some(r) = Node::borrow(&self.map.root) {
+                stack.push(r);
+            }
 
             IterArc::dig(&mut stack, backwards);
 

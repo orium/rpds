@@ -975,7 +975,7 @@ mod internal {
                 panic!(
                     "Consistency error in red-black tree ({:?}).  Insertions: {:?}",
                     error,
-                    &values[0..(i + 1)]
+                    &values[0..=i]
                 );
             }
         }
@@ -1026,7 +1026,7 @@ mod internal {
 
             if let Err(error) = map.check_consistent() {
                 panic!(format!("Consistency error in red-black tree ({:?}).  Insertions: {:?}.  Removals: {:?}",
-                               error, &values_insert, &values_remove[0..(i + 1)]));
+                               error, &values_insert, &values_remove[0..=i]));
             }
         }
     }

@@ -1013,10 +1013,10 @@ where
             },
         );
 
-        next_stack_elem.map(|e| {
+        if let Some(e) = next_stack_elem {
             self.stack.push(e);
             self.dig();
-        });
+        }
     }
 
     fn advance(&mut self) {

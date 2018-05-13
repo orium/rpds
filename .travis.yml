@@ -12,14 +12,14 @@ rust:
 addons:
   apt:
     packages:
-      # dependencies needed to build kcov.
-      # TODO Remove when kcov v34 is available.
+      # Dependencies needed to build kcov.
+      # TODO Remove when kcov version >= 34 is available.
       - libelf-dev
       - libdw-dev
       - binutils-dev
       - libiberty-dev
 
-      # dependencies of the code coverage tool.
+      # Dependencies of the code coverage tool.
       - jq
 
 install:
@@ -32,19 +32,19 @@ install:
 script:
   - ./tools/check.sh
 
-# TODO Do not build kcov when v34 is available, just install it directly.
+# TODO Do not build kcov when version >= 34 is available, just install it directly.
 after_success:
   test $TRAVIS_OS_NAME = linux
   && test $TRAVIS_RUST_VERSION = stable
-  && wget https://github.com/SimonKagstrom/kcov/archive/v34.tar.gz
-  && tar xzf v34.tar.gz
-  && cd kcov-34
+  && wget https://github.com/SimonKagstrom/kcov/archive/v35.tar.gz
+  && tar xf v35.tar.gz
+  && cd kcov-35
   && mkdir build
   && cd build
   && cmake ..
   && make
   && sudo make install
   && cd ../../
-  && rm -rf kcov-34 v34.tar.gz
+  && rm -rf kcov-35 v35.tar.gz
   && travis_wait ./tools/codecov.sh
   && bash <(curl -s https://codecov.io/bash)
