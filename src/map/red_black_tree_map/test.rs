@@ -18,7 +18,8 @@ enum InvariantViolation {
 
 impl<K, V> Node<K, V> {
     fn count(&self) -> usize {
-        1 + self.left.as_ref().map_or(0, |l| l.count())
+        1
+            + self.left.as_ref().map_or(0, |l| l.count())
             + self.right.as_ref().map_or(0, |r| r.count())
     }
 
@@ -47,10 +48,12 @@ impl<K, V> Node<K, V> {
         };
 
         self_ok
-            && self.left
+            && self
+                .left
                 .as_ref()
                 .map_or(true, |l| l.red_nodes_have_black_children())
-            && self.right
+            && self
+                .right
                 .as_ref()
                 .map_or(true, |r| r.red_nodes_have_black_children())
     }
@@ -96,17 +99,20 @@ where
     K: Ord + Clone,
 {
     fn check_consistent(&self) -> Result<(), InvariantViolation> {
-        if !self.root
+        if !self
+            .root
             .as_ref()
             .map_or(true, |r| r.has_binary_search_property())
         {
             Result::Err(InvariantViolation::BinarySearch)
-        } else if !self.root
+        } else if !self
+            .root
             .as_ref()
             .map_or(true, |r| r.red_nodes_have_black_children())
         {
             Result::Err(InvariantViolation::RedNodeBlackChildren)
-        } else if !self.root
+        } else if !self
+            .root
             .as_ref()
             .map_or(true, |r| r.is_black_height_balanced())
         {

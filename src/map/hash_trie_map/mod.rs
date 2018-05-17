@@ -853,7 +853,8 @@ where
 {
     fn eq(&self, other: &HashTrieMap<K, V, H>) -> bool {
         self.size() == other.size()
-            && self.iter()
+            && self
+                .iter()
                 .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
     }
 }

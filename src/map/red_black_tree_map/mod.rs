@@ -937,7 +937,8 @@ where
 {
     fn eq(&self, other: &RedBlackTreeMap<K, V>) -> bool {
         self.size() == other.size()
-            && self.iter()
+            && self
+                .iter()
                 .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
     }
 }
@@ -1077,11 +1078,7 @@ where
 
     fn dig(stack: &mut Vec<&Node<K, V>>, backwards: bool) {
         let child = stack.last().and_then(|node| {
-            let c = if backwards {
-                &node.right
-            } else {
-                &node.left
-            };
+            let c = if backwards { &node.right } else { &node.left };
             Node::borrow(c)
         });
 
@@ -1119,11 +1116,7 @@ where
 
     fn advance(stack: &mut Vec<&Node<K, V>>, backwards: bool) {
         if let Some(node) = stack.pop() {
-            let child = if backwards {
-                &node.left
-            } else {
-                &node.right
-            };
+            let child = if backwards { &node.left } else { &node.right };
 
             if let Some(c) = Node::borrow(child) {
                 stack.push(c);
