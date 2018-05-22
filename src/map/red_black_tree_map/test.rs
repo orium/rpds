@@ -999,8 +999,11 @@ mod internal {
         use self::rand::SeedableRng;
 
         let limit = 50_000;
-        let seed: [u32; 4] = [24573, 23355, 3457, 25346746];
-        let mut rng = rand::ChaChaRng::from_seed(&seed);
+        let seed: [u8; 32] = [
+            24, 73, 23, 5, 34, 57, 253, 46, 245, 73, 23, 155, 137, 250, 46, 46, 217, 3, 55, 157,
+            137, 250, 46, 46, 217, 3, 55, 157, 34, 135, 34, 123,
+        ];
+        let mut rng = rand::ChaChaRng::from_seed(seed);
         let mut permutation: [u32; 64] = {
             let mut p: [u32; 64] = [0; 64];
 
@@ -1051,8 +1054,11 @@ mod internal {
         use self::rand::SeedableRng;
 
         let limit = 50_000;
-        let seed: [u32; 4] = [24573, 23355, 3457, 25346746];
-        let mut rng = rand::ChaChaRng::from_seed(&seed);
+        let seed: [u8; 32] = [
+            24, 73, 23, 5, 34, 57, 253, 46, 245, 73, 23, 155, 137, 250, 46, 46, 217, 3, 55, 157,
+            137, 250, 46, 46, 217, 3, 55, 157, 34, 135, 34, 123,
+        ];
+        let mut rng = rand::ChaChaRng::from_seed(seed);
         let mut permutation_insert: [u32; 64] = {
             let mut p: [u32; 64] = [0; 64];
 

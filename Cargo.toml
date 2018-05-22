@@ -39,7 +39,7 @@ serde = { version = "1", optional = true }
 [dev-dependencies]
 # TODO This will probably be part of rust in the future (see https://github.com/rust-lang/rust/issues/29553)
 criterion = "0.2"
-rand = "0.4"
+rand = "0.5"
 # needed to test serde
 bincode = "1"
 pretty_assertions = "0.5"
