@@ -943,11 +943,7 @@ where
     }
 }
 
-impl<K, V: Eq> Eq for RedBlackTreeMap<K, V>
-where
-    K: Ord,
-{
-}
+impl<K, V: Eq> Eq for RedBlackTreeMap<K, V> where K: Ord {}
 
 impl<K: Ord, V: PartialOrd> PartialOrd for RedBlackTreeMap<K, V> {
     fn partial_cmp(&self, other: &RedBlackTreeMap<K, V>) -> Option<Ordering> {

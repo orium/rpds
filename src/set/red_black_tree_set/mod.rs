@@ -212,11 +212,7 @@ where
     }
 }
 
-impl<T> Eq for RedBlackTreeSet<T>
-where
-    T: Ord,
-{
-}
+impl<T> Eq for RedBlackTreeSet<T> where T: Ord {}
 
 impl<T> Display for RedBlackTreeSet<T>
 where
