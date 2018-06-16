@@ -25,7 +25,7 @@ license = "MPL-2.0"
 include = [
     "/src/**/*.rs",
     "/Cargo.toml",
-    "/LICENSE",
+    "/LICENSE.md",
     "/README.md",
 ]
 
