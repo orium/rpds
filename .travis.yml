@@ -9,6 +9,12 @@ rust:
   - beta
   - nightly
 
+matrix:
+  allow_failures:
+    - rust: nightly
+    - rust: beta
+  fast_finish: true
+
 addons:
   apt:
     packages:
