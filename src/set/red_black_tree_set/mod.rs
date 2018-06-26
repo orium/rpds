@@ -77,12 +77,14 @@ impl<T> RedBlackTreeSet<T>
 where
     T: Ord,
 {
+    #[must_use]
     pub fn new() -> RedBlackTreeSet<T> {
         RedBlackTreeSet {
             map: RedBlackTreeMap::new(),
         }
     }
 
+    #[must_use]
     pub fn insert(&self, v: T) -> RedBlackTreeSet<T> {
         RedBlackTreeSet {
             map: self.map.insert(v, ()),
@@ -93,6 +95,7 @@ where
         self.map.insert_mut(v, ());
     }
 
+    #[must_use]
     pub fn remove<V: ?Sized>(&self, v: &V) -> RedBlackTreeSet<T>
     where
         T: Borrow<V>,
@@ -111,6 +114,7 @@ where
         self.map.remove_mut(v)
     }
 
+    #[must_use]
     pub fn contains<V: ?Sized>(&self, v: &V) -> bool
     where
         T: Borrow<V>,
@@ -119,14 +123,17 @@ where
         self.map.contains_key(v)
     }
 
+    #[must_use]
     pub fn first(&self) -> Option<&T> {
         self.map.first().map(|(k, _)| k)
     }
 
+    #[must_use]
     pub fn last(&self) -> Option<&T> {
         self.map.last().map(|(k, _)| k)
     }
 
+    #[must_use]
     pub fn is_disjoint(&self, other: &RedBlackTreeSet<T>) -> bool {
         let mut self_it = self.iter();
         let mut other_it = other.iter();
@@ -145,6 +152,7 @@ where
         true
     }
 
+    #[must_use]
     pub fn is_subset(&self, other: &RedBlackTreeSet<T>) -> bool {
         let mut other_it = other.iter();
 
@@ -164,20 +172,24 @@ where
         true
     }
 
+    #[must_use]
     pub fn is_superset(&self, other: &RedBlackTreeSet<T>) -> bool {
         other.is_subset(self)
     }
 
+    #[must_use]
     #[inline]
     pub fn size(&self) -> usize {
         self.map.size()
     }
 
+    #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.size() == 0
     }
 
+    #[must_use]
     pub fn iter(&self) -> Iter<T> {
         self.map.keys()
     }

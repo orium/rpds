@@ -79,6 +79,7 @@ impl<T> HashTrieSet<T, RandomState>
 where
     T: Eq + Hash,
 {
+    #[must_use]
     pub fn new() -> HashTrieSet<T> {
         HashTrieSet {
             map: HashTrieMap::new(),
@@ -107,6 +108,7 @@ where
         }
     }
 
+    #[must_use]
     pub fn insert(&self, v: T) -> HashTrieSet<T, H> {
         HashTrieSet {
             map: self.map.insert(v, ()),
@@ -117,6 +119,7 @@ where
         self.map.insert_mut(v, ());
     }
 
+    #[must_use]
     pub fn remove<V: ?Sized>(&self, v: &V) -> HashTrieSet<T, H>
     where
         T: Borrow<V>,
@@ -135,6 +138,7 @@ where
         self.map.remove_mut(v)
     }
 
+    #[must_use]
     pub fn contains<V: ?Sized>(&self, v: &V) -> bool
     where
         T: Borrow<V>,
@@ -143,28 +147,34 @@ where
         self.map.contains_key(v)
     }
 
+    #[must_use]
     pub fn is_disjoint<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, I>) -> bool {
         self.iter().all(|v| !other.contains(v))
     }
 
+    #[must_use]
     pub fn is_subset<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, I>) -> bool {
         self.iter().all(|v| other.contains(v))
     }
 
+    #[must_use]
     pub fn is_superset<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, I>) -> bool {
         other.is_subset(self)
     }
 
+    #[must_use]
     #[inline]
     pub fn size(&self) -> usize {
         self.map.size()
     }
 
+    #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.size() == 0
     }
 
+    #[must_use]
     pub fn iter(&self) -> Iter<T> {
         self.map.keys()
     }

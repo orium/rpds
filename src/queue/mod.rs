@@ -73,6 +73,7 @@ pub struct Queue<T> {
 }
 
 impl<T> Queue<T> {
+    #[must_use]
     pub fn new() -> Queue<T> {
         Queue {
             in_list:  List::new(),
@@ -80,6 +81,7 @@ impl<T> Queue<T> {
         }
     }
 
+    #[must_use]
     pub fn peek(&self) -> Option<&T> {
         if !self.out_list.is_empty() {
             self.out_list.first()
@@ -88,6 +90,7 @@ impl<T> Queue<T> {
         }
     }
 
+    #[must_use]
     pub fn dequeue(&self) -> Option<Queue<T>> {
         let mut new_queue = self.clone();
 
@@ -113,6 +116,7 @@ impl<T> Queue<T> {
         }
     }
 
+    #[must_use]
     pub fn enqueue(&self, v: T) -> Queue<T> {
         let mut new_queue = self.clone();
 
@@ -125,16 +129,19 @@ impl<T> Queue<T> {
         self.in_list.push_front_mut(v);
     }
 
+    #[must_use]
     #[inline]
     pub fn len(&self) -> usize {
         self.in_list.len() + self.out_list.len()
     }
 
+    #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    #[must_use]
     pub fn iter(&self) -> Iter<T> {
         self.iter_arc().map(|v| v.borrow())
     }

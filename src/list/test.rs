@@ -141,7 +141,6 @@ fn test_drop_first() {
         .push_front(1)
         .push_front(0);
 
-    empty_list.drop_first();
     assert!(empty_list.is_empty());
     assert_eq!(singleton_list.drop_first().unwrap().first(), None);
     assert_eq!(list.drop_first().unwrap().first(), Some(&1));

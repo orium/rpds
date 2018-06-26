@@ -783,6 +783,7 @@ impl<K, V> RedBlackTreeMap<K, V>
 where
     K: Ord,
 {
+    #[must_use]
     pub fn new() -> RedBlackTreeMap<K, V> {
         RedBlackTreeMap {
             root: None,
@@ -790,6 +791,7 @@ where
         }
     }
 
+    #[must_use]
     pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
@@ -801,6 +803,7 @@ where
             .map(|e| &e.value)
     }
 
+    #[must_use]
     pub fn first(&self) -> Option<(&K, &V)> {
         self.root
             .as_ref()
@@ -808,6 +811,7 @@ where
             .map(|e| (&e.key, &e.value))
     }
 
+    #[must_use]
     pub fn last(&self) -> Option<(&K, &V)> {
         self.root
             .as_ref()
@@ -815,6 +819,7 @@ where
             .map(|e| (&e.key, &e.value))
     }
 
+    #[must_use]
     pub fn insert(&self, key: K, value: V) -> RedBlackTreeMap<K, V> {
         let mut new_map = self.clone();
 
@@ -831,6 +836,7 @@ where
         }
     }
 
+    #[must_use]
     pub fn remove<Q: ?Sized>(&self, key: &Q) -> RedBlackTreeMap<K, V>
     where
         K: Borrow<Q>,
@@ -863,6 +869,7 @@ where
         removed
     }
 
+    #[must_use]
     pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
@@ -871,16 +878,19 @@ where
         self.get(key).is_some()
     }
 
+    #[must_use]
     #[inline]
     pub fn size(&self) -> usize {
         self.size
     }
 
+    #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.size() == 0
     }
 
+    #[must_use]
     pub fn iter(&self) -> Iter<K, V> {
         self.iter_arc().map(|e| (&e.key, &e.value))
     }
@@ -889,10 +899,12 @@ where
         IterArc::new(self)
     }
 
+    #[must_use]
     pub fn keys(&self) -> IterKeys<K, V> {
         self.iter().map(|(k, _)| k)
     }
 
+    #[must_use]
     pub fn values(&self) -> IterValues<K, V> {
         self.iter().map(|(_, v)| v)
     }

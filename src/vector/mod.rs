@@ -226,10 +226,12 @@ mod vector_utils {
 }
 
 impl<T> Vector<T> {
+    #[must_use]
     pub fn new() -> Vector<T> {
         Vector::new_with_bits(DEFAULT_BITS)
     }
 
+    #[must_use]
     pub fn new_with_bits(bits: u8) -> Vector<T> {
         assert!(bits > 0, "number of bits for the vector must be positive");
 
@@ -240,11 +242,13 @@ impl<T> Vector<T> {
         }
     }
 
+    #[must_use]
     #[inline]
     pub fn first(&self) -> Option<&T> {
         self.get(0)
     }
 
+    #[must_use]
     pub fn last(&self) -> Option<&T> {
         match self.length {
             0 => None,
@@ -265,6 +269,7 @@ impl<T> Vector<T> {
         }
     }
 
+    #[must_use]
     pub fn get(&self, index: usize) -> Option<&T> {
         if index >= self.length {
             None
@@ -275,6 +280,7 @@ impl<T> Vector<T> {
         }
     }
 
+    #[must_use]
     pub fn set(&self, index: usize, v: T) -> Option<Vector<T>> {
         let mut new_vector = self.clone();
 
@@ -335,6 +341,7 @@ impl<T> Vector<T> {
         self.length == self.root_max_capacity()
     }
 
+    #[must_use]
     pub fn push_back(&self, v: T) -> Vector<T> {
         let mut new_vector = self.clone();
 
@@ -383,6 +390,7 @@ impl<T> Vector<T> {
         }
     }
 
+    #[must_use]
     pub fn drop_last(&self) -> Option<Vector<T>> {
         let mut new_vector = self.clone();
 
@@ -414,16 +422,19 @@ impl<T> Vector<T> {
         }
     }
 
+    #[must_use]
     #[inline]
     pub fn len(&self) -> usize {
         self.length
     }
 
+    #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    #[must_use]
     pub fn iter(&self) -> Iter<T> {
         self.iter_arc().map(|v| v.borrow())
     }

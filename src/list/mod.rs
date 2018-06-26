@@ -108,6 +108,7 @@ impl<T> Clone for Node<T> {
 }
 
 impl<T> List<T> {
+    #[must_use]
     pub fn new() -> List<T> {
         List {
             head:   None,
@@ -116,14 +117,17 @@ impl<T> List<T> {
         }
     }
 
+    #[must_use]
     pub fn first(&self) -> Option<&T> {
         self.head.as_ref().map(|node| node.value.borrow())
     }
 
+    #[must_use]
     pub fn last(&self) -> Option<&T> {
         self.last.as_ref().map(|node| node.borrow())
     }
 
+    #[must_use]
     pub fn drop_first(&self) -> Option<List<T>> {
         let mut new_list = self.clone();
 
@@ -163,6 +167,7 @@ impl<T> List<T> {
         self.length += 1;
     }
 
+    #[must_use]
     pub fn push_front(&self, v: T) -> List<T> {
         let mut new_list = self.clone();
 
@@ -175,6 +180,7 @@ impl<T> List<T> {
         self.push_front_arc_mut(Arc::new(v))
     }
 
+    #[must_use]
     pub fn reverse(&self) -> List<T> {
         let mut new_list = List::new();
 
@@ -211,16 +217,19 @@ impl<T> List<T> {
         self.head = prev;
     }
 
+    #[must_use]
     #[inline]
     pub fn len(&self) -> usize {
         self.length
     }
 
+    #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    #[must_use]
     pub fn iter(&self) -> Iter<T> {
         self.iter_arc().map(|v| v.borrow())
     }

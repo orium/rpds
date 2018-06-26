@@ -67,14 +67,17 @@ pub struct Stack<T> {
 }
 
 impl<T> Stack<T> {
+    #[must_use]
     pub fn new() -> Stack<T> {
         Stack { list: List::new() }
     }
 
+    #[must_use]
     pub fn peek(&self) -> Option<&T> {
         self.list.first()
     }
 
+    #[must_use]
     pub fn pop(&self) -> Option<Stack<T>> {
         let mut new_stack = self.clone();
 
@@ -89,6 +92,7 @@ impl<T> Stack<T> {
         self.list.drop_first_mut()
     }
 
+    #[must_use]
     pub fn push(&self, v: T) -> Stack<T> {
         let mut new_stack = self.clone();
 
@@ -101,16 +105,19 @@ impl<T> Stack<T> {
         self.list.push_front_mut(v);
     }
 
+    #[must_use]
     #[inline]
     pub fn size(&self) -> usize {
         self.list.len()
     }
 
+    #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.list.is_empty()
     }
 
+    #[must_use]
     pub fn iter(&self) -> Iter<T> {
         self.list.iter()
     }

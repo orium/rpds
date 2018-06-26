@@ -678,10 +678,12 @@ impl<K, V> HashTrieMap<K, V, RandomState>
 where
     K: Eq + Hash,
 {
+    #[must_use]
     pub fn new() -> HashTrieMap<K, V> {
         HashTrieMap::new_with_degree(DEFAULT_DEGREE)
     }
 
+    #[must_use]
     pub fn new_with_degree(degree: u8) -> HashTrieMap<K, V> {
         HashTrieMap::new_with_hasher_and_degree(RandomState::new(), degree)
     }
@@ -692,10 +694,12 @@ where
     K: Eq + Hash,
     H: Clone,
 {
+    #[must_use]
     pub fn new_with_hasher(hasher_builder: H) -> HashTrieMap<K, V, H> {
         HashTrieMap::new_with_hasher_and_degree(hasher_builder, DEFAULT_DEGREE)
     }
 
+    #[must_use]
     pub fn new_with_hasher_and_degree(hasher_builder: H, degree: u8) -> HashTrieMap<K, V, H> {
         assert!(degree.is_power_of_two(), "degree must be a power of two");
         assert!(
@@ -711,6 +715,7 @@ where
         }
     }
 
+    #[must_use]
     pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
@@ -723,6 +728,7 @@ where
             .map(|e| e.value())
     }
 
+    #[must_use]
     pub fn insert(&self, key: K, value: V) -> HashTrieMap<K, V, H> {
         let mut new_map = self.clone();
 
@@ -740,6 +746,7 @@ where
         }
     }
 
+    #[must_use]
     pub fn remove<Q: ?Sized>(&self, key: &Q) -> HashTrieMap<K, V, H>
     where
         K: Borrow<Q>,
@@ -773,6 +780,7 @@ where
         removed
     }
 
+    #[must_use]
     pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
@@ -781,16 +789,19 @@ where
         self.get(key).is_some()
     }
 
+    #[must_use]
     #[inline]
     pub fn size(&self) -> usize {
         self.size
     }
 
+    #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.size() == 0
     }
 
+    #[must_use]
     pub fn iter(&self) -> Iter<K, V> {
         self.iter_arc().map(|e| (&e.key, &e.value))
     }
@@ -799,10 +810,12 @@ where
         IterArc::new(self)
     }
 
+    #[must_use]
     pub fn keys(&self) -> IterKeys<K, V> {
         self.iter().map(|(k, _)| k)
     }
 
+    #[must_use]
     pub fn values(&self) -> IterValues<K, V> {
         self.iter().map(|(_, v)| v)
     }
