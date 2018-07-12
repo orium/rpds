@@ -9,17 +9,11 @@ rust:
   - beta
   - nightly
 
-matrix:
-  allow_failures:
-    - rust: nightly
-    - rust: beta
-  fast_finish: true
-
 addons:
   apt:
     packages:
       # Dependencies needed to build kcov.
-      # TODO Remove when kcov version >= 34 is available.
+      # TODO Remove when kcov >= 34 is available in the official repositories.
       - libelf-dev
       - libdw-dev
       - binutils-dev
@@ -38,7 +32,7 @@ install:
 script:
   - ./tools/check.sh
 
-# TODO Do not build kcov when version >= 34 is available, just install it directly.
+# TODO Do not build kcov when version >= 34 is available in the official repositories.
 after_success:
   test $TRAVIS_OS_NAME = linux
   && test $TRAVIS_RUST_VERSION = stable
