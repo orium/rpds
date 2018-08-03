@@ -948,10 +948,9 @@ where
     K: Ord,
 {
     fn eq(&self, other: &RedBlackTreeMap<K, V>) -> bool {
-        self.size() == other.size()
-            && self
-                .iter()
-                .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
+        self.size() == other.size() && self
+            .iter()
+            .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
     }
 }
 

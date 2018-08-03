@@ -865,10 +865,9 @@ where
     H: Clone,
 {
     fn eq(&self, other: &HashTrieMap<K, V, H>) -> bool {
-        self.size() == other.size()
-            && self
-                .iter()
-                .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
+        self.size() == other.size() && self
+            .iter()
+            .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
     }
 }
 
@@ -1019,13 +1018,14 @@ where
     }
 
     fn dig(&mut self) {
-        let next_stack_elem: Option<IterStackElement<K, V>> = self.stack.last_mut().and_then(
-            |stack_top| match *stack_top {
-                IterStackElement::Branch(ref mut iter) =>
-                    iter.peek().map(|node| IterStackElement::new(node)),
-                _ => None,
-            },
-        );
+        let next_stack_elem: Option<IterStackElement<K, V>> =
+            self.stack
+                .last_mut()
+                .and_then(|stack_top| match *stack_top {
+                    IterStackElement::Branch(ref mut iter) =>
+                        iter.peek().map(|node| IterStackElement::new(node)),
+                    _ => None,
+                });
 
         if let Some(e) = next_stack_elem {
             self.stack.push(e);

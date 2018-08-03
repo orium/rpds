@@ -18,8 +18,7 @@ enum InvariantViolation {
 
 impl<K, V> Node<K, V> {
     fn count(&self) -> usize {
-        1
-            + self.left.as_ref().map_or(0, |l| l.count())
+        1 + self.left.as_ref().map_or(0, |l| l.count())
             + self.right.as_ref().map_or(0, |r| r.count())
     }
 
