@@ -5,10 +5,7 @@
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
-#[macro_use]
-extern crate criterion;
-
-use criterion::{black_box, Criterion};
+use ::criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn std_vec_push(c: &mut Criterion) {
     let limit = 10_000;

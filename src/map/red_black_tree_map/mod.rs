@@ -91,7 +91,7 @@ enum Color {
 struct Node<K, V> {
     entry: Arc<Entry<K, V>>,
     color: Color,
-    left:  Option<Arc<Node<K, V>>>,
+    left: Option<Arc<Node<K, V>>>,
     right: Option<Arc<Node<K, V>>>,
 }
 
@@ -100,7 +100,7 @@ impl<K, V> Clone for Node<K, V> {
         Node {
             entry: Arc::clone(&self.entry),
             color: self.color,
-            left:  self.left.clone(),
+            left: self.left.clone(),
             right: self.right.clone(),
         }
     }
@@ -114,7 +114,7 @@ where
         Node {
             entry: Arc::new(entry),
             color: Color::Red,
-            left:  None,
+            left: None,
             right: None,
         }
     }
@@ -123,7 +123,7 @@ where
         Node {
             entry: Arc::new(entry),
             color: Color::Black,
-            left:  None,
+            left: None,
             right: None,
         }
     }
@@ -255,92 +255,79 @@ where
                 match (color_l, color_l_l, color_l_r, color_r, color_r_l, color_r_r) {
                     // Case 1
                     (Some(R), Some(R), ..) => {
-                        // TODO Simplify this and other cases once NLL is stable.
                         let mut node_l_arc = self.left.take().unwrap();
-                        {
-                            let node_l: &mut Node<K, V> = Arc::make_mut(&mut node_l_arc);
-                            let mut node_l_l_arc = node_l.left.take().unwrap();
-                            {
-                                let node_l_l: &mut Node<K, V> = Arc::make_mut(&mut node_l_l_arc);
+                        let node_l: &mut Node<K, V> = Arc::make_mut(&mut node_l_arc);
+                        let mut node_l_l_arc = node_l.left.take().unwrap();
+                        let node_l_l: &mut Node<K, V> = Arc::make_mut(&mut node_l_l_arc);
 
-                                self.color = Color::Red;
-                                node_l.color = Color::Black;
-                                node_l_l.color = Color::Black;
+                        self.color = Color::Red;
+                        node_l.color = Color::Black;
+                        node_l_l.color = Color::Black;
 
-                                swap(&mut self.entry, &mut node_l.entry);
-                                swap(&mut node_l.left, &mut node_l.right);
-                                swap(&mut self.right, &mut node_l.right);
-                            }
-                            self.left = Some(node_l_l_arc);
-                        }
+                        swap(&mut self.entry, &mut node_l.entry);
+                        swap(&mut node_l.left, &mut node_l.right);
+                        swap(&mut self.right, &mut node_l.right);
+
+                        self.left = Some(node_l_l_arc);
                         self.right = Some(node_l_arc);
                     }
 
                     // Case 2
                     (Some(R), _, Some(R), ..) => {
                         let mut node_l_arc = self.left.take().unwrap();
-                        {
-                            let node_l: &mut Node<K, V> = Arc::make_mut(&mut node_l_arc);
-                            let mut node_l_r_arc = node_l.right.take().unwrap();
-                            {
-                                let node_l_r: &mut Node<K, V> = Arc::make_mut(&mut node_l_r_arc);
+                        let node_l: &mut Node<K, V> = Arc::make_mut(&mut node_l_arc);
+                        let mut node_l_r_arc = node_l.right.take().unwrap();
+                        let node_l_r: &mut Node<K, V> = Arc::make_mut(&mut node_l_r_arc);
 
-                                self.color = Color::Red;
-                                node_l.color = Color::Black;
-                                node_l_r.color = Color::Black;
+                        self.color = Color::Red;
+                        node_l.color = Color::Black;
+                        node_l_r.color = Color::Black;
 
-                                swap(&mut self.entry, &mut node_l_r.entry);
-                                swap(&mut node_l_r.left, &mut node_l_r.right);
-                                swap(&mut node_l.right, &mut node_l_r.right);
-                                swap(&mut self.right, &mut node_l_r.right);
-                            }
-                            self.right = Some(node_l_r_arc);
-                        }
+                        swap(&mut self.entry, &mut node_l_r.entry);
+                        swap(&mut node_l_r.left, &mut node_l_r.right);
+                        swap(&mut node_l.right, &mut node_l_r.right);
+                        swap(&mut self.right, &mut node_l_r.right);
+
+                        self.right = Some(node_l_r_arc);
                         self.left = Some(node_l_arc);
                     }
 
                     // Case 3
                     (.., Some(R), Some(R), _) => {
                         let mut node_r_arc = self.right.take().unwrap();
-                        {
-                            let node_r: &mut Node<K, V> = Arc::make_mut(&mut node_r_arc);
-                            let mut node_r_l_arc = node_r.left.take().unwrap();
-                            {
-                                let node_r_l: &mut Node<K, V> = Arc::make_mut(&mut node_r_l_arc);
+                        let node_r: &mut Node<K, V> = Arc::make_mut(&mut node_r_arc);
+                        let mut node_r_l_arc = node_r.left.take().unwrap();
+                        let node_r_l: &mut Node<K, V> = Arc::make_mut(&mut node_r_l_arc);
 
-                                self.color = Color::Red;
-                                node_r.color = Color::Black;
-                                node_r_l.color = Color::Black;
+                        self.color = Color::Red;
+                        node_r.color = Color::Black;
+                        node_r_l.color = Color::Black;
 
-                                swap(&mut self.entry, &mut node_r_l.entry);
-                                swap(&mut node_r.left, &mut node_r_l.right);
-                                swap(&mut node_r_l.left, &mut node_r_l.right);
-                                swap(&mut self.left, &mut node_r_l.left);
-                            }
-                            self.left = Some(node_r_l_arc);
-                        }
+                        swap(&mut self.entry, &mut node_r_l.entry);
+                        swap(&mut node_r.left, &mut node_r_l.right);
+                        swap(&mut node_r_l.left, &mut node_r_l.right);
+                        swap(&mut self.left, &mut node_r_l.left);
+
+                        self.left = Some(node_r_l_arc);
                         self.right = Some(node_r_arc);
                     }
 
                     // Case 4
                     (.., Some(R), _, Some(R)) => {
                         let mut node_r_arc = self.right.take().unwrap();
-                        {
-                            let node_r: &mut Node<K, V> = Arc::make_mut(&mut node_r_arc);
-                            let mut node_r_r_arc = node_r.right.take().unwrap();
-                            {
-                                let node_r_r: &mut Node<K, V> = Arc::make_mut(&mut node_r_r_arc);
+                        let node_r: &mut Node<K, V> = Arc::make_mut(&mut node_r_arc);
+                        let mut node_r_r_arc = node_r.right.take().unwrap();
+                        let node_r_r: &mut Node<K, V> = Arc::make_mut(&mut node_r_r_arc);
 
-                                self.color = Color::Red;
-                                node_r.color = Color::Black;
-                                node_r_r.color = Color::Black;
+                        self.color = Color::Red;
+                        node_r.color = Color::Black;
+                        node_r_r.color = Color::Black;
 
-                                swap(&mut self.entry, &mut node_r.entry);
-                                swap(&mut node_r.left, &mut node_r.right);
-                                swap(&mut self.left, &mut node_r.left);
-                            }
-                            self.right = Some(node_r_r_arc);
-                        }
+                        swap(&mut self.entry, &mut node_r.entry);
+                        swap(&mut node_r.left, &mut node_r.right);
+                        swap(&mut self.left, &mut node_r.left);
+
+                        self.right = Some(node_r_r_arc);
                         self.left = Some(node_r_arc);
                     }
 
@@ -354,8 +341,8 @@ where
     /// Inserts the entry and returns whether the key is new.
     fn insert(root: &mut Option<Arc<Node<K, V>>>, key: K, value: V) -> bool {
         fn ins<K: Ord, V>(node: &mut Option<Arc<Node<K, V>>>, k: K, v: V, is_root: bool) -> bool {
-            match *node {
-                Some(ref mut n) => {
+            match node {
+                Some(n) => {
                     let node = Arc::make_mut(n);
 
                     let ret = match k.cmp(&node.entry.key) {
@@ -421,78 +408,60 @@ where
         match (left, right) {
             (None, None) => false,
             (None, Some(r_arc)) => {
-                ::utils::replace(node, r_arc);
+                crate::utils::replace(node, r_arc);
                 true
             }
             (Some(l_arc), None) => {
-                ::utils::replace(node, l_arc);
+                crate::utils::replace(node, l_arc);
                 true
             }
             (Some(mut l_arc), Some(mut r_arc)) => {
                 match (l_arc.color, r_arc.color) {
                     (B, R) => {
-                        // TODO Simplify this once we have NLL.
-                        {
-                            let r = Arc::make_mut(&mut r_arc);
-                            let rl = r.left.take();
+                        let r = Arc::make_mut(&mut r_arc);
+                        let rl = r.left.take();
 
-                            // This will always return `true`.
-                            Node::remove_fuse(node, Some(l_arc), rl);
+                        // This will always return `true`.
+                        Node::remove_fuse(node, Some(l_arc), rl);
 
-                            swap(node, r);
-                        }
+                        swap(node, r);
+
                         node.left = Some(r_arc);
                     }
                     (R, B) => {
-                        // TODO Simplify this once we have NLL.
-                        {
-                            let l = Arc::make_mut(&mut l_arc);
-                            let lr = l.right.take();
+                        let l = Arc::make_mut(&mut l_arc);
+                        let lr = l.right.take();
 
-                            // This will always return `true`.
-                            Node::remove_fuse(node, lr, Some(r_arc));
+                        // This will always return `true`.
+                        Node::remove_fuse(node, lr, Some(r_arc));
 
-                            swap(node, l);
-                        }
+                        swap(node, l);
+
                         node.right = Some(l_arc);
                     }
                     (R, R) => {
-                        // TODO Simplify this once we have NLL.
-                        let fused = {
-                            let r = Arc::make_mut(&mut r_arc);
-                            let rl = r.left.take();
-                            let l = Arc::make_mut(&mut l_arc);
-                            let lr = l.right.take();
+                        let r = Arc::make_mut(&mut r_arc);
+                        let rl = r.left.take();
+                        let l = Arc::make_mut(&mut l_arc);
+                        let lr = l.right.take();
 
-                            Node::remove_fuse(node, lr, rl)
-                        };
+                        let fused = Node::remove_fuse(node, lr, rl);
 
                         match node.color {
                             R if fused => {
                                 let fl = node.left.take();
                                 let fr = node.right.take();
 
-                                // TODO Simplify this once we have NLL.
-                                {
-                                    let r = Arc::make_mut(&mut r_arc);
-                                    let l = Arc::make_mut(&mut l_arc);
-
-                                    l.right = fl;
-                                    r.left = fr;
-                                }
+                                l.right = fl;
+                                r.left = fr;
 
                                 node.left = Some(l_arc);
                                 node.right = Some(r_arc);
                             }
                             _ => {
-                                // TODO Simplify this once we have NLL.
-                                {
-                                    let l = Arc::make_mut(&mut l_arc);
-                                    swap(l, node);
-                                }
+                                swap(l, node);
 
                                 if fused {
-                                    let r = Arc::make_mut(&mut r_arc);
                                     r.left = Some(l_arc);
                                 }
 
@@ -501,42 +470,28 @@ where
                         }
                     }
                     (B, B) => {
-                        // TODO Simplify this once we have NLL.
-                        let fused = {
-                            let r = Arc::make_mut(&mut r_arc);
-                            let rl = r.left.take();
-                            let l = Arc::make_mut(&mut l_arc);
-                            let lr = l.right.take();
+                        let r = Arc::make_mut(&mut r_arc);
+                        let rl = r.left.take();
+                        let l = Arc::make_mut(&mut l_arc);
+                        let lr = l.right.take();
 
-                            Node::remove_fuse(node, lr, rl)
-                        };
+                        let fused = Node::remove_fuse(node, lr, rl);
 
                         match node.color {
                             R if fused => {
                                 let fl = node.left.take();
                                 let fr = node.right.take();
 
-                                // TODO Simplify this once we have NLL.
-                                {
-                                    let r = Arc::make_mut(&mut r_arc);
-                                    let l = Arc::make_mut(&mut l_arc);
-
-                                    l.right = fl;
-                                    r.left = fr;
-                                }
+                                l.right = fl;
+                                r.left = fr;
 
                                 node.left = Some(l_arc);
                                 node.right = Some(r_arc);
                             }
                             _ => {
-                                // TODO Simplify this once we have NLL.
-                                {
-                                    let l = Arc::make_mut(&mut l_arc);
-                                    swap(l, node);
-                                }
+                                swap(l, node);
 
                                 if fused {
-                                    let r = Arc::make_mut(&mut r_arc);
                                     r.left = Some(l_arc);
                                 }
 
@@ -589,13 +544,10 @@ where
                 self_l.color = Color::Black;
             }
             (_, Some(B), _) => {
-                // TODO Remove scope when NLL is stable.
-                {
-                    let self_r = Arc::make_mut(self.right.as_mut().unwrap());
+                let self_r = Arc::make_mut(self.right.as_mut().unwrap());
 
-                    self.color = Color::Black;
-                    self_r.color = Color::Red;
-                }
+                self.color = Color::Black;
+                self_r.color = Color::Red;
 
                 self.remove_balance();
             }
@@ -603,12 +555,8 @@ where
                 let self_r = Arc::make_mut(self.right.as_mut().unwrap());
 
                 let mut self_r_l_arc = self_r.left.take().unwrap();
-                // TODO Simplify once NLL is stable.
-                let new_r_l = {
-                    let self_r_l = Arc::make_mut(&mut self_r_l_arc);
-
-                    self_r_l.right.take()
-                };
+                let self_r_l = Arc::make_mut(&mut self_r_l_arc);
+                let new_r_l = self_r_l.right.take();
 
                 self_r.color = Color::Black;
                 self_r.left = new_r_l;
@@ -618,15 +566,11 @@ where
 
                 self.color = Color::Red;
 
-                // TODO Simplify once NLL is stable.
-                {
-                    let self_r_l = Arc::make_mut(&mut self_r_l_arc);
+                self_r_l.right = self_r_l.left.take();
+                self_r_l.left = self.left.take();
 
-                    self_r_l.right = self_r_l.left.take();
-                    self_r_l.left = self.left.take();
+                swap(&mut self.entry, &mut self_r_l.entry);
 
-                    swap(&mut self.entry, &mut self_r_l.entry);
-                }
                 self.left = Some(self_r_l_arc);
             }
             _ => unreachable!(),
@@ -651,13 +595,10 @@ where
                 self_r.color = Color::Black;
             }
             (Some(B), ..) => {
-                // TODO Remove scope when NLL is stable.
-                {
-                    let self_l = Arc::make_mut(self.left.as_mut().unwrap());
+                let self_l = Arc::make_mut(self.left.as_mut().unwrap());
 
-                    self.color = Color::Black;
-                    self_l.color = Color::Red;
-                }
+                self.color = Color::Black;
+                self_l.color = Color::Red;
 
                 self.remove_balance();
             }
@@ -665,12 +606,8 @@ where
                 let self_l = Arc::make_mut(self.left.as_mut().unwrap());
 
                 let mut self_l_r_arc = self_l.right.take().unwrap();
-                // TODO Simplify once NLL is stable.
-                let new_l_r = {
-                    let self_l_r = Arc::make_mut(&mut self_l_r_arc);
-
-                    self_l_r.left.take()
-                };
+                let self_l_r = Arc::make_mut(&mut self_l_r_arc);
+                let new_l_r = self_l_r.left.take();
 
                 self_l.color = Color::Black;
                 self_l.right = new_l_r;
@@ -680,15 +617,11 @@ where
 
                 self.color = Color::Red;
 
-                // TODO Simplify once NLL is stable.
-                {
-                    let self_l_r = Arc::make_mut(&mut self_l_r_arc);
+                self_l_r.left = self_l_r.right.take();
+                self_l_r.right = self.right.take();
 
-                    self_l_r.left = self_l_r.right.take();
-                    self_l_r.right = self.right.take();
+                swap(&mut self.entry, &mut self_l_r.entry);
 
-                    swap(&mut self.entry, &mut self_l_r.entry);
-                }
                 self.right = Some(self_l_r_arc);
             }
             _ => unreachable!(),
@@ -743,7 +676,6 @@ where
             K: Borrow<Q> + Ord,
             Q: Ord,
         {
-            // TODO Simplify this once we have NLL.
             let (removed, make_node_none) = match *node {
                 Some(ref mut node_arc) => {
                     let node = Arc::make_mut(node_arc);
@@ -893,26 +825,26 @@ where
     }
 
     #[must_use]
-    pub fn iter(&self) -> Iter<K, V> {
+    pub fn iter(&self) -> Iter<'_, K, V> {
         self.iter_arc().map(|e| (&e.key, &e.value))
     }
 
-    fn iter_arc(&self) -> IterArc<K, V> {
+    fn iter_arc(&self) -> IterArc<'_, K, V> {
         IterArc::new(self)
     }
 
     #[must_use]
-    pub fn keys(&self) -> IterKeys<K, V> {
+    pub fn keys(&self) -> IterKeys<'_, K, V> {
         self.iter().map(|(k, _)| k)
     }
 
     #[must_use]
-    pub fn values(&self) -> IterValues<K, V> {
+    pub fn values(&self) -> IterValues<'_, K, V> {
         self.iter().map(|(_, v)| v)
     }
 
     #[must_use]
-    pub fn range<Q, RB>(&self, range: RB) -> RangeIter<K, V>
+    pub fn range<Q, RB>(&self, range: RB) -> RangeIter<'_, K, V>
     where
         K: Borrow<Q>,
         Q: Ord + ?Sized,
@@ -921,14 +853,17 @@ where
         use std::ops::Bound::*;
 
         match (range.start_bound(), range.end_bound()) {
-            (Excluded(s), Excluded(e)) if s == e =>
-                panic!("range start and end are equal and excluded"),
+            (Excluded(s), Excluded(e)) if s == e => {
+                panic!("range start and end are equal and excluded")
+            }
             (Included(s), Included(e))
             | (Included(s), Excluded(e))
             | (Excluded(s), Included(e))
             | (Excluded(s), Excluded(e))
                 if s > e =>
-                panic!("range start is greater than range end"),
+            {
+                panic!("range start is greater than range end")
+            }
             _ => {}
         };
         RangeIterArc::new(self, range).map(|e| (&e.key, &e.value))
@@ -1015,7 +950,7 @@ where
     K: Ord + Display,
     V: Display,
 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("{")?;
@@ -1076,13 +1011,13 @@ mod iter_utils {
     // Note that it would be possible to make `backwards` a generic parameter, but it's not clear that
     // it's worth the effort.
     #[derive(Debug)]
-    pub struct IterStack<'a, K: 'a, V: 'a> {
+    pub struct IterStack<'a, K, V> {
         // The invariant maintained by `stack` depends on whether we are moving forwards or backwards.
         // In either case, the current node is at the top of the stack. If we are moving forwards, the
         // rest of the stack consists of those ancestors of the current node that contain the current
         // node in their left subtree. In other words, the keys in the stack increase as we go from the
         // top of the stack to the bottom.
-        stack:     Vec<&'a Node<K, V>>,
+        stack: Vec<&'a Node<K, V>>,
         backwards: bool,
     }
 
@@ -1201,7 +1136,7 @@ mod iter_utils {
 }
 
 #[derive(Debug)]
-pub struct IterArc<'a, K: 'a, V: 'a> {
+pub struct IterArc<'a, K, V> {
     range_iter: RangeIterArc<'a, K, V>,
 
     // Number of elements left in the iterator. This is used in `size_hint()`.
@@ -1212,7 +1147,7 @@ impl<'a, K, V> IterArc<'a, K, V>
 where
     K: Ord,
 {
-    fn new(map: &RedBlackTreeMap<K, V>) -> IterArc<K, V> {
+    fn new(map: &RedBlackTreeMap<K, V>) -> IterArc<'_, K, V> {
         IterArc {
             range_iter: RangeIterArc::new(map, ..),
             size: map.size,
@@ -1263,17 +1198,17 @@ impl<'a, K: Ord, V> ExactSizeIterator for IterArc<'a, K, V> {}
 // belonging to the range. Every time `next()` is called, we advance the forward stack; every time
 // `next_back()` is called, we advance the backward stack.
 #[derive(Debug)]
-pub struct RangeIterArc<'a, K: 'a, V: 'a> {
+pub struct RangeIterArc<'a, K, V> {
     map: &'a RedBlackTreeMap<K, V>,
 
-    stack_forward:  iter_utils::IterStack<'a, K, V>,
+    stack_forward: iter_utils::IterStack<'a, K, V>,
     stack_backward: iter_utils::IterStack<'a, K, V>,
 
     done: bool,
 }
 
 impl<'a, K: Ord, V> RangeIterArc<'a, K, V> {
-    fn new<Q, RB>(map: &RedBlackTreeMap<K, V>, bounds: RB) -> RangeIterArc<K, V>
+    fn new<Q, RB>(map: &RedBlackTreeMap<K, V>, bounds: RB) -> RangeIterArc<'_, K, V>
     where
         K: Borrow<Q>,
         Q: Ord + ?Sized,
@@ -1361,8 +1296,8 @@ where
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
-    use serde::ser::{Serialize, Serializer};
+    use ::serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
+    use ::serde::ser::{Serialize, Serializer};
     use std::fmt;
     use std::marker::PhantomData;
 
@@ -1401,7 +1336,7 @@ pub mod serde {
     {
         type Value = RedBlackTreeMap<K, V>;
 
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
             formatter.write_str("a map")
         }
 

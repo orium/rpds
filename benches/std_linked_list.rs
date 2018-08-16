@@ -5,10 +5,7 @@
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
-#[macro_use]
-extern crate criterion;
-
-use criterion::{black_box, Criterion};
+use ::criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::collections::LinkedList;
 
 fn std_linked_list_push_front(c: &mut Criterion) {

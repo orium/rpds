@@ -5,7 +5,7 @@
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Entry<K, V> {
-    pub key:   K,
+    pub key: K,
     pub value: V,
 }
 

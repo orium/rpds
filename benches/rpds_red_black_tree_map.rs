@@ -5,12 +5,8 @@
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
-#[macro_use]
-extern crate criterion;
-extern crate rpds;
-
-use criterion::{black_box, Criterion};
-use rpds::RedBlackTreeMap;
+use ::criterion::{black_box, criterion_group, criterion_main, Criterion};
+use ::rpds::RedBlackTreeMap;
 
 fn rpds_red_black_tree_map_insert(c: &mut Criterion) {
     let limit = 10_000;

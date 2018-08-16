@@ -3,16 +3,17 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+use crate::List;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::sync::Arc;
-use List;
 
 // TODO Use impl trait instead of this when available.
-type IterArc<'a, T> = ::std::iter::Chain<::list::IterArc<'a, T>, LazilyReversedListIter<'a, T>>;
+type IterArc<'a, T> =
+    ::std::iter::Chain<crate::list::IterArc<'a, T>, LazilyReversedListIter<'a, T>>;
 pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
 
 /// Creates a [`Queue`](queue/struct.Queue.html) containing the given arguments:
@@ -68,7 +69,7 @@ macro_rules! queue {
 /// [Immutability in C# Part Four: An Immutable Queue](https://goo.gl/hWyMuS).
 #[derive(Debug)]
 pub struct Queue<T> {
-    in_list:  List<T>,
+    in_list: List<T>,
     out_list: List<T>,
 }
 
@@ -76,7 +77,7 @@ impl<T> Queue<T> {
     #[must_use]
     pub fn new() -> Queue<T> {
         Queue {
-            in_list:  List::new(),
+            in_list: List::new(),
             out_list: List::new(),
         }
     }
@@ -142,11 +143,11 @@ impl<T> Queue<T> {
     }
 
     #[must_use]
-    pub fn iter(&self) -> Iter<T> {
+    pub fn iter(&self) -> Iter<'_, T> {
         self.iter_arc().map(|v| v.borrow())
     }
 
-    fn iter_arc(&self) -> IterArc<T> {
+    fn iter_arc(&self) -> IterArc<'_, T> {
         self.out_list
             .iter_arc()
             .chain(LazilyReversedListIter::new(&self.in_list))
@@ -195,14 +196,14 @@ impl<T: Hash> Hash for Queue<T> {
 impl<T> Clone for Queue<T> {
     fn clone(&self) -> Queue<T> {
         Queue {
-            in_list:  self.in_list.clone(),
+            in_list: self.in_list.clone(),
             out_list: self.out_list.clone(),
         }
     }
 }
 
 impl<T: Display> Display for Queue<T> {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("Queue(")?;
@@ -232,7 +233,7 @@ impl<T> FromIterator<T> for Queue<T> {
     fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> Queue<T> {
         Queue {
             out_list: List::from_iter(into_iter),
-            in_list:  List::new(),
+            in_list: List::new(),
         }
     }
 }
@@ -242,13 +243,13 @@ pub enum LazilyReversedListIter<'a, T: 'a> {
         list: &'a List<T>,
     },
     Initialized {
-        vec:     Vec<&'a Arc<T>>,
+        vec: Vec<&'a Arc<T>>,
         current: Option<usize>,
     },
 }
 
 impl<'a, T> LazilyReversedListIter<'a, T> {
-    fn new(list: &List<T>) -> LazilyReversedListIter<T> {
+    fn new(list: &List<T>) -> LazilyReversedListIter<'_, T> {
         LazilyReversedListIter::Uninitialized { list }
     }
 }
@@ -257,7 +258,7 @@ impl<'a, T> Iterator for LazilyReversedListIter<'a, T> {
     type Item = &'a Arc<T>;
 
     fn next(&mut self) -> Option<&'a Arc<T>> {
-        match *self {
+        match self {
             LazilyReversedListIter::Uninitialized { list } => {
                 let len = list.len();
                 let mut vec: Vec<&'a Arc<T>> = Vec::with_capacity(len);
@@ -292,7 +293,7 @@ impl<'a, T> Iterator for LazilyReversedListIter<'a, T> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = match *self {
+        let len = match self {
             LazilyReversedListIter::Uninitialized { list } => list.len(),
             LazilyReversedListIter::Initialized {
                 current: Some(i), ..
@@ -309,8 +310,8 @@ impl<'a, T> ExactSizeIterator for LazilyReversedListIter<'a, T> {}
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::de::{Deserialize, Deserializer};
-    use serde::ser::{Serialize, Serializer};
+    use ::serde::de::{Deserialize, Deserializer};
+    use ::serde::ser::{Serialize, Serializer};
 
     impl<T> Serialize for Queue<T>
     where
@@ -328,7 +329,7 @@ pub mod serde {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Queue<T>, D::Error> {
             Deserialize::deserialize(deserializer).map(|list| Queue {
                 out_list: list,
-                in_list:  List::new(),
+                in_list: List::new(),
             })
         }
     }

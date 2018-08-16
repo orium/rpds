@@ -4,9 +4,11 @@
  */
 
 use super::*;
+use pretty_assertions::assert_eq;
 
 mod lazily_reversed_list_iter {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_iter() {
@@ -49,6 +51,7 @@ mod lazily_reversed_list_iter {
 
 mod iter {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_iter() {
@@ -117,6 +120,7 @@ mod iter {
 
 mod internal {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_enqueue_dequeue_mut() {
@@ -154,12 +158,12 @@ mod compile_time {
 
     #[test]
     fn test_is_send() {
-        let _: Box<Send> = Box::new(Queue::<i32>::new());
+        let _: Box<dyn Send> = Box::new(Queue::<i32>::new());
     }
 
     #[test]
     fn test_is_sync() {
-        let _: Box<Sync> = Box::new(Queue::<i32>::new());
+        let _: Box<dyn Sync> = Box::new(Queue::<i32>::new());
     }
 }
 

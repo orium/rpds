@@ -3,9 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-extern crate rand;
-
 use super::*;
+use pretty_assertions::assert_eq;
 
 #[derive(Debug)]
 enum InvariantViolation {
@@ -128,10 +127,11 @@ where
 
 mod node {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     fn dummy_entry<T: Clone>(v: T) -> Entry<T, T> {
         Entry {
-            key:   v.clone(),
+            key: v.clone(),
             value: v,
         }
     }
@@ -140,7 +140,7 @@ mod node {
         Node {
             entry: Arc::new(dummy_entry(v)),
             color: Color::Red,
-            left:  None,
+            left: None,
             right: None,
         }
     }
@@ -153,7 +153,7 @@ mod node {
         Node {
             entry: Arc::new(dummy_entry(v)),
             color: Color::Red,
-            left:  left.map(|n| Arc::new(n)),
+            left: left.map(|n| Arc::new(n)),
             right: right.map(|n| Arc::new(n)),
         }
     }
@@ -289,13 +289,13 @@ mod node {
         let mut tree_case_1 = Node {
             entry: Arc::clone(&entry_z),
             color: Color::Black,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_y),
                 color: Color::Red,
-                left:  Some(Arc::new(Node {
+                left: Some(Arc::new(Node {
                     entry: Arc::clone(&entry_x),
                     color: Color::Red,
-                    left:  Some(Arc::clone(&tree_a)),
+                    left: Some(Arc::clone(&tree_a)),
                     right: Some(Arc::clone(&tree_b)),
                 })),
                 right: Some(Arc::clone(&tree_c)),
@@ -306,14 +306,14 @@ mod node {
         let mut tree_case_2 = Node {
             entry: Arc::clone(&entry_z),
             color: Color::Black,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_x),
                 color: Color::Red,
-                left:  Some(Arc::clone(&tree_a)),
+                left: Some(Arc::clone(&tree_a)),
                 right: Some(Arc::new(Node {
                     entry: Arc::clone(&entry_y),
                     color: Color::Red,
-                    left:  Some(Arc::clone(&tree_b)),
+                    left: Some(Arc::clone(&tree_b)),
                     right: Some(Arc::clone(&tree_c)),
                 })),
             })),
@@ -323,14 +323,14 @@ mod node {
         let mut tree_case_3 = Node {
             entry: Arc::clone(&entry_x),
             color: Color::Black,
-            left:  Some(Arc::clone(&tree_a)),
+            left: Some(Arc::clone(&tree_a)),
             right: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_z),
                 color: Color::Red,
-                left:  Some(Arc::new(Node {
+                left: Some(Arc::new(Node {
                     entry: Arc::clone(&entry_y),
                     color: Color::Red,
-                    left:  Some(Arc::clone(&tree_b)),
+                    left: Some(Arc::clone(&tree_b)),
                     right: Some(Arc::clone(&tree_c)),
                 })),
                 right: Some(Arc::clone(&tree_d)),
@@ -340,15 +340,15 @@ mod node {
         let mut tree_case_4 = Node {
             entry: Arc::clone(&entry_x),
             color: Color::Black,
-            left:  Some(Arc::clone(&tree_a)),
+            left: Some(Arc::clone(&tree_a)),
             right: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_y),
                 color: Color::Red,
-                left:  Some(Arc::clone(&tree_b)),
+                left: Some(Arc::clone(&tree_b)),
                 right: Some(Arc::new(Node {
                     entry: Arc::clone(&entry_z),
                     color: Color::Red,
-                    left:  Some(Arc::clone(&tree_c)),
+                    left: Some(Arc::clone(&tree_c)),
                     right: Some(Arc::clone(&tree_d)),
                 })),
             })),
@@ -357,13 +357,13 @@ mod node {
         let mut tree_none_of_the_above = Node {
             entry: Arc::clone(&entry_z),
             color: Color::Black,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_y),
                 color: Color::Red,
-                left:  Some(Arc::new(Node {
+                left: Some(Arc::new(Node {
                     entry: Arc::clone(&entry_x),
                     color: Color::Black,
-                    left:  Some(Arc::clone(&tree_a)),
+                    left: Some(Arc::clone(&tree_a)),
                     right: Some(Arc::clone(&tree_b)),
                 })),
                 right: Some(Arc::clone(&tree_c)),
@@ -374,16 +374,16 @@ mod node {
         let mut tree_balanced = Node {
             entry: Arc::clone(&entry_y),
             color: Color::Red,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_x),
                 color: Color::Black,
-                left:  Some(Arc::clone(&tree_a)),
+                left: Some(Arc::clone(&tree_a)),
                 right: Some(Arc::clone(&tree_b)),
             })),
             right: Some(Arc::new(Node {
                 entry: Arc::clone(&entry_z),
                 color: Color::Black,
-                left:  Some(Arc::clone(&tree_c)),
+                left: Some(Arc::clone(&tree_c)),
                 right: Some(Arc::clone(&tree_d)),
             })),
         };
@@ -428,11 +428,11 @@ mod node {
         let expected_node = Node {
             entry: Arc::new(Entry::new(0, 2)),
             color: Color::Black,
-            left:  None,
+            left: None,
             right: Some(Arc::new(Node {
                 entry: Arc::new(Entry::new(10, 3)),
                 color: Color::Red,
-                left:  None,
+                left: None,
                 right: None,
             })),
         };
@@ -444,11 +444,11 @@ mod node {
         let expected_node = Node {
             entry: Arc::new(Entry::new(0, 2)),
             color: Color::Black,
-            left:  None,
+            left: None,
             right: Some(Arc::new(Node {
                 entry: Arc::new(Entry::new(10, 4)),
                 color: Color::Red,
-                left:  None,
+                left: None,
                 right: None,
             })),
         };
@@ -461,16 +461,16 @@ mod node {
         let expected_node = Node {
             entry: Arc::new(Entry::new(5, 5)),
             color: Color::Black,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(Entry::new(0, 2)),
                 color: Color::Black,
-                left:  None,
+                left: None,
                 right: None,
             })),
             right: Some(Arc::new(Node {
                 entry: Arc::new(Entry::new(10, 4)),
                 color: Color::Black,
-                left:  None,
+                left: None,
                 right: None,
             })),
         };
@@ -483,16 +483,16 @@ mod node {
         let expected_node = Node {
             entry: Arc::new(Entry::new(5, 5)),
             color: Color::Black,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(Entry::new(0, 1)),
                 color: Color::Black,
-                left:  None,
+                left: None,
                 right: None,
             })),
             right: Some(Arc::new(Node {
                 entry: Arc::new(Entry::new(10, 4)),
                 color: Color::Black,
-                left:  None,
+                left: None,
                 right: None,
             })),
         };
@@ -522,19 +522,19 @@ mod node {
         let left = Node {
             entry: Arc::new(dummy_entry("a")),
             color: Color::Black,
-            left:  None,
+            left: None,
             right: None,
         };
         let right = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Red,
-            left:  None,
+            left: None,
             right: Some(Arc::new(dummy_node("c"))),
         };
         let expected_node = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Red,
-            left:  Some(Arc::new(left.clone())),
+            left: Some(Arc::new(left.clone())),
             right: Some(Arc::new(dummy_node("c"))),
         };
 
@@ -548,19 +548,19 @@ mod node {
         let left = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Red,
-            left:  Some(Arc::new(dummy_node("a"))),
+            left: Some(Arc::new(dummy_node("a"))),
             right: None,
         };
         let right = Node {
             entry: Arc::new(dummy_entry("c")),
             color: Color::Black,
-            left:  None,
+            left: None,
             right: None,
         };
         let expected_node = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Red,
-            left:  Some(Arc::new(dummy_node("a"))),
+            left: Some(Arc::new(dummy_node("a"))),
             right: Some(Arc::new(right.clone())),
         };
 
@@ -574,28 +574,28 @@ mod node {
         let left = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Red,
-            left:  Some(Arc::new(dummy_node("a"))),
+            left: Some(Arc::new(dummy_node("a"))),
             right: None,
         };
         let right = Node {
             entry: Arc::new(dummy_entry("y")),
             color: Color::Red,
-            left:  Some(Arc::new(dummy_node("c").make_red())),
+            left: Some(Arc::new(dummy_node("c").make_red())),
             right: Some(Arc::new(dummy_node("d"))),
         };
         let expected_node = Node {
             entry: Arc::new(dummy_entry("c")),
             color: Color::Red,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("x")),
                 color: Color::Red,
-                left:  Some(Arc::new(dummy_node("a"))),
+                left: Some(Arc::new(dummy_node("a"))),
                 right: None,
             })),
             right: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("y")),
                 color: Color::Red,
-                left:  None,
+                left: None,
                 right: Some(Arc::new(dummy_node("d"))),
             })),
         };
@@ -610,23 +610,23 @@ mod node {
         let left = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Red,
-            left:  Some(Arc::new(dummy_node("a"))),
+            left: Some(Arc::new(dummy_node("a"))),
             right: None,
         };
         let right = Node {
             entry: Arc::new(dummy_entry("y")),
             color: Color::Red,
-            left:  Some(Arc::new(dummy_node("c").make_black())),
+            left: Some(Arc::new(dummy_node("c").make_black())),
             right: Some(Arc::new(dummy_node("d"))),
         };
         let expected_node = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Red,
-            left:  Some(Arc::new(dummy_node("a"))),
+            left: Some(Arc::new(dummy_node("a"))),
             right: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("y")),
                 color: Color::Red,
-                left:  Some(Arc::new(dummy_node("c").make_black())),
+                left: Some(Arc::new(dummy_node("c").make_black())),
                 right: Some(Arc::new(dummy_node("d"))),
             })),
         };
@@ -641,28 +641,28 @@ mod node {
         let left = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Black,
-            left:  Some(Arc::new(dummy_node("a"))),
+            left: Some(Arc::new(dummy_node("a"))),
             right: None,
         };
         let right = Node {
             entry: Arc::new(dummy_entry("y")),
             color: Color::Black,
-            left:  Some(Arc::new(dummy_node("c").make_red())),
+            left: Some(Arc::new(dummy_node("c").make_red())),
             right: Some(Arc::new(dummy_node("d"))),
         };
         let expected_node = Node {
             entry: Arc::new(dummy_entry("c")),
             color: Color::Red,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("x")),
                 color: Color::Black,
-                left:  Some(Arc::new(dummy_node("a"))),
+                left: Some(Arc::new(dummy_node("a"))),
                 right: None,
             })),
             right: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("y")),
                 color: Color::Black,
-                left:  None,
+                left: None,
                 right: Some(Arc::new(dummy_node("d"))),
             })),
         };
@@ -677,24 +677,24 @@ mod node {
         let left = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Black,
-            left:  Some(Arc::new(dummy_node("a"))),
+            left: Some(Arc::new(dummy_node("a"))),
             right: None,
         };
         let right = Node {
             entry: Arc::new(dummy_entry("y")),
             color: Color::Black,
-            left:  Some(Arc::new(dummy_node("c").make_black())),
+            left: Some(Arc::new(dummy_node("c").make_black())),
             right: Some(Arc::new(dummy_node("d"))),
         };
         let expected_node = {
             let mut n = Node {
                 entry: Arc::new(dummy_entry("x")),
                 color: Color::Red,
-                left:  Some(Arc::new(dummy_node("a"))),
+                left: Some(Arc::new(dummy_node("a"))),
                 right: Some(Arc::new(Node {
                     entry: Arc::new(dummy_entry("y")),
                     color: Color::Black,
-                    left:  Some(Arc::new(dummy_node("c").make_black())),
+                    left: Some(Arc::new(dummy_node("c").make_black())),
                     right: Some(Arc::new(dummy_node("d"))),
                 })),
             };
@@ -715,32 +715,32 @@ mod node {
         let mut node = Node {
             entry: Arc::new(dummy_entry("y")),
             color: Color::Black, // Irrelevant
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("x")),
                 color: Color::Red,
-                left:  Some(Arc::new(dummy_node("a"))),
+                left: Some(Arc::new(dummy_node("a"))),
                 right: Some(Arc::new(dummy_node("b"))),
             })),
             right: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("z")),
                 color: Color::Red,
-                left:  Some(Arc::new(dummy_node("c"))),
+                left: Some(Arc::new(dummy_node("c"))),
                 right: Some(Arc::new(dummy_node("d"))),
             })),
         };
         let expected_node = Node {
             entry: Arc::new(dummy_entry("y")),
             color: Color::Red,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("x")),
                 color: Color::Black,
-                left:  Some(Arc::new(dummy_node("a"))),
+                left: Some(Arc::new(dummy_node("a"))),
                 right: Some(Arc::new(dummy_node("b"))),
             })),
             right: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("z")),
                 color: Color::Black,
-                left:  Some(Arc::new(dummy_node("c"))),
+                left: Some(Arc::new(dummy_node("c"))),
                 right: Some(Arc::new(dummy_node("d"))),
             })),
         };
@@ -754,17 +754,17 @@ mod node {
         let bl = Node {
             entry: Arc::new(dummy_entry("bl")),
             color: Color::Black,
-            left:  None,
+            left: None,
             right: None,
         };
 
         let mut node = Node {
             entry: Arc::new(dummy_entry("y")),
             color: Color::Black, // Irrelevant
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("x")),
                 color: Color::Red,
-                left:  Some(Arc::new(dummy_node("a"))),
+                left: Some(Arc::new(dummy_node("a"))),
                 right: Some(Arc::new(dummy_node("b"))),
             })),
             right: Some(Arc::new(dummy_node("c"))),
@@ -772,10 +772,10 @@ mod node {
         let expected_node = Node {
             entry: Arc::new(dummy_entry("y")),
             color: Color::Red,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("x")),
                 color: Color::Black,
-                left:  Some(Arc::new(dummy_node("a"))),
+                left: Some(Arc::new(dummy_node("a"))),
                 right: Some(Arc::new(dummy_node("b"))),
             })),
             right: Some(Arc::new(dummy_node("c"))),
@@ -787,11 +787,11 @@ mod node {
         let mut node = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Black, // Irrelevant
-            left:  Some(Arc::new(bl.clone())),
+            left: Some(Arc::new(bl.clone())),
             right: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("y")),
                 color: Color::Black,
-                left:  Some(Arc::new(dummy_node("a"))),
+                left: Some(Arc::new(dummy_node("a"))),
                 right: Some(Arc::new(dummy_node("b"))),
             })),
         };
@@ -799,11 +799,11 @@ mod node {
             let mut n = Node {
                 entry: Arc::new(dummy_entry("x")),
                 color: Color::Black,
-                left:  Some(Arc::new(bl.clone())),
+                left: Some(Arc::new(bl.clone())),
                 right: Some(Arc::new(Node {
                     entry: Arc::new(dummy_entry("y")),
                     color: Color::Red,
-                    left:  Some(Arc::new(dummy_node("a"))),
+                    left: Some(Arc::new(dummy_node("a"))),
                     right: Some(Arc::new(dummy_node("b"))),
                 })),
             };
@@ -817,14 +817,14 @@ mod node {
         let mut node = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Black, // Irrelevant
-            left:  Some(Arc::new(bl.clone())),
+            left: Some(Arc::new(bl.clone())),
             right: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("z")),
                 color: Color::Red,
-                left:  Some(Arc::new(Node {
+                left: Some(Arc::new(Node {
                     entry: Arc::new(dummy_entry("y")),
                     color: Color::Black,
-                    left:  Some(Arc::new(dummy_node("a"))),
+                    left: Some(Arc::new(dummy_node("a"))),
                     right: Some(Arc::new(dummy_node("b"))),
                 })),
                 right: Some(Arc::new(dummy_node("c").make_black())),
@@ -833,17 +833,17 @@ mod node {
         let expected_node = Node {
             entry: Arc::new(dummy_entry("y")),
             color: Color::Red,
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("x")),
                 color: Color::Black,
-                left:  Some(Arc::new(bl.clone())),
+                left: Some(Arc::new(bl.clone())),
                 right: Some(Arc::new(dummy_node("a"))),
             })),
             right: Some(Arc::new({
                 let mut n = Node {
                     entry: Arc::new(dummy_entry("z")),
                     color: Color::Black,
-                    left:  Some(Arc::new(dummy_node("b"))),
+                    left: Some(Arc::new(dummy_node("b"))),
                     right: Some(Arc::new(dummy_node("c").make_red())),
                 };
                 n.remove_balance();
@@ -860,29 +860,29 @@ mod node {
         let bl = Node {
             entry: Arc::new(dummy_entry("bl")),
             color: Color::Black,
-            left:  None,
+            left: None,
             right: None,
         };
 
         let mut node = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Black, // Irrelevant
-            left:  Some(Arc::new(dummy_node("a"))),
+            left: Some(Arc::new(dummy_node("a"))),
             right: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("y")),
                 color: Color::Red,
-                left:  Some(Arc::new(dummy_node("b"))),
+                left: Some(Arc::new(dummy_node("b"))),
                 right: Some(Arc::new(dummy_node("c"))),
             })),
         };
         let expected_node = Node {
             entry: Arc::new(dummy_entry("x")),
             color: Color::Red,
-            left:  Some(Arc::new(dummy_node("a"))),
+            left: Some(Arc::new(dummy_node("a"))),
             right: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("y")),
                 color: Color::Black,
-                left:  Some(Arc::new(dummy_node("b"))),
+                left: Some(Arc::new(dummy_node("b"))),
                 right: Some(Arc::new(dummy_node("c"))),
             })),
         };
@@ -893,10 +893,10 @@ mod node {
         let mut node = Node {
             entry: Arc::new(dummy_entry("y")),
             color: Color::Black, // Irrelevant
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("x")),
                 color: Color::Black,
-                left:  Some(Arc::new(dummy_node("a"))),
+                left: Some(Arc::new(dummy_node("a"))),
                 right: Some(Arc::new(dummy_node("b"))),
             })),
             right: Some(Arc::new(bl.clone())),
@@ -905,10 +905,10 @@ mod node {
             let mut n = Node {
                 entry: Arc::new(dummy_entry("y")),
                 color: Color::Black,
-                left:  Some(Arc::new(Node {
+                left: Some(Arc::new(Node {
                     entry: Arc::new(dummy_entry("x")),
                     color: Color::Red,
-                    left:  Some(Arc::new(dummy_node("a"))),
+                    left: Some(Arc::new(dummy_node("a"))),
                     right: Some(Arc::new(dummy_node("b"))),
                 })),
                 right: Some(Arc::new(bl.clone())),
@@ -923,14 +923,14 @@ mod node {
         let mut node = Node {
             entry: Arc::new(dummy_entry("z")),
             color: Color::Black, // Irrelevant
-            left:  Some(Arc::new(Node {
+            left: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("x")),
                 color: Color::Red,
-                left:  Some(Arc::new(dummy_node("a").make_black())),
+                left: Some(Arc::new(dummy_node("a").make_black())),
                 right: Some(Arc::new(Node {
                     entry: Arc::new(dummy_entry("y")),
                     color: Color::Black,
-                    left:  Some(Arc::new(dummy_node("b"))),
+                    left: Some(Arc::new(dummy_node("b"))),
                     right: Some(Arc::new(dummy_node("c"))),
                 })),
             })),
@@ -939,11 +939,11 @@ mod node {
         let expected_node = Node {
             entry: Arc::new(dummy_entry("y")),
             color: Color::Red,
-            left:  Some(Arc::new({
+            left: Some(Arc::new({
                 let mut n = Node {
                     entry: Arc::new(dummy_entry("x")),
                     color: Color::Black,
-                    left:  Some(Arc::new(dummy_node("a").make_red())),
+                    left: Some(Arc::new(dummy_node("a").make_red())),
                     right: Some(Arc::new(dummy_node("b"))),
                 };
                 n.remove_balance();
@@ -952,7 +952,7 @@ mod node {
             right: Some(Arc::new(Node {
                 entry: Arc::new(dummy_entry("z")),
                 color: Color::Black,
-                left:  Some(Arc::new(dummy_node("c"))),
+                left: Some(Arc::new(dummy_node("c"))),
                 right: Some(Arc::new(bl.clone())),
             })),
         };
@@ -964,6 +964,7 @@ mod node {
 
 mod internal {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     fn insert_test(values: &[u32]) {
         let mut map = RedBlackTreeMap::new();
@@ -994,8 +995,8 @@ mod internal {
 
     #[test]
     fn test_insert() {
-        use self::rand::Rng;
-        use self::rand::SeedableRng;
+        use rand::Rng;
+        use rand::SeedableRng;
 
         let limit = 50_000;
         let seed: [u8; 32] = [
@@ -1049,8 +1050,8 @@ mod internal {
 
     #[test]
     fn test_remove() {
-        use self::rand::Rng;
-        use self::rand::SeedableRng;
+        use rand::Rng;
+        use rand::SeedableRng;
 
         let limit = 50_000;
         let seed: [u8; 32] = [
@@ -1080,6 +1081,7 @@ mod internal {
 
 mod iter {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_lg_floor() {
@@ -1340,12 +1342,12 @@ mod compile_time {
 
     #[test]
     fn test_is_send() {
-        let _: Box<Send> = Box::new(RedBlackTreeMap::<i32, i32>::new());
+        let _: Box<dyn Send> = Box::new(RedBlackTreeMap::<i32, i32>::new());
     }
 
     #[test]
     fn test_is_sync() {
-        let _: Box<Sync> = Box::new(RedBlackTreeMap::<i32, i32>::new());
+        let _: Box<dyn Sync> = Box::new(RedBlackTreeMap::<i32, i32>::new());
     }
 }
 

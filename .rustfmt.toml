@@ -1,5 +1,9 @@
-comment_width = 100
-struct_field_align_threshold = 4
+edition = "2018"
+
 use_field_init_shorthand = true
 use_try_shorthand = true
-match_arm_blocks = false
+
+# TODO Awaiting stabilization
+# comment_width = 100
+# match_arm_blocks = false
+# struct_field_align_threshold = 4

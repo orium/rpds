@@ -7,7 +7,8 @@ mod sparse_array_usize;
 
 use self::sparse_array_usize::SparseArrayUsize;
 use super::entry::Entry;
-use list;
+use crate::list;
+use crate::List;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
 use std::fmt::Display;
@@ -20,7 +21,6 @@ use std::ops::Index;
 use std::slice;
 use std::sync::Arc;
 use std::vec::Vec;
-use List;
 
 type HashValue = u64;
 
@@ -165,7 +165,7 @@ enum Bucket<K, V> {
 
 #[derive(Debug, PartialEq, Eq)]
 struct EntryWithHash<K, V> {
-    entry:    Arc<Entry<K, V>>,
+    entry: Arc<Entry<K, V>>,
     key_hash: HashValue,
 }
 
@@ -221,8 +221,8 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        match *self {
-            Node::Branch(ref subtrees) => {
+        match self {
+            Node::Branch(subtrees) => {
                 let index: usize = node_utils::index_from_hash(key_hash, depth, degree)
                     .expect("hash cannot be exhausted if we are on a branch");
 
@@ -230,26 +230,20 @@ where
                     .get(index)
                     .and_then(|subtree| subtree.get(key, key_hash, depth + 1, degree))
             }
-            Node::Leaf(ref bucket) => bucket.get(key, key_hash),
+            Node::Leaf(bucket) => bucket.get(key, key_hash),
         }
     }
 
     /// Returns a pair with the node with the new entry and whether the key is new.
     fn insert(&mut self, entry: EntryWithHash<K, V>, depth: usize, degree: u8) -> bool {
-        match *self {
-            Node::Branch(ref mut subtrees) => {
+        match self {
+            Node::Branch(subtrees) => {
                 let index: usize = node_utils::index_from_hash(entry.key_hash, depth, degree)
                     .expect("hash cannot be exhausted if we are on a branch");
 
-                match subtrees.get(index) {
-                    Some(_) => {
-                        // TODO simplify once we have NLL.
-                        match subtrees.get_mut(index) {
-                            Some(subtree) =>
-                                Arc::make_mut(subtree).insert(entry, depth + 1, degree),
-                            None => unreachable!(),
-                        }
-                    }
+                match subtrees.get_mut(index) {
+                    Some(subtree) => Arc::make_mut(subtree).insert(entry, depth + 1, degree),
+
                     None => {
                         let new_subtree = Node::Leaf(Bucket::Single(entry));
                         subtrees.set(index, Arc::new(new_subtree));
@@ -257,42 +251,29 @@ where
                     }
                 }
             }
-            Node::Leaf(_) => {
+            Node::Leaf(bucket) => {
                 // If we are at maximum depth then the hash was totally consumed and we have a
                 // collision.
                 let maximum_depth =
                     node_utils::index_from_hash(entry.key_hash, depth, degree).is_none();
 
-                // TODO simplify once we have NLL.
-                let bucket_contains_key: bool = {
-                    match *self {
-                        Node::Leaf(ref bucket) => bucket.contains_key(entry.key(), entry.key_hash),
-                        Node::Branch(_) => unreachable!(),
-                    }
-                };
+                let bucket_contains_key: bool = bucket.contains_key(entry.key(), entry.key_hash);
 
                 match maximum_depth {
                     // We reached a bucket.  If the bucket contains the key we are inserting then
                     // we just need to replace it.
-                    false if bucket_contains_key => {
-                        // TODO simplify once we have NLL.
-                        match *self {
-                            Node::Leaf(ref mut bucket) => bucket.insert(entry),
-                            Node::Branch(_) => unreachable!(),
-                        }
-                    }
+                    false if bucket_contains_key => bucket.insert(entry),
 
                     // We reached a bucket and the key we will insert is not there.  We need to
                     // create a `Node::Branch` and insert the elements of the bucket there, as well
                     // as the new element.
                     false => {
                         // TODO This clone should not be needed.
-                        let old_entry: EntryWithHash<K, V> = match *self {
-                            Node::Leaf(Bucket::Single(ref e)) => e.clone(),
-                            Node::Leaf(Bucket::Collision(_)) => unreachable!(
+                        let old_entry: EntryWithHash<K, V> = match bucket {
+                            Bucket::Single(e) => e.clone(),
+                            Bucket::Collision(_) => unreachable!(
                                 "hash is not exhausted, so there cannot be a collision here"
                             ),
-                            Node::Branch(_) => unreachable!(),
                         };
 
                         *self = Node::new_empty_branch();
@@ -304,13 +285,7 @@ where
                     }
 
                     // Hash was already totally consumed.  This is a collision.
-                    true => {
-                        // TODO simplify once we have NLL.
-                        match *self {
-                            Node::Leaf(ref mut bucket) => bucket.insert(entry),
-                            Node::Branch(_) => unreachable!(),
-                        }
-                    }
+                    true => bucket.insert(entry),
                 }
             }
         }
@@ -319,15 +294,15 @@ where
     /// Compresses a node.  This makes the shallowest tree that is well-formed, i.e. branches with
     /// a single entry become a leaf with it.
     fn compress(&mut self) {
-        let new_node = match *self {
-            Node::Branch(ref mut subtrees) => {
+        let new_node = match self {
+            Node::Branch(subtrees) => {
                 match subtrees.size() {
                     1 => {
                         let compress: bool = {
                             let subtree = subtrees.first().unwrap();
 
                             // Keep collision at the bottom of the tree.
-                            match *subtree.borrow() {
+                            match subtree.borrow() {
                                 Node::Leaf(Bucket::Single(_)) => true,
                                 _ => false,
                             }
@@ -345,7 +320,7 @@ where
         };
 
         if let Some(node) = new_node {
-            ::utils::replace(self, node);
+            crate::utils::replace(self, node);
         }
     }
 
@@ -355,82 +330,62 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let (removed, needs_compression) = match *self {
-            Node::Branch(ref mut subtrees) => {
+        match self {
+            Node::Branch(subtrees) => {
                 let index: usize = node_utils::index_from_hash(key_hash, depth, degree)
                     .expect("hash cannot be exhausted if we are on a branch");
 
-                match subtrees.get(index) {
-                    // TODO Simplify once we have NLL.
-                    Some(_) => {
-                        let (subtree_is_empty, removed) = {
-                            let subtree = subtrees.get_mut(index).unwrap();
-                            let subtree = Arc::make_mut(subtree);
-                            let removed = subtree.remove(key, key_hash, depth + 1, degree);
+                match subtrees.get_mut(index) {
+                    Some(subtree) => {
+                        let subtree = Arc::make_mut(subtree);
+                        let removed = subtree.remove(key, key_hash, depth + 1, degree);
 
-                            (subtree.is_empty(), removed)
-                        };
-
-                        match (subtree_is_empty, removed) {
-                            (_, false) => (false, false),
+                        match (subtree.is_empty(), removed) {
+                            (_, false) => (),
                             (false, true) => {
                                 // Note that we still must call compress because it is possible that
                                 // we had a node with just one entry, which was not compressed
                                 // because it had a collision.  Maybe now we do not have a collision
                                 // and we can compress it.
-                                (true, true)
+                                self.compress();
                             }
                             (true, true) => {
                                 subtrees.remove(index);
 
-                                (true, true)
+                                self.compress();
                             }
-                        }
+                        };
+
+                        removed
                     }
 
-                    None => (false, false),
+                    None => false,
                 }
             }
 
-            // TODO Simplify once we have NLL.
-            Node::Leaf(_) => {
-                let (removed, is_empty) = match *self {
-                    Node::Leaf(ref mut bucket) => {
-                        let mut bucket_ref = Some(bucket);
-                        let rem = Bucket::remove(&mut bucket_ref, key, key_hash);
+            Node::Leaf(bucket) => {
+                let mut bucket_ref = Some(bucket);
+                let removed = Bucket::remove(&mut bucket_ref, key, key_hash);
 
-                        (rem, bucket_ref.is_none())
-                    }
-                    Node::Branch(_) => unreachable!(),
-                };
-
-                if is_empty {
+                if bucket_ref.is_none() {
                     // TODO Most of these empty branches will be dropped very soon.  We might
                     //      gain some speed if we avoid this.  (However, currently no heap
-                    //      allocation happen anyway.)
+                    //      allocation happens anyway.)
                     //      We can do something similar to Bucket::remove() where we receive
                     //      a `&mut Option<&mut Bucket<_, _>>`.
                     *self = Node::new_empty_branch();
                 }
 
-                (removed, false)
+                removed
             }
-        };
-
-        // TODO When we have NLL we can drop the `needs_compression` and just compress when we need
-        // it.
-        if needs_compression {
-            self.compress();
         }
-
-        removed
     }
 
     fn is_empty(&self) -> bool {
-        match *self {
-            Node::Branch(ref subtrees) => subtrees.size() == 0,
+        match self {
+            Node::Branch(subtrees) => subtrees.size() == 0,
             Node::Leaf(Bucket::Single(_)) => false,
-            Node::Leaf(Bucket::Collision(ref entries)) => {
+            Node::Leaf(Bucket::Collision(entries)) => {
                 debug_assert!(
                     entries.len() >= 2,
                     "collisions must have at least two entries"
@@ -446,9 +401,9 @@ where
     K: Eq + Hash,
 {
     fn clone(&self) -> Node<K, V> {
-        match *self {
-            Node::Branch(ref subtrees) => Node::Branch(subtrees.clone()),
-            Node::Leaf(ref bucket) => Node::Leaf(bucket.clone()),
+        match self {
+            Node::Branch(subtrees) => Node::Branch(subtrees.clone()),
+            Node::Leaf(bucket) => Node::Leaf(bucket.clone()),
         }
     }
 }
@@ -497,10 +452,10 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        match *self {
-            Bucket::Single(ref entry) if entry.matches(key, key_hash) => Some(entry.borrow()),
+        match self {
+            Bucket::Single(entry) if entry.matches(key, key_hash) => Some(entry.borrow()),
             Bucket::Single(_) => None,
-            Bucket::Collision(ref entries) => entries
+            Bucket::Collision(entries) => entries
                 .iter()
                 .find(|e| e.matches(key, key_hash))
                 .map(|e| e.borrow()),
@@ -523,26 +478,22 @@ where
     /// to the list order).  The order of the rest of the list must be preserved for the same
     /// reason.
     fn insert(&mut self, entry: EntryWithHash<K, V>) -> bool {
-        match *self {
-            Bucket::Single(ref mut existing_entry)
+        match self {
+            Bucket::Single(existing_entry)
                 if existing_entry.matches(entry.key(), entry.key_hash) =>
             {
                 *existing_entry = entry;
                 false
             }
-            Bucket::Single(_) => {
-                // TODO Maybe we can simplify this with NLL.
+            Bucket::Single(existing_entry) => {
                 // TODO In theory we should not need to clone `existing_entry`.
-                let entries = match *self {
-                    Bucket::Single(ref existing_entry) => list!(entry, existing_entry.clone()),
-                    _ => unreachable!(),
-                };
+                let entries = list!(entry, existing_entry.clone());
 
                 *self = Bucket::Collision(entries);
 
                 true
             }
-            Bucket::Collision(ref mut entries) => {
+            Bucket::Collision(entries) => {
                 let key_existed = bucket_utils::list_remove_first(entries, |e| {
                     e.matches(entry.key(), entry.key_hash)
                 });
@@ -568,8 +519,8 @@ where
     {
         match bucket.take() {
             Some(b) => {
-                match *b {
-                    Bucket::Single(ref existing_entry) if existing_entry.matches(key, key_hash) => {
+                match b {
+                    Bucket::Single(existing_entry) if existing_entry.matches(key, key_hash) => {
                         // bucket is already `None`.
                         true
                     }
@@ -579,29 +530,16 @@ where
                         false
                     }
 
-                    // TODO Simplify when we have NLL.
-                    Bucket::Collision(_) => {
-                        let (removed, new_len) = match *b {
-                            Bucket::Collision(ref mut entries) => {
-                                let rem = bucket_utils::list_remove_first(entries, |e| {
-                                    e.matches(key, key_hash)
-                                });
+                    Bucket::Collision(entries) => {
+                        let removed =
+                            bucket_utils::list_remove_first(entries, |e| e.matches(key, key_hash));
 
-                                (rem, entries.len())
-                            }
-                            _ => unreachable!(),
-                        };
-
-                        match new_len {
+                        match entries.len() {
                             0 => unreachable!(
                                 "impossible to have collision with a single or no entry"
                             ),
                             1 => {
-                                let entry = match *b {
-                                    Bucket::Collision(ref entries) =>
-                                        entries.first().unwrap().clone(),
-                                    _ => unreachable!(),
-                                };
+                                let entry = entries.first().unwrap().clone();
 
                                 *b = Bucket::Single(entry);
                             }
@@ -624,9 +562,9 @@ where
     K: Eq + Hash,
 {
     fn clone(&self) -> Bucket<K, V> {
-        match *self {
-            Bucket::Single(ref entry) => Bucket::Single(EntryWithHash::clone(entry)),
-            Bucket::Collision(ref entries) => Bucket::Collision(List::clone(entries)),
+        match self {
+            Bucket::Single(entry) => Bucket::Single(EntryWithHash::clone(entry)),
+            Bucket::Collision(entries) => Bucket::Collision(List::clone(entries)),
         }
     }
 }
@@ -668,7 +606,7 @@ where
 {
     fn clone(&self) -> EntryWithHash<K, V> {
         EntryWithHash {
-            entry:    Arc::clone(&self.entry),
+            entry: Arc::clone(&self.entry),
             key_hash: self.key_hash,
         }
     }
@@ -802,21 +740,21 @@ where
     }
 
     #[must_use]
-    pub fn iter(&self) -> Iter<K, V> {
+    pub fn iter(&self) -> Iter<'_, K, V> {
         self.iter_arc().map(|e| (&e.key, &e.value))
     }
 
-    fn iter_arc(&self) -> IterArc<K, V> {
+    fn iter_arc(&self) -> IterArc<'_, K, V> {
         IterArc::new(self)
     }
 
     #[must_use]
-    pub fn keys(&self) -> IterKeys<K, V> {
+    pub fn keys(&self) -> IterKeys<'_, K, V> {
         self.iter().map(|(k, _)| k)
     }
 
     #[must_use]
-    pub fn values(&self) -> IterValues<K, V> {
+    pub fn values(&self) -> IterValues<'_, K, V> {
         self.iter().map(|(_, v)| v)
     }
 }
@@ -885,7 +823,7 @@ where
     V: Display,
     H: Clone,
 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("{")?;
@@ -934,13 +872,13 @@ where
 }
 
 #[derive(Debug)]
-pub struct IterArc<'a, K: 'a, V: 'a> {
+pub struct IterArc<'a, K, V> {
     stack: Vec<IterStackElement<'a, K, V>>,
-    size:  usize,
+    size: usize,
 }
 
 #[derive(Debug)]
-enum IterStackElement<'a, K: 'a, V: 'a> {
+enum IterStackElement<'a, K, V> {
     Branch(Peekable<slice::Iter<'a, Arc<Node<K, V>>>>),
     LeafSingle(&'a EntryWithHash<K, V>),
     LeafCollision(Peekable<list::Iter<'a, EntryWithHash<K, V>>>),
@@ -950,33 +888,34 @@ impl<'a, K, V> IterStackElement<'a, K, V>
 where
     K: Eq + Hash,
 {
-    fn new(node: &Node<K, V>) -> IterStackElement<K, V> {
-        match *node {
-            Node::Branch(ref children) => IterStackElement::Branch(children.iter().peekable()),
-            Node::Leaf(Bucket::Single(ref entry)) => IterStackElement::LeafSingle(entry),
-            Node::Leaf(Bucket::Collision(ref entries)) =>
-                IterStackElement::LeafCollision(entries.iter().peekable()),
+    fn new(node: &Node<K, V>) -> IterStackElement<'_, K, V> {
+        match node {
+            Node::Branch(children) => IterStackElement::Branch(children.iter().peekable()),
+            Node::Leaf(Bucket::Single(entry)) => IterStackElement::LeafSingle(entry),
+            Node::Leaf(Bucket::Collision(entries)) => {
+                IterStackElement::LeafCollision(entries.iter().peekable())
+            }
         }
     }
 
     fn current_elem(&mut self) -> &'a Arc<Entry<K, V>> {
-        match *self {
+        match self {
             IterStackElement::Branch(_) => panic!("called current element of a branch"),
             IterStackElement::LeafSingle(entry) => &entry.entry,
-            IterStackElement::LeafCollision(ref mut iter) => &iter.peek().unwrap().entry,
+            IterStackElement::LeafCollision(iter) => &iter.peek().unwrap().entry,
         }
     }
 
     /// Advance and returns `true` if finished.
     #[inline]
     fn advance(&mut self) -> bool {
-        match *self {
-            IterStackElement::Branch(ref mut iter) => {
+        match self {
+            IterStackElement::Branch(iter) => {
                 iter.next();
                 iter.peek().is_none()
             }
             IterStackElement::LeafSingle(_) => true,
-            IterStackElement::LeafCollision(ref mut iter) => {
+            IterStackElement::LeafCollision(iter) => {
                 iter.next();
                 iter.peek().is_none()
             }
@@ -1000,8 +939,8 @@ impl<'a, K, V> IterArc<'a, K, V>
 where
     K: Eq + Hash,
 {
-    fn new<H: BuildHasher + Clone>(map: &HashTrieMap<K, V, H>) -> IterArc<K, V> {
-        let mut stack: Vec<IterStackElement<K, V>> =
+    fn new<H: BuildHasher + Clone>(map: &HashTrieMap<K, V, H>) -> IterArc<'_, K, V> {
+        let mut stack: Vec<IterStackElement<'_, K, V>> =
             Vec::with_capacity(iter_utils::trie_max_height(map.degree) + 1);
 
         if map.size() > 0 {
@@ -1019,14 +958,13 @@ where
     }
 
     fn dig(&mut self) {
-        let next_stack_elem: Option<IterStackElement<K, V>> =
-            self.stack
-                .last_mut()
-                .and_then(|stack_top| match *stack_top {
-                    IterStackElement::Branch(ref mut iter) =>
-                        iter.peek().map(|node| IterStackElement::new(node)),
-                    _ => None,
-                });
+        let next_stack_elem: Option<IterStackElement<'_, K, V>> =
+            self.stack.last_mut().and_then(|stack_top| match stack_top {
+                IterStackElement::Branch(iter) => {
+                    iter.peek().map(|node| IterStackElement::new(node))
+                }
+                _ => None,
+            });
 
         if let Some(e) = next_stack_elem {
             self.stack.push(e);
@@ -1081,8 +1019,8 @@ impl<'a, K: Eq + Hash, V> ExactSizeIterator for IterArc<'a, K, V> {}
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
-    use serde::ser::{Serialize, Serializer};
+    use ::serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
+    use ::serde::ser::{Serialize, Serializer};
     use std::fmt;
     use std::marker::PhantomData;
 
@@ -1124,7 +1062,7 @@ pub mod serde {
     {
         type Value = HashTrieMap<K, V, H>;
 
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
             formatter.write_str("a map")
         }
 

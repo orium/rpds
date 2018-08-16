@@ -4,9 +4,11 @@
  */
 
 use super::*;
+use pretty_assertions::assert_eq;
 
 mod node {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_new_empty_branch() {
@@ -122,6 +124,7 @@ mod node {
 
 mod iter {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_iter_empty() {
@@ -261,6 +264,7 @@ mod iter {
 
 mod internal {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     fn dummy_vector_with_length(len: usize) -> Vector<u8> {
         let mut v = Vector::new_with_bits(5);
@@ -386,12 +390,12 @@ mod compile_time {
 
     #[test]
     fn test_is_send() {
-        let _: Box<Send> = Box::new(Vector::<i32>::new());
+        let _: Box<dyn Send> = Box::new(Vector::<i32>::new());
     }
 
     #[test]
     fn test_is_sync() {
-        let _: Box<Sync> = Box::new(Vector::<i32>::new());
+        let _: Box<dyn Sync> = Box::new(Vector::<i32>::new());
     }
 }
 

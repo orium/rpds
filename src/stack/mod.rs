@@ -3,14 +3,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+use crate::List;
 use std::cmp::Ordering;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
-use List;
 
 // TODO Use impl trait for return value when available
-pub type Iter<'a, T> = ::list::Iter<'a, T>;
+pub type Iter<'a, T> = crate::list::Iter<'a, T>;
 
 /// Creates a [`Stack`](stack/struct.Stack.html) containing the given arguments:
 ///
@@ -118,7 +118,7 @@ impl<T> Stack<T> {
     }
 
     #[must_use]
-    pub fn iter(&self) -> Iter<T> {
+    pub fn iter(&self) -> Iter<'_, T> {
         self.list.iter()
     }
 }
@@ -164,7 +164,7 @@ impl<T> Clone for Stack<T> {
 }
 
 impl<T: Display> Display for Stack<T> {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("Stack(")?;
@@ -201,8 +201,8 @@ impl<T> FromIterator<T> for Stack<T> {
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::de::{Deserialize, Deserializer};
-    use serde::ser::{Serialize, Serializer};
+    use ::serde::de::{Deserialize, Deserializer};
+    use ::serde::ser::{Serialize, Serializer};
 
     impl<T> Serialize for Stack<T>
     where

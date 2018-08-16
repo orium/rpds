@@ -20,13 +20,6 @@ To use rpds add the following to your `Cargo.toml`:
 rpds = "<version>"
 ```
 
-Additionally, add this to your crate root:
-
-```rust,ignore
-#[macro_use]
-extern crate rpds;
-```
-
 ## Data Structures
 
 This crate offers the following data structures:

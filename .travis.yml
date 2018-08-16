@@ -8,7 +8,8 @@ os:
 rust:
   - stable
   - beta
-  - nightly
+# TODO Enable nightly when component `rustfmt` is available there.
+#  - nightly
 
 addons:
   apt:
@@ -24,10 +25,7 @@ addons:
       - jq
 
 install:
-  # needed for rustfmt
-  # TODO Remove when all features used in `.rustfmt.toml` are stable.
-  - rustup toolchain install nightly
-  - rustup component add --toolchain nightly rustfmt-preview
+  - rustup component add rustfmt
   - cargo install cargo-deadlinks
 
 script:

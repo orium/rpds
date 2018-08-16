@@ -5,12 +5,8 @@
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
-#[macro_use]
-extern crate criterion;
-extern crate rpds;
-
-use criterion::{black_box, Criterion};
-use rpds::List;
+use ::criterion::{black_box, criterion_group, criterion_main, Criterion};
+use ::rpds::List;
 
 fn rpds_list_push_front(c: &mut Criterion) {
     let limit = 10_000;

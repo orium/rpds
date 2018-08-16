@@ -93,8 +93,8 @@ macro_rules! vector {
 /// and [Understanding Persistent Vector Part 2](http://hypirion.com/musings/understanding-persistent-vector-pt-2).
 #[derive(Debug)]
 pub struct Vector<T> {
-    root:   Arc<Node<T>>,
-    bits:   u8,
+    root: Arc<Node<T>>,
+    bits: u8,
     length: usize,
 }
 
@@ -116,9 +116,9 @@ impl<T> Node<T> {
     fn get<F: Fn(usize, usize) -> usize>(&self, index: usize, height: usize, bucket: F) -> &T {
         let b = bucket(index, height);
 
-        match *self {
-            Node::Branch(ref a) => a[b].get(index, height - 1, bucket),
-            Node::Leaf(ref a) => {
+        match self {
+            Node::Branch(a) => a[b].get(index, height - 1, bucket),
+            Node::Leaf(a) => {
                 debug_assert_eq!(height, 0);
                 a[b].as_ref()
             }
@@ -128,8 +128,8 @@ impl<T> Node<T> {
     fn assoc<F: Fn(usize) -> usize>(&mut self, value: T, height: usize, bucket: F) {
         let b = bucket(height);
 
-        match *self {
-            Node::Leaf(ref mut a) => {
+        match self {
+            Node::Leaf(a) => {
                 debug_assert_eq!(height, 0, "cannot have a leaf at this height");
 
                 if a.len() == b {
@@ -139,22 +139,22 @@ impl<T> Node<T> {
                 }
             }
 
-            Node::Branch(ref mut a) => {
+            Node::Branch(a) => {
                 debug_assert!(height > 0, "cannot have a branch at this height");
 
-                if let Some(subtree) = a.get_mut(b) {
-                    Arc::make_mut(subtree).assoc(value, height - 1, bucket);
-                    return; // TODO avoid return when NLL are ready.
+                match a.get_mut(b) {
+                    Some(subtree) => Arc::make_mut(subtree).assoc(value, height - 1, bucket),
+                    None => {
+                        let mut subtree = if height > 1 {
+                            Node::new_empty_branch()
+                        } else {
+                            Node::new_empty_leaf()
+                        };
+
+                        subtree.assoc(value, height - 1, bucket);
+                        a.push(Arc::new(subtree));
+                    }
                 }
-
-                let mut subtree = if height > 1 {
-                    Node::new_empty_branch()
-                } else {
-                    Node::new_empty_leaf()
-                };
-
-                subtree.assoc(value, height - 1, bucket);
-                a.push(Arc::new(subtree));
             }
         }
     }
@@ -170,9 +170,9 @@ impl<T> Node<T> {
     }
 
     fn used(&self) -> usize {
-        match *self {
-            Node::Leaf(ref a) => a.len(),
-            Node::Branch(ref a) => a.len(),
+        match self {
+            Node::Leaf(a) => a.len(),
+            Node::Branch(a) => a.len(),
         }
     }
 
@@ -186,15 +186,16 @@ impl<T> Node<T> {
             return true;
         }
 
-        match *self {
-            Node::Leaf(ref mut a) => {
+        match self {
+            Node::Leaf(a) => {
                 a.pop();
             }
 
-            Node::Branch(ref mut a) =>
+            Node::Branch(a) => {
                 if Arc::make_mut(a.last_mut().unwrap()).drop_last() {
                     a.pop();
-                },
+                }
+            }
         }
 
         self.is_empty()
@@ -222,9 +223,9 @@ impl<T: Clone> Node<T> {
 
 impl<T> Clone for Node<T> {
     fn clone(&self) -> Node<T> {
-        match *self {
-            Node::Branch(ref a) => Node::Branch(Vec::clone(a)),
-            Node::Leaf(ref a) => Node::Leaf(Vec::clone(a)),
+        match self {
+            Node::Branch(a) => Node::Branch(Vec::clone(a)),
+            Node::Leaf(a) => Node::Leaf(Vec::clone(a)),
         }
     }
 }
@@ -396,19 +397,12 @@ impl<T> Vector<T> {
     ///
     /// The trie must always have a compressed root.
     fn compress_root(root: &mut Node<T>) -> Option<Arc<Node<T>>> {
-        match *root {
+        let singleton = root.is_singleton();
+
+        match root {
             Node::Leaf(_) => None,
-            Node::Branch(_) =>
-                if root.is_singleton() {
-                    // TODO Simplify once we have NLL.
-                    if let Node::Branch(ref mut a) = *root {
-                        a.pop()
-                    } else {
-                        unreachable!()
-                    }
-                } else {
-                    None
-                },
+            Node::Branch(a) if singleton => a.pop(),
+            Node::Branch(_) => None,
         }
     }
 
@@ -457,11 +451,11 @@ impl<T> Vector<T> {
     }
 
     #[must_use]
-    pub fn iter(&self) -> Iter<T> {
+    pub fn iter(&self) -> Iter<'_, T> {
         self.iter_arc().map(|v| v.borrow())
     }
 
-    fn iter_arc(&self) -> IterArc<T> {
+    fn iter_arc(&self) -> IterArc<'_, T> {
         IterArc::new(self)
     }
 }
@@ -542,8 +536,8 @@ impl<T: Hash> Hash for Vector<T> {
 impl<T> Clone for Vector<T> {
     fn clone(&self) -> Vector<T> {
         Vector {
-            root:   Arc::clone(&self.root),
-            bits:   self.bits,
+            root: Arc::clone(&self.root),
+            bits: self.bits,
             length: self.length,
         }
     }
@@ -553,7 +547,7 @@ impl<T> Display for Vector<T>
 where
     T: Display,
 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("[")?;
@@ -595,23 +589,23 @@ impl<T> Extend<T> for Vector<T> {
     }
 }
 
-pub struct IterArc<'a, T: 'a> {
+pub struct IterArc<'a, T> {
     vector: &'a Vector<T>,
 
-    stack_forward:  Option<Vec<IterStackElement<'a, T>>>,
+    stack_forward: Option<Vec<IterStackElement<'a, T>>>,
     stack_backward: Option<Vec<IterStackElement<'a, T>>>,
 
-    left_index:  usize, // inclusive
+    left_index: usize,  // inclusive
     right_index: usize, // exclusive
 }
 
-struct IterStackElement<'a, T: 'a> {
-    node:  &'a Node<T>,
+struct IterStackElement<'a, T> {
+    node: &'a Node<T>,
     index: isize,
 }
 
 impl<'a, T> IterStackElement<'a, T> {
-    fn new(node: &Node<T>, backwards: bool) -> IterStackElement<T> {
+    fn new(node: &Node<T>, backwards: bool) -> IterStackElement<'_, T> {
         IterStackElement {
             node,
             index: if backwards {
@@ -623,15 +617,15 @@ impl<'a, T> IterStackElement<'a, T> {
     }
 
     fn current_node(&self) -> &'a Node<T> {
-        match *self.node {
-            Node::Branch(ref a) => a[self.index as usize].as_ref(),
+        match self.node {
+            Node::Branch(a) => a[self.index as usize].as_ref(),
             Node::Leaf(_) => panic!("called current node of a branch"),
         }
     }
 
     fn current_elem(&self) -> &'a Arc<T> {
-        match *self.node {
-            Node::Leaf(ref a) => &a[self.index as usize],
+        match self.node {
+            Node::Leaf(a) => &a[self.index as usize],
             Node::Branch(_) => panic!("called current element of a branch"),
         }
     }
@@ -650,7 +644,7 @@ impl<'a, T> IterStackElement<'a, T> {
 }
 
 impl<'a, T> IterArc<'a, T> {
-    fn new(vector: &Vector<T>) -> IterArc<T> {
+    fn new(vector: &Vector<T>) -> IterArc<'_, T> {
         IterArc {
             vector,
 
@@ -662,7 +656,7 @@ impl<'a, T> IterArc<'a, T> {
         }
     }
 
-    fn dig(stack: &mut Vec<IterStackElement<T>>, backwards: bool) {
+    fn dig(stack: &mut Vec<IterStackElement<'_, T>>, backwards: bool) {
         let next_node: &Node<T> = {
             let stack_top = stack.last().unwrap();
 
@@ -686,7 +680,8 @@ impl<'a, T> IterArc<'a, T> {
         };
 
         if stack_field.is_none() {
-            let mut stack: Vec<IterStackElement<T>> = Vec::with_capacity(self.vector.height() + 1);
+            let mut stack: Vec<IterStackElement<'_, T>> =
+                Vec::with_capacity(self.vector.height() + 1);
 
             stack.push(IterStackElement::new(self.vector.root.borrow(), backwards));
 
@@ -696,7 +691,7 @@ impl<'a, T> IterArc<'a, T> {
         }
     }
 
-    fn advance(stack: &mut Vec<IterStackElement<T>>, backwards: bool) {
+    fn advance(stack: &mut Vec<IterStackElement<'_, T>>, backwards: bool) {
         if let Some(mut stack_element) = stack.pop() {
             let finished = stack_element.advance(backwards);
 
@@ -790,8 +785,8 @@ impl<'a, T> ExactSizeIterator for IterArc<'a, T> {}
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
-    use serde::ser::{Serialize, Serializer};
+    use ::serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
+    use ::serde::ser::{Serialize, Serializer};
     use std::fmt;
     use std::marker::PhantomData;
 
@@ -825,7 +820,7 @@ pub mod serde {
     {
         type Value = Vector<T>;
 
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
             formatter.write_str("a sequence")
         }
 

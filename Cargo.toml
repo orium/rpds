@@ -4,6 +4,8 @@ description = "Persistent data structures with structural sharing"
 version = "0.5.0"
 authors = ["Diogo Sousa <diogogsousa@gmail.com>"]
 
+edition = "2018"
+
 homepage = "https://github.com/orium/rpds"
 repository = "https://github.com/orium/rpds"
 documentation = "https://docs.rs/rpds"

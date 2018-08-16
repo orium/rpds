@@ -27,16 +27,16 @@ macro_rules! list_reverse {
         }
     };
     ($h:expr ; $($reversed:expr),*) => {
-        list_reverse!( ; $h, $($reversed),*)
+        $crate::list_reverse!( ; $h, $($reversed),*)
     };
     ($h:expr, $($t:expr),+ ; $($reversed:expr),*) => {
-        list_reverse!($($t),* ; $h, $($reversed),*)
+        $crate::list_reverse!($($t),* ; $h, $($reversed),*)
     };
 
     // This is just to handle the cases where this macro is called with an extra comma in the
     // reserve list, which can happen in a recursive call.
     ($($t:expr),* ; $($reversed:expr),*,) => {
-        list_reverse!($($t),* ; $($reversed),*)
+        $crate::list_reverse!($($t),* ; $($reversed),*)
     };
 }
 
@@ -55,7 +55,7 @@ macro_rules! list_reverse {
 #[macro_export]
 macro_rules! list {
     ($($e:expr),*) => {
-        list_reverse!($($e),* ; )
+        $crate::list_reverse!($($e),* ; )
     };
 }
 
@@ -87,22 +87,22 @@ macro_rules! list {
 /// make some operations more efficient.
 #[derive(Debug)]
 pub struct List<T> {
-    head:   Option<Arc<Node<T>>>,
-    last:   Option<Arc<T>>,
+    head: Option<Arc<Node<T>>>,
+    last: Option<Arc<T>>,
     length: usize,
 }
 
 #[derive(Debug)]
 struct Node<T> {
     value: Arc<T>,
-    next:  Option<Arc<Node<T>>>,
+    next: Option<Arc<Node<T>>>,
 }
 
 impl<T> Clone for Node<T> {
     fn clone(&self) -> Node<T> {
         Node {
             value: Arc::clone(&self.value),
-            next:  self.next.clone(),
+            next: self.next.clone(),
         }
     }
 }
@@ -111,8 +111,8 @@ impl<T> List<T> {
     #[must_use]
     pub fn new() -> List<T> {
         List {
-            head:   None,
-            last:   None,
+            head: None,
+            last: None,
             length: 0,
         }
     }
@@ -139,7 +139,7 @@ impl<T> List<T> {
     }
 
     pub fn drop_first_mut(&mut self) -> bool {
-        if let Some(ref h) = self.head.take() {
+        if let Some(h) = self.head.take() {
             self.head = h.next.clone();
             self.length -= 1;
 
@@ -160,7 +160,7 @@ impl<T> List<T> {
 
         let new_head = Node {
             value: v,
-            next:  self.head.take(),
+            next: self.head.take(),
         };
 
         self.head = Some(Arc::new(new_head));
@@ -202,15 +202,12 @@ impl<T> List<T> {
         let mut current: Option<Arc<Node<T>>> = self.head.take();
 
         while let Some(mut curr_arc) = current {
-            // TODO Simplify once we have NLL.
-            {
-                let curr = Arc::make_mut(&mut curr_arc);
-                let curr_next = curr.next.take();
+            let curr = Arc::make_mut(&mut curr_arc);
+            let curr_next = curr.next.take();
 
-                curr.next = prev.take();
+            curr.next = prev.take();
 
-                current = curr_next;
-            }
+            current = curr_next;
             prev = Some(curr_arc);
         }
 
@@ -230,11 +227,11 @@ impl<T> List<T> {
     }
 
     #[must_use]
-    pub fn iter(&self) -> Iter<T> {
+    pub fn iter(&self) -> Iter<'_, T> {
         self.iter_arc().map(|v| v.borrow())
     }
 
-    pub(crate) fn iter_arc(&self) -> IterArc<T> {
+    pub(crate) fn iter_arc(&self) -> IterArc<'_, T> {
         IterArc::new(self)
     }
 }
@@ -280,15 +277,15 @@ impl<T: Hash> Hash for List<T> {
 impl<T> Clone for List<T> {
     fn clone(&self) -> List<T> {
         List {
-            head:   self.head.clone(),
-            last:   self.last.clone(),
+            head: self.head.clone(),
+            last: self.last.clone(),
             length: self.length,
         }
     }
 }
 
 impl<T: Display> Display for List<T> {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("[")?;
@@ -335,15 +332,15 @@ impl<T> FromIterator<T> for List<T> {
 }
 
 #[derive(Debug)]
-pub struct IterArc<'a, T: 'a> {
-    next:   Option<&'a Node<T>>,
+pub struct IterArc<'a, T> {
+    next: Option<&'a Node<T>>,
     length: usize,
 }
 
 impl<'a, T> IterArc<'a, T> {
-    fn new(list: &List<T>) -> IterArc<T> {
+    fn new(list: &List<T>) -> IterArc<'_, T> {
         IterArc {
-            next:   list.head.as_ref().map(|node| node.as_ref()),
+            next: list.head.as_ref().map(|node| node.as_ref()),
             length: list.len(),
         }
     }
@@ -354,7 +351,7 @@ impl<'a, T> Iterator for IterArc<'a, T> {
 
     fn next(&mut self) -> Option<&'a Arc<T>> {
         match self.next {
-            Some(&Node {
+            Some(Node {
                 value: ref v,
                 next: ref t,
             }) => {
@@ -376,8 +373,8 @@ impl<'a, T> ExactSizeIterator for IterArc<'a, T> {}
 #[cfg(feature = "serde")]
 pub mod serde {
     use super::*;
-    use serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
-    use serde::ser::{Serialize, Serializer};
+    use ::serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
+    use ::serde::ser::{Serialize, Serializer};
     use std::fmt;
     use std::marker::PhantomData;
 
@@ -411,7 +408,7 @@ pub mod serde {
     {
         type Value = List<T>;
 
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
             formatter.write_str("a sequence")
         }
 

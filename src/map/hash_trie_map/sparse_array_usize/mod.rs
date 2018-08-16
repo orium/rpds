@@ -12,7 +12,7 @@ use std::vec::Vec;
 #[derive(Debug, PartialEq, Eq)]
 pub struct SparseArrayUsize<T> {
     bitmap: usize,
-    array:  Vec<T>,
+    array: Vec<T>,
 }
 
 mod sparse_array_usize_utils {
@@ -32,7 +32,7 @@ impl<T> SparseArrayUsize<T> {
     pub fn new() -> SparseArrayUsize<T> {
         SparseArrayUsize {
             bitmap: 0,
-            array:  Vec::new(),
+            array: Vec::new(),
         }
     }
 
@@ -87,7 +87,7 @@ impl<T> SparseArrayUsize<T> {
         self.bitmap.count_ones() as usize
     }
 
-    pub fn iter(&self) -> slice::Iter<T> {
+    pub fn iter(&self) -> slice::Iter<'_, T> {
         self.array.iter()
     }
 }
@@ -96,7 +96,7 @@ impl<T: Clone> Clone for SparseArrayUsize<T> {
     fn clone(&self) -> SparseArrayUsize<T> {
         SparseArrayUsize {
             bitmap: self.bitmap,
-            array:  Vec::clone(&self.array),
+            array: Vec::clone(&self.array),
         }
     }
 }

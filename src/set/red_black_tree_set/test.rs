@@ -4,9 +4,11 @@
  */
 
 use super::*;
+use pretty_assertions::assert_eq;
 
 mod iter {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_iter_empty() {
@@ -104,12 +106,12 @@ mod compile_time {
 
     #[test]
     fn test_is_send() {
-        let _: Box<Send> = Box::new(RedBlackTreeSet::<i32>::new());
+        let _: Box<dyn Send> = Box::new(RedBlackTreeSet::<i32>::new());
     }
 
     #[test]
     fn test_is_sync() {
-        let _: Box<Sync> = Box::new(RedBlackTreeSet::<i32>::new());
+        let _: Box<dyn Sync> = Box::new(RedBlackTreeSet::<i32>::new());
     }
 }
 

@@ -4,9 +4,11 @@
  */
 
 use super::*;
+use pretty_assertions::assert_eq;
 
 mod bucket {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_list_remove_first() {
@@ -180,7 +182,7 @@ mod hasher_mocks {
 
     pub struct MockedHasher {
         last_byte: Option<u8>,
-        byte_map:  HashMap<u8, HashValue>,
+        byte_map: HashMap<u8, HashValue>,
     }
 
     impl MockedHashBuilder {
@@ -201,7 +203,7 @@ mod hasher_mocks {
         fn build_hasher(&self) -> MockedHasher {
             MockedHasher {
                 last_byte: None,
-                byte_map:  self.byte_map.clone(),
+                byte_map: self.byte_map.clone(),
             }
         }
     }
@@ -218,11 +220,11 @@ mod hasher_mocks {
 
     pub struct LimitedHashSpaceHashBuilder {
         inner_hash_builder: RandomState,
-        hash_space_size:    usize,
+        hash_space_size: usize,
     }
 
     pub struct LimitedHashSpaceHasher {
-        inner_hasher:    ::std::collections::hash_map::DefaultHasher,
+        inner_hasher: ::std::collections::hash_map::DefaultHasher,
         hash_space_size: usize,
     }
 
@@ -239,7 +241,7 @@ mod hasher_mocks {
         fn clone(&self) -> LimitedHashSpaceHashBuilder {
             LimitedHashSpaceHashBuilder {
                 inner_hash_builder: self.inner_hash_builder.clone(),
-                hash_space_size:    self.hash_space_size,
+                hash_space_size: self.hash_space_size,
             }
         }
     }
@@ -249,7 +251,7 @@ mod hasher_mocks {
 
         fn build_hasher(&self) -> LimitedHashSpaceHasher {
             LimitedHashSpaceHasher {
-                inner_hasher:    self.inner_hash_builder.build_hasher(),
+                inner_hasher: self.inner_hash_builder.build_hasher(),
                 hash_space_size: self.hash_space_size,
             }
         }
@@ -269,6 +271,7 @@ mod hasher_mocks {
 mod node {
     use self::hasher_mocks::*;
     use super::*;
+    use pretty_assertions::assert_eq;
     use std::collections::HashMap;
 
     #[test]
@@ -596,6 +599,7 @@ mod node {
 
 mod iter {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_trie_max_height() {
@@ -727,12 +731,12 @@ mod compile_time {
 
     #[test]
     fn test_is_send() {
-        let _: Box<Send> = Box::new(HashTrieMap::<i32, i32>::new());
+        let _: Box<dyn Send> = Box::new(HashTrieMap::<i32, i32>::new());
     }
 
     #[test]
     fn test_is_sync() {
-        let _: Box<Sync> = Box::new(HashTrieMap::<i32, i32>::new());
+        let _: Box<dyn Sync> = Box::new(HashTrieMap::<i32, i32>::new());
     }
 }
 
