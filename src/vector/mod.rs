@@ -10,6 +10,7 @@ use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::mem::size_of;
 use std::ops::Index;
+use std::ops::IndexMut;
 use std::sync::Arc;
 use std::vec::Vec;
 
@@ -198,6 +199,21 @@ impl<T> Node<T> {
         self.is_empty()
     }
 }
+
+impl<T: Clone> Node<T> {
+    fn get_mut<F: Fn(usize, usize) -> usize>(&mut self, index: usize, height: usize, bucket: F) -> &mut T {
+        let b = bucket(index, height);
+
+        match *self {
+            Node::Branch(ref mut a) => Arc::make_mut(&mut a[b]).get_mut(index, height - 1, bucket),
+            Node::Leaf(ref mut a) => {
+                debug_assert_eq!(height, 0);
+                Arc::make_mut(&mut a[b])
+            }
+        }
+    }
+}
+
 
 impl<T> Clone for Node<T> {
     fn clone(&self) -> Node<T> {
@@ -444,11 +460,38 @@ impl<T> Vector<T> {
     }
 }
 
+impl<T: Clone> Vector<T> {
+    #[must_use]
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+        if index >= self.length {
+            None
+        } else {
+            let height = self.height();
+            let bits = self.bits;
+            Some(
+                Arc::make_mut(&mut self.root).get_mut(
+                    index,
+                    height,
+                    |index, height| { vector_utils::bucket(bits, index, height) }
+                )
+            )
+        }
+    }
+}
+
 impl<T> Index<usize> for Vector<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &T {
         self.get(index)
+            .expect(&format!("index out of bounds {}", index))
+    }
+}
+
+impl<T: Clone> IndexMut<usize> for Vector<T> {
+
+    fn index_mut(&mut self, index: usize) -> &mut T {
+        self.get_mut(index)
             .expect(&format!("index out of bounds {}", index))
     }
 }
