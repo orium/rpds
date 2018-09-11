@@ -461,6 +461,8 @@ impl<T> Vector<T> {
 }
 
 impl<T: Clone> Vector<T> {
+    /// Gets a mutable reference to an element. If the element is shared, this Vector will be cloned.
+    /// Returns **None** if and only if the given **index** is out of range.
     #[must_use]
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         if index >= self.length {
