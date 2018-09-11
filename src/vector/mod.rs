@@ -201,7 +201,12 @@ impl<T> Node<T> {
 }
 
 impl<T: Clone> Node<T> {
-    fn get_mut<F: Fn(usize, usize) -> usize>(&mut self, index: usize, height: usize, bucket: F) -> &mut T {
+    fn get_mut<F: Fn(usize, usize) -> usize>(
+        &mut self,
+        index: usize,
+        height: usize,
+        bucket: F,
+    ) -> &mut T {
         let b = bucket(index, height);
 
         match *self {
@@ -213,7 +218,6 @@ impl<T: Clone> Node<T> {
         }
     }
 }
-
 
 impl<T> Clone for Node<T> {
     fn clone(&self) -> Node<T> {
@@ -471,11 +475,9 @@ impl<T: Clone> Vector<T> {
             let height = self.height();
             let bits = self.bits;
             Some(
-                Arc::make_mut(&mut self.root).get_mut(
-                    index,
-                    height,
-                    |index, height| { vector_utils::bucket(bits, index, height) }
-                )
+                Arc::make_mut(&mut self.root).get_mut(index, height, |index, height| {
+                    vector_utils::bucket(bits, index, height)
+                }),
             )
         }
     }
@@ -491,7 +493,6 @@ impl<T> Index<usize> for Vector<T> {
 }
 
 impl<T: Clone> IndexMut<usize> for Vector<T> {
-
     fn index_mut(&mut self, index: usize) -> &mut T {
         self.get_mut(index)
             .expect(&format!("index out of bounds {}", index))

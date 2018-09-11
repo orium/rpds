@@ -684,7 +684,7 @@ fn test_index_mut() {
         String::from("the"),
         String::from("fun"),
         String::from("begins!")
-        ];
+    ];
     let mut v2 = v1.clone();
     let expected1 = vector!["This", "is", "where", "the", "fun", "begins!"];
     let expected2 = vector!["That", "is", "where", "the", "cloning", "BEGINS!"];
@@ -697,7 +697,7 @@ fn test_index_mut() {
         println!("{}\t{}\t{}\t{}", v1[i], expected1[i], v2[i], expected2[i]);
         assert_eq!(v1[i], expected1[i]);
         assert_eq!(v2[i], expected2[i]);
-    } 
+    }
 }
 
 #[cfg(feature = "serde")]
