@@ -693,6 +693,9 @@ fn test_index_mut() {
     v2[4] = String::from("cloning");
     v2[5].make_ascii_uppercase();
 
+    let len = v2.len();
+    assert_eq!(v2.get_mut(len), None);
+
     for i in 0..v1.len() {
         println!("{}\t{}\t{}\t{}", v1[i], expected1[i], v2[i], expected2[i]);
         assert_eq!(v1[i], expected1[i]);
