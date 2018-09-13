@@ -675,6 +675,31 @@ fn test_clone() {
     assert!(clone.iter().eq(vector.iter()));
 }
 
+#[test]
+fn test_index_mut() {
+    let v1 = vector![
+        String::from("This"),
+        String::from("is"),
+        String::from("where"),
+        String::from("the"),
+        String::from("fun"),
+        String::from("begins!")
+    ];
+    let mut v2 = v1.clone();
+    let expected1 = vector!["This", "is", "where", "the", "fun", "begins!"];
+    let expected2 = vector!["That", "is", "where", "the", "cloning", "BEGINS!"];
+
+    v2[0] = "That".into();
+    v2[4] = String::from("cloning");
+    v2[5].make_ascii_uppercase();
+
+    let len = v2.len();
+    assert_eq!(v2.get_mut(len), None);
+
+    assert_eq!(v1, expected1);
+    assert_eq!(v2, expected2);
+}
+
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() {
