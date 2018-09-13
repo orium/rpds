@@ -465,8 +465,8 @@ impl<T> Vector<T> {
 }
 
 impl<T: Clone> Vector<T> {
-    /// Gets a mutable reference to an element. If the element is shared, this Vector will be cloned.
-    /// Returns **None** if and only if the given **index** is out of range.
+    /// Gets a mutable reference to an element. If the element is shared, it will be cloned.
+    /// Returns `None` if and only if the given `index` is out of range.
     #[must_use]
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         if index >= self.length {
@@ -505,16 +505,16 @@ impl<T> Default for Vector<T> {
     }
 }
 
-impl<T: PartialEq> PartialEq for Vector<T> {
-    fn eq(&self, other: &Vector<T>) -> bool {
+impl<T: PartialEq<U>, U> PartialEq<Vector<U>> for Vector<T> {
+    fn eq(&self, other: &Vector<U>) -> bool {
         self.length == other.length && self.iter().eq(other.iter())
     }
 }
 
 impl<T: Eq> Eq for Vector<T> {}
 
-impl<T: PartialOrd<T>> PartialOrd<Vector<T>> for Vector<T> {
-    fn partial_cmp(&self, other: &Vector<T>) -> Option<Ordering> {
+impl<T: PartialOrd<U>, U> PartialOrd<Vector<U>> for Vector<T> {
+    fn partial_cmp(&self, other: &Vector<U>) -> Option<Ordering> {
         self.iter().partial_cmp(other.iter())
     }
 }
