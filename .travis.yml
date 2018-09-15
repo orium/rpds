@@ -36,15 +36,15 @@ script:
 after_success:
   test $TRAVIS_OS_NAME = linux
   && test $TRAVIS_RUST_VERSION = stable
-  && wget https://github.com/SimonKagstrom/kcov/archive/v35.tar.gz
-  && tar xf v35.tar.gz
-  && cd kcov-35
+  && wget https://github.com/SimonKagstrom/kcov/archive/v36.tar.gz
+  && tar xf v36.tar.gz
+  && cd kcov-36
   && mkdir build
   && cd build
   && cmake ..
   && make
   && sudo make install
   && cd ../../
-  && rm -rf kcov-35 v35.tar.gz
+  && rm -rf kcov-36 v36.tar.gz
   && travis_wait ./tools/codecov.sh
   && bash <(curl -s https://codecov.io/bash)
