@@ -24,9 +24,11 @@ license = "MPL-2.0"
 # What to include when packaging.
 include = [
     "/src/**/*.rs",
+    "/benches/**/*.rs",
     "/Cargo.toml",
     "/LICENSE.md",
     "/README.md",
+    "/release-notes.md",
 ]
 
 [badges]
