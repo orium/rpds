@@ -11,7 +11,7 @@ cd "$(git rev-parse --show-toplevel)"
 
 cargo build --features fatal-warnings,serde --all-targets
 cargo test  --features fatal-warnings,serde
-QUICK_BENCH=true cargo bench --features fatal-warnings,serde
+QUICK_BENCH=true cargo bench --features fatal-warnings,serde -- --test
 cargo doc   --features fatal-warnings,serde
 cargo deadlinks
 cargo package --allow-dirty
