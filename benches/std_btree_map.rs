@@ -8,14 +8,11 @@
 #[macro_use]
 extern crate criterion;
 
-mod utils;
-
 use criterion::{black_box, Criterion};
 use std::collections::BTreeMap;
-use utils::limit;
 
 fn std_btree_map_insert(c: &mut Criterion) {
-    let limit = limit(10_000);
+    let limit = 10_000;
 
     c.bench_function("std b-tree map insert", move |b| {
         b.iter(|| {
@@ -31,7 +28,7 @@ fn std_btree_map_insert(c: &mut Criterion) {
 }
 
 fn std_btree_map_remove(c: &mut Criterion) {
-    let limit = limit(10_000);
+    let limit = 10_000;
 
     c.bench_function("std btree map remove", move |b| {
         b.iter_with_setup(
@@ -56,7 +53,7 @@ fn std_btree_map_remove(c: &mut Criterion) {
 }
 
 fn std_btree_map_get(c: &mut Criterion) {
-    let limit = limit(10_000);
+    let limit = 10_000;
     let mut map: BTreeMap<usize, isize> = BTreeMap::new();
 
     for i in 0..limit {
@@ -73,7 +70,7 @@ fn std_btree_map_get(c: &mut Criterion) {
 }
 
 fn std_btree_map_iterate(c: &mut Criterion) {
-    let limit = limit(10_000);
+    let limit = 10_000;
     let mut map: BTreeMap<usize, isize> = BTreeMap::new();
 
     for i in 0..limit {

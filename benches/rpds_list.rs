@@ -9,14 +9,11 @@
 extern crate criterion;
 extern crate rpds;
 
-mod utils;
-
 use criterion::{black_box, Criterion};
 use rpds::List;
-use utils::limit;
 
 fn rpds_list_push_front(c: &mut Criterion) {
-    let limit = limit(10_000);
+    let limit = 10_000;
 
     c.bench_function("rpds list push front", move |b| {
         b.iter(|| {
@@ -32,7 +29,7 @@ fn rpds_list_push_front(c: &mut Criterion) {
 }
 
 fn rpds_list_push_front_mut(c: &mut Criterion) {
-    let limit = limit(10_000);
+    let limit = 10_000;
 
     c.bench_function("rpds list push front mut", move |b| {
         b.iter(|| {
@@ -48,7 +45,7 @@ fn rpds_list_push_front_mut(c: &mut Criterion) {
 }
 
 fn rpds_list_drop_first(c: &mut Criterion) {
-    let limit = limit(10_000);
+    let limit = 10_000;
 
     c.bench_function("rpds list drop first", move |b| {
         b.iter_with_setup(
@@ -73,7 +70,7 @@ fn rpds_list_drop_first(c: &mut Criterion) {
 }
 
 fn rpds_list_drop_first_mut(c: &mut Criterion) {
-    let limit = limit(10_000);
+    let limit = 10_000;
 
     c.bench_function("rpds list drop first mut", move |b| {
         b.iter_with_setup(
@@ -98,7 +95,7 @@ fn rpds_list_drop_first_mut(c: &mut Criterion) {
 }
 
 fn rpds_list_reverse(c: &mut Criterion) {
-    let limit = limit(1_000);
+    let limit = 1_000;
 
     c.bench_function("rpds list reverse", move |b| {
         b.iter_with_setup(
@@ -123,7 +120,7 @@ fn rpds_list_reverse(c: &mut Criterion) {
 }
 
 fn rpds_list_reverse_mut(c: &mut Criterion) {
-    let limit = limit(1_000);
+    let limit = 1_000;
 
     c.bench_function("rpds list reverse mut", move |b| {
         b.iter_with_setup(
@@ -148,7 +145,7 @@ fn rpds_list_reverse_mut(c: &mut Criterion) {
 }
 
 fn rpds_list_iterate(c: &mut Criterion) {
-    let limit = limit(10_000);
+    let limit = 10_000;
     let mut list: List<usize> = List::new();
 
     for i in 0..limit {
