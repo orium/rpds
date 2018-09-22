@@ -1040,11 +1040,65 @@ where
 pub struct IterArc<'a, K: 'a, V: 'a> {
     map: &'a RedBlackTreeMap<K, V>,
 
-    stack_forward:  Option<Vec<&'a Node<K, V>>>,
-    stack_backward: Option<Vec<&'a Node<K, V>>>,
+    stack_forward:  Option<Stack<'a, K, V>>,
+    stack_backward: Option<Stack<'a, K, V>>,
 
     left_index:  usize, // inclusive
     right_index: usize, // exclusive
+}
+
+// This is a stack for navigating through the tree. It can be used to go either forwards or
+// backwards, but not both: when you call `dig` or `advance`, you must use the same value of
+// `backwards` for the entire lifetime of this stack.
+#[derive(Debug)]
+struct Stack<'a, K: 'a, V: 'a> {
+    // The invariant maintained by `stack` depends on whether we are moving forwards or backwards.
+    // In either case, the current node is at the top of the stack. If we are moving forwards, the
+    // rest of the stack consists of those ancestors of the current node that contain the current
+    // node in their left subtree. In other words, the keys in the stack increase as we go from the
+    // top of the stack to the bottom.
+    stack: Vec<&'a Node<K, V>>,
+}
+
+impl<'a, K: Ord, V> Stack<'a, K, V> {
+    fn new(map: &'a RedBlackTreeMap<K, V>) -> Stack<'a, K, V> {
+        let size = iter_utils::conservative_height(map.size()) + 1;
+        let mut vec = Vec::with_capacity(size);
+
+        if let Some(r) = Node::borrow(&map.root) {
+            vec.push(r);
+        }
+
+        Stack { stack: vec }
+    }
+
+    #[inline]
+    fn current(&self) -> Option<&'a Arc<Entry<K, V>>> {
+        self.stack.last().map(|node| &node.entry)
+    }
+
+    fn dig(&mut self, backwards: bool) {
+        let child = self.stack.last().and_then(|node| {
+            let c = if backwards { &node.right } else { &node.left };
+            Node::borrow(c)
+        });
+
+        if let Some(c) = child {
+            self.stack.push(c);
+            self.dig(backwards);
+        }
+    }
+
+    fn advance(&mut self, backwards: bool) {
+        if let Some(node) = self.stack.pop() {
+            let child = if backwards { &node.left } else { &node.right };
+
+            if let Some(c) = Node::borrow(child) {
+                self.stack.push(c);
+                self.dig(backwards);
+            }
+        }
+    }
 }
 
 mod iter_utils {
@@ -1083,18 +1137,6 @@ where
         }
     }
 
-    fn dig(stack: &mut Vec<&Node<K, V>>, backwards: bool) {
-        let child = stack.last().and_then(|node| {
-            let c = if backwards { &node.right } else { &node.left };
-            Node::borrow(c)
-        });
-
-        if let Some(c) = child {
-            stack.push(c);
-            IterArc::dig(stack, backwards);
-        }
-    }
-
     fn init_if_needed(&mut self, backwards: bool) {
         let stack_field = if backwards {
             &mut self.stack_backward
@@ -1103,14 +1145,8 @@ where
         };
 
         if stack_field.is_none() {
-            let mut stack =
-                Vec::with_capacity(iter_utils::conservative_height(self.map.size()) + 1);
-
-            if let Some(r) = Node::borrow(&self.map.root) {
-                stack.push(r);
-            }
-
-            IterArc::dig(&mut stack, backwards);
+            let mut stack = Stack::new(self.map);
+            stack.dig(backwards);
 
             *stack_field = Some(stack);
         }
@@ -1121,25 +1157,9 @@ where
         self.left_index < self.right_index
     }
 
-    fn advance(stack: &mut Vec<&Node<K, V>>, backwards: bool) {
-        if let Some(node) = stack.pop() {
-            let child = if backwards { &node.left } else { &node.right };
-
-            if let Some(c) = Node::borrow(child) {
-                stack.push(c);
-                IterArc::dig(stack, backwards);
-            }
-        }
-    }
-
-    #[inline]
-    fn current(stack: &[&'a Node<K, V>]) -> Option<&'a Arc<Entry<K, V>>> {
-        stack.last().map(|node| &node.entry)
-    }
-
     fn advance_forward(&mut self) {
         if self.non_empty() {
-            IterArc::advance(&mut self.stack_forward.as_mut().unwrap(), false);
+            self.stack_forward.as_mut().unwrap().advance(false);
 
             self.left_index += 1;
         }
@@ -1147,7 +1167,7 @@ where
 
     fn current_forward(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
         if self.non_empty() {
-            IterArc::current(self.stack_forward.as_ref().unwrap())
+            self.stack_forward.as_ref().unwrap().current()
         } else {
             None
         }
@@ -1155,7 +1175,7 @@ where
 
     fn advance_backward(&mut self) {
         if self.non_empty() {
-            IterArc::advance(&mut self.stack_backward.as_mut().unwrap(), true);
+            self.stack_backward.as_mut().unwrap().advance(true);
 
             self.right_index -= 1;
         }
@@ -1163,7 +1183,7 @@ where
 
     fn current_backward(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
         if self.non_empty() {
-            IterArc::current(self.stack_backward.as_ref().unwrap())
+            self.stack_backward.as_ref().unwrap().current()
         } else {
             None
         }
