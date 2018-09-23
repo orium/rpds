@@ -1156,38 +1156,6 @@ where
     fn non_empty(&self) -> bool {
         self.left_index < self.right_index
     }
-
-    fn advance_forward(&mut self) {
-        if self.non_empty() {
-            self.stack_forward.as_mut().unwrap().advance(false);
-
-            self.left_index += 1;
-        }
-    }
-
-    fn current_forward(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
-        if self.non_empty() {
-            self.stack_forward.as_ref().unwrap().current()
-        } else {
-            None
-        }
-    }
-
-    fn advance_backward(&mut self) {
-        if self.non_empty() {
-            self.stack_backward.as_mut().unwrap().advance(true);
-
-            self.right_index -= 1;
-        }
-    }
-
-    fn current_backward(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
-        if self.non_empty() {
-            self.stack_backward.as_ref().unwrap().current()
-        } else {
-            None
-        }
-    }
 }
 
 impl<'a, K, V> Iterator for IterArc<'a, K, V>
@@ -1199,11 +1167,15 @@ where
     fn next(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
         self.init_if_needed(false);
 
-        let current = self.current_forward();
+        if self.non_empty() {
+            let current = self.stack_forward.as_ref().unwrap().current();
+            self.stack_forward.as_mut().unwrap().advance(false);
+            self.left_index += 1;
 
-        self.advance_forward();
-
-        current
+            current
+        } else {
+            None
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -1220,11 +1192,15 @@ where
     fn next_back(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
         self.init_if_needed(true);
 
-        let current = self.current_backward();
+        if self.non_empty() {
+            let current = self.stack_backward.as_ref().unwrap().current();
+            self.stack_backward.as_mut().unwrap().advance(true);
+            self.right_index -= 1;
 
-        self.advance_backward();
-
-        current
+            current
+        } else {
+            None
+        }
     }
 }
 
