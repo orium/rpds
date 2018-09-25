@@ -919,14 +919,15 @@ where
         use std::ops::Bound::*;
 
         match (range.start_bound(), range.end_bound()) {
-            (Excluded(s), Excluded(e)) if s==e =>
+            (Excluded(s), Excluded(e)) if s == e =>
                 panic!("range start and end are equal and excluded in RedBlackTreeMap"),
-            (Included(s), Included(e)) |
-            (Included(s), Excluded(e)) |
-            (Excluded(s), Included(e)) |
-            (Excluded(s), Excluded(e)) if s>e =>
+            (Included(s), Included(e))
+            | (Included(s), Excluded(e))
+            | (Excluded(s), Included(e))
+            | (Excluded(s), Excluded(e))
+                if s > e =>
                 panic!("range start is greater than range end in RedBlackTreeMap"),
-            _ => {},
+            _ => {}
         };
         RangeIter::new(self, range)
     }
@@ -1086,7 +1087,9 @@ impl<'a, K: Ord, V> Stack<'a, K, V> {
     fn new(map: &'a RedBlackTreeMap<K, V>) -> Stack<'a, K, V> {
         let size = iter_utils::conservative_height(map.size()) + 1;
 
-        Stack { stack: Vec::with_capacity(size) }
+        Stack {
+            stack: Vec::with_capacity(size),
+        }
     }
 
     #[inline]
@@ -1132,7 +1135,11 @@ impl<'a, K: Ord, V> Stack<'a, K, V> {
             self.stack.push(cur_node);
         }
 
-        let child = if good == backwards { &cur_node.right } else { &cur_node.left };
+        let child = if good == backwards {
+            &cur_node.right
+        } else {
+            &cur_node.left
+        };
         if let Some(c) = child {
             self.dig_towards(c.borrow(), target, backwards);
         }
@@ -1298,18 +1305,20 @@ impl<'a, K: Ord, V> RangeIter<'a, K, V> {
         };
 
         RangeIter {
-            map: map,
+            map,
             stack_forward: forward,
             stack_backward: backward,
-            done: done,
+            done,
         }
     }
 
     // Checks if the forwards and backwards stacks are pointing to the same entry. If they are, it
     // means that yielding one more element will terminate the iteration.
     fn almost_done(&self) -> bool {
-        let ptr = |stack: &Stack<_,_>| {
-            stack.current().map(|arc| arc.borrow() as *const Entry<_,_>)
+        let ptr = |stack: &Stack<_, _>| {
+            stack
+                .current()
+                .map(|arc| arc.borrow() as *const Entry<_, _>)
         };
         ptr(&self.stack_forward) == ptr(&self.stack_backward)
     }

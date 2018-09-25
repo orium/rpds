@@ -1290,8 +1290,11 @@ mod iter {
 
         macro_rules! cmp {
             ($range:expr, $expected:expr) => {
-                assert_eq!(map.range($range).map(|(k, v)| (*k, *v)).collect::<Vec<_>>(), $expected);
-            }
+                assert_eq!(
+                    map.range($range).map(|(k, v)| (*k, *v)).collect::<Vec<_>>(),
+                    $expected
+                );
+            };
         }
 
         cmp!(.., vec![(0, 0), (1, 2), (2, 4), (3, 6)]);
