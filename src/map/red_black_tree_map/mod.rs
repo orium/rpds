@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
-use std::ops::Index;
+use std::ops::{Bound, Index, RangeBounds};
 use std::sync::Arc;
 
 // TODO Use impl trait instead of this when available.
@@ -908,6 +908,28 @@ where
     pub fn values(&self) -> IterValues<K, V> {
         self.iter().map(|(_, v)| v)
     }
+
+    #[must_use]
+    pub fn range<Q, RB>(&self, range: RB) -> RangeIter<K, V>
+    where
+        K: Borrow<Q>,
+        Q: Ord + ?Sized,
+        RB: RangeBounds<Q>,
+    {
+        use std::ops::Bound::*;
+
+        match (range.start_bound(), range.end_bound()) {
+            (Excluded(s), Excluded(e)) if s==e =>
+                panic!("range start and end are equal and excluded in RedBlackTreeMap"),
+            (Included(s), Included(e)) |
+            (Included(s), Excluded(e)) |
+            (Excluded(s), Included(e)) |
+            (Excluded(s), Excluded(e)) if s>e =>
+                panic!("range start is greater than range end in RedBlackTreeMap"),
+            _ => {},
+        };
+        RangeIter::new(self, range)
+    }
 }
 
 impl<'a, K, Q: ?Sized, V> Index<&'a Q> for RedBlackTreeMap<K, V>
@@ -1063,13 +1085,8 @@ struct Stack<'a, K: 'a, V: 'a> {
 impl<'a, K: Ord, V> Stack<'a, K, V> {
     fn new(map: &'a RedBlackTreeMap<K, V>) -> Stack<'a, K, V> {
         let size = iter_utils::conservative_height(map.size()) + 1;
-        let mut vec = Vec::with_capacity(size);
 
-        if let Some(r) = Node::borrow(&map.root) {
-            vec.push(r);
-        }
-
-        Stack { stack: vec }
+        Stack { stack: Vec::with_capacity(size) }
     }
 
     #[inline]
@@ -1086,6 +1103,38 @@ impl<'a, K: Ord, V> Stack<'a, K, V> {
         if let Some(c) = child {
             self.stack.push(c);
             self.dig(backwards);
+        }
+    }
+
+    // If backwards is false, this puts the first entry satisfying the bound on top of the stack.
+    fn dig_towards<Q>(&mut self, cur_node: &'a Node<K, V>, target: Bound<&Q>, backwards: bool)
+    where
+        K: Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        use std::ops::Bound::*;
+
+        let good = if backwards {
+            match target {
+                Included(x) => cur_node.entry.key.borrow() <= x,
+                Excluded(x) => cur_node.entry.key.borrow() < x,
+                Unbounded => true,
+            }
+        } else {
+            match target {
+                Included(x) => cur_node.entry.key.borrow() >= x,
+                Excluded(x) => cur_node.entry.key.borrow() > x,
+                Unbounded => true,
+            }
+        };
+
+        if good {
+            self.stack.push(cur_node);
+        }
+
+        let child = if good == backwards { &cur_node.right } else { &cur_node.left };
+        if let Some(c) = child {
+            self.dig_towards(c.borrow(), target, backwards);
         }
     }
 
@@ -1146,7 +1195,11 @@ where
 
         if stack_field.is_none() {
             let mut stack = Stack::new(self.map);
-            stack.dig(backwards);
+
+            if let Some(r) = Node::borrow(&self.map.root) {
+                stack.stack.push(r);
+                stack.dig(backwards);
+            }
 
             *stack_field = Some(stack);
         }
@@ -1205,6 +1258,112 @@ where
 }
 
 impl<'a, K: Ord, V> ExactSizeIterator for IterArc<'a, K, V> {}
+
+#[derive(Debug)]
+pub struct RangeIter<'a, K: 'a, V: 'a> {
+    map: &'a RedBlackTreeMap<K, V>,
+
+    stack_forward:  Stack<'a, K, V>,
+    stack_backward: Stack<'a, K, V>,
+
+    done: bool,
+}
+
+impl<'a, K: Ord, V> RangeIter<'a, K, V> {
+    fn new<Q, RB>(map: &RedBlackTreeMap<K, V>, bounds: RB) -> RangeIter<K, V>
+    where
+        K: Borrow<Q>,
+        Q: Ord + ?Sized,
+        RB: RangeBounds<Q>,
+    {
+        let mut forward = Stack::new(map);
+        let mut backward = Stack::new(map);
+
+        if let Some(ref root) = map.root {
+            forward.dig_towards(root.borrow(), bounds.start_bound(), false);
+            backward.dig_towards(root.borrow(), bounds.end_bound(), true);
+        }
+
+        // We need to explicitly check for the case that the case that the range is empty
+        // (either because we were passed an empty range like 1..1, or because we were passed a
+        // non-empty range that happened to contain no elements of the tree).
+        let done = if let Some(entry) = forward.current() {
+            match bounds.end_bound() {
+                Bound::Included(x) => entry.key.borrow() > x,
+                Bound::Excluded(x) => entry.key.borrow() >= x,
+                Bound::Unbounded => false,
+            }
+        } else {
+            true
+        };
+
+        RangeIter {
+            map: map,
+            stack_forward: forward,
+            stack_backward: backward,
+            done: done,
+        }
+    }
+
+    // Checks if the forwards and backwards stacks are pointing to the same entry. If they are, it
+    // means that yielding one more element will terminate the iteration.
+    fn almost_done(&self) -> bool {
+        let ptr = |stack: &Stack<_,_>| {
+            stack.current().map(|arc| arc.borrow() as *const Entry<_,_>)
+        };
+        ptr(&self.stack_forward) == ptr(&self.stack_backward)
+    }
+}
+
+impl<'a, K, V> Iterator for RangeIter<'a, K, V>
+where
+    K: Ord,
+{
+    type Item = (&'a K, &'a V);
+
+    fn next(&mut self) -> Option<(&'a K, &'a V)> {
+        if !self.done {
+            let current = self.stack_forward.current();
+
+            if self.almost_done() {
+                self.done = true;
+            } else {
+                self.stack_forward.advance(false);
+            }
+
+            current.map(|arc| {
+                let entry: &Entry<K, V> = arc.borrow();
+                (&entry.key, &entry.value)
+            })
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a, K, V> DoubleEndedIterator for RangeIter<'a, K, V>
+where
+    K: Ord,
+{
+    fn next_back(&mut self) -> Option<(&'a K, &'a V)> {
+        if !self.done {
+            let current = self.stack_backward.current();
+
+            if self.almost_done() {
+                self.done = true;
+            } else {
+                self.stack_backward.advance(true);
+            }
+
+            current.map(|arc| {
+                let entry: &Entry<K, V> = arc.borrow();
+                (&entry.key, &entry.value)
+            })
+        } else {
+            None
+        }
+    }
+}
 
 #[cfg(feature = "serde")]
 pub mod serde {

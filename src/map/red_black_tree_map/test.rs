@@ -1278,6 +1278,44 @@ mod iter {
 
         assert_eq!(left, 0);
     }
+
+    #[test]
+    fn test_range() {
+        let map = rbt_map![
+            0 => 0,
+            1 => 2,
+            2 => 4,
+            3 => 6
+        ];
+
+        macro_rules! cmp {
+            ($range:expr, $expected:expr) => {
+                assert_eq!(map.range($range).map(|(k, v)| (*k, *v)).collect::<Vec<_>>(), $expected);
+            }
+        }
+
+        cmp!(.., vec![(0, 0), (1, 2), (2, 4), (3, 6)]);
+        cmp!(1.., vec![(1, 2), (2, 4), (3, 6)]);
+        cmp!(1..3, vec![(1, 2), (2, 4)]);
+        cmp!(1..=3, vec![(1, 2), (2, 4), (3, 6)]);
+        cmp!(..3, vec![(0, 0), (1, 2), (2, 4)]);
+    }
+
+    #[test]
+    fn test_range_empty() {
+        let map = rbt_map![
+            0 => 0,
+            1 => 2,
+            10 => 20,
+            11 => 22
+        ];
+
+        assert_eq!(map.range(1..1).next(), None);
+        assert_eq!(map.range(3..10).next(), None);
+        assert_eq!(map.range(..0).next(), None);
+        assert_eq!(map.range(3..=9).next(), None);
+        assert_eq!(map.range(13..).next(), None);
+    }
 }
 
 mod compile_time {
