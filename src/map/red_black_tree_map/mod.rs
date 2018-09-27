@@ -17,6 +17,8 @@ pub type Iter<'a, K, V> =
     ::std::iter::Map<IterArc<'a, K, V>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
 pub type IterKeys<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
 pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
+pub type RangeIter<'a, K, V> =
+    ::std::iter::Map<RangeIterArc<'a, K, V>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
 
 /// Creates a [`RedBlackTreeMap`](map/red_black_tree_map/struct.RedBlackTreeMap.html) containing the
 /// given arguments:
@@ -929,7 +931,7 @@ where
                 panic!("range start is greater than range end in RedBlackTreeMap"),
             _ => {}
         };
-        RangeIter::new(self, range)
+        RangeIterArc::new(self, range).map(|e| (&e.key, &e.value))
     }
 }
 
@@ -1061,13 +1063,10 @@ where
 
 #[derive(Debug)]
 pub struct IterArc<'a, K: 'a, V: 'a> {
-    map: &'a RedBlackTreeMap<K, V>,
+    range_iter: RangeIterArc<'a, K, V>,
 
-    stack_forward:  Option<Stack<'a, K, V>>,
-    stack_backward: Option<Stack<'a, K, V>>,
-
-    left_index:  usize, // inclusive
-    right_index: usize, // exclusive
+    // Number of elements left in the iterator. This is used for things like size_hint.
+    size: usize,
 }
 
 // This is a stack for navigating through the tree. It can be used to go either forwards or
@@ -1183,38 +1182,9 @@ where
 {
     fn new(map: &RedBlackTreeMap<K, V>) -> IterArc<K, V> {
         IterArc {
-            map,
-
-            stack_forward: None,
-            stack_backward: None,
-
-            left_index: 0,
-            right_index: map.size(),
+            range_iter: RangeIterArc::new(map, ..),
+            size: map.size,
         }
-    }
-
-    fn init_if_needed(&mut self, backwards: bool) {
-        let stack_field = if backwards {
-            &mut self.stack_backward
-        } else {
-            &mut self.stack_forward
-        };
-
-        if stack_field.is_none() {
-            let mut stack = Stack::new(self.map);
-
-            if let Some(r) = Node::borrow(&self.map.root) {
-                stack.stack.push(r);
-                stack.dig(backwards);
-            }
-
-            *stack_field = Some(stack);
-        }
-    }
-
-    #[inline]
-    fn non_empty(&self) -> bool {
-        self.left_index < self.right_index
     }
 }
 
@@ -1225,23 +1195,16 @@ where
     type Item = &'a Arc<Entry<K, V>>;
 
     fn next(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
-        self.init_if_needed(false);
-
-        if self.non_empty() {
-            let current = self.stack_forward.as_ref().unwrap().current();
-            self.stack_forward.as_mut().unwrap().advance(false);
-            self.left_index += 1;
-
-            current
+        if self.size > 0 {
+            self.size -= 1;
+            self.range_iter.next()
         } else {
             None
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.right_index - self.left_index;
-
-        (len, Some(len))
+        (self.size, Some(self.size))
     }
 }
 
@@ -1250,14 +1213,9 @@ where
     K: Ord,
 {
     fn next_back(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
-        self.init_if_needed(true);
-
-        if self.non_empty() {
-            let current = self.stack_backward.as_ref().unwrap().current();
-            self.stack_backward.as_mut().unwrap().advance(true);
-            self.right_index -= 1;
-
-            current
+        if self.size > 0 {
+            self.size -= 1;
+            self.range_iter.next_back()
         } else {
             None
         }
@@ -1267,7 +1225,7 @@ where
 impl<'a, K: Ord, V> ExactSizeIterator for IterArc<'a, K, V> {}
 
 #[derive(Debug)]
-pub struct RangeIter<'a, K: 'a, V: 'a> {
+pub struct RangeIterArc<'a, K: 'a, V: 'a> {
     map: &'a RedBlackTreeMap<K, V>,
 
     stack_forward:  Stack<'a, K, V>,
@@ -1276,8 +1234,8 @@ pub struct RangeIter<'a, K: 'a, V: 'a> {
     done: bool,
 }
 
-impl<'a, K: Ord, V> RangeIter<'a, K, V> {
-    fn new<Q, RB>(map: &RedBlackTreeMap<K, V>, bounds: RB) -> RangeIter<K, V>
+impl<'a, K: Ord, V> RangeIterArc<'a, K, V> {
+    fn new<Q, RB>(map: &RedBlackTreeMap<K, V>, bounds: RB) -> RangeIterArc<K, V>
     where
         K: Borrow<Q>,
         Q: Ord + ?Sized,
@@ -1304,7 +1262,7 @@ impl<'a, K: Ord, V> RangeIter<'a, K, V> {
             true
         };
 
-        RangeIter {
+        RangeIterArc {
             map,
             stack_forward: forward,
             stack_backward: backward,
@@ -1324,13 +1282,13 @@ impl<'a, K: Ord, V> RangeIter<'a, K, V> {
     }
 }
 
-impl<'a, K, V> Iterator for RangeIter<'a, K, V>
+impl<'a, K, V> Iterator for RangeIterArc<'a, K, V>
 where
     K: Ord,
 {
-    type Item = (&'a K, &'a V);
+    type Item = &'a Arc<Entry<K, V>>;
 
-    fn next(&mut self) -> Option<(&'a K, &'a V)> {
+    fn next(&mut self) -> Option<Self::Item> {
         if !self.done {
             let current = self.stack_forward.current();
 
@@ -1340,21 +1298,18 @@ where
                 self.stack_forward.advance(false);
             }
 
-            current.map(|arc| {
-                let entry: &Entry<K, V> = arc.borrow();
-                (&entry.key, &entry.value)
-            })
+            current
         } else {
             None
         }
     }
 }
 
-impl<'a, K, V> DoubleEndedIterator for RangeIter<'a, K, V>
+impl<'a, K, V> DoubleEndedIterator for RangeIterArc<'a, K, V>
 where
     K: Ord,
 {
-    fn next_back(&mut self) -> Option<(&'a K, &'a V)> {
+    fn next_back(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
         if !self.done {
             let current = self.stack_backward.current();
 
@@ -1364,10 +1319,7 @@ where
                 self.stack_backward.advance(true);
             }
 
-            current.map(|arc| {
-                let entry: &Entry<K, V> = arc.borrow();
-                (&entry.key, &entry.value)
-            })
+            current
         } else {
             None
         }
