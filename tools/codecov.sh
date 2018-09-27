@@ -9,6 +9,11 @@ set -e
 cd $(dirname "$0")
 cd "$(git rev-parse --show-toplevel)"
 
+source "tools/utils.sh"
+
+assert_installed "jq"
+assert_installed "kcov"
+
 # If we don't pass this to rustc, functions that are unreachable from the unit
 # tests will be removed from the binary and would not count as uncovered code.
 export RUSTFLAGS='-C link-dead-code'

@@ -9,6 +9,11 @@ set -e
 cd $(dirname "$0")
 cd "$(git rev-parse --show-toplevel)"
 
+source "tools/utils.sh"
+
+assert_installed "cargo-deadlinks"
+assert_installed "cargo-fmt"
+
 cargo build --features fatal-warnings,serde --all-targets
 cargo test  --features fatal-warnings,serde
 cargo bench --features fatal-warnings,serde -- --test

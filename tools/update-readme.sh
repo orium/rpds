@@ -24,8 +24,9 @@ function new_readme() {
 }
 
 check=false
+force=false
 
-args=$(getopt -l "check" -o "ch" -- "$@")
+args=$(getopt -l "check,force" -o "cfh" -- "$@")
 
 eval set -- "$args"
 
@@ -40,6 +41,10 @@ while [ $# -ge 1 ]; do
                     check=true
                     shift
                     ;;
+                -f|--force)
+                    force=true
+                    shift
+                    ;;
                 -h)
                     echo "usage: $0 [--check]"
                     exit 0
@@ -48,6 +53,11 @@ while [ $# -ge 1 ]; do
 
         shift
 done
+
+if [ $(git status --porcelain README.md | wc -l) -ne 0 ] && ! $force; then
+    echo "error: \`README.md\` was modified.  Use \`--force\` to overwrite it." >&2
+    exit 1
+fi
 
 new_readme_filename=$(new_readme)
 
