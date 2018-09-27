@@ -191,9 +191,10 @@ impl<T> Node<T> {
                 a.pop();
             }
 
-            Node::Branch(ref mut a) => if Arc::make_mut(a.last_mut().unwrap()).drop_last() {
-                a.pop();
-            },
+            Node::Branch(ref mut a) =>
+                if Arc::make_mut(a.last_mut().unwrap()).drop_last() {
+                    a.pop();
+                },
         }
 
         self.is_empty()
@@ -397,16 +398,17 @@ impl<T> Vector<T> {
     fn compress_root(root: &mut Node<T>) -> Option<Arc<Node<T>>> {
         match *root {
             Node::Leaf(_) => None,
-            Node::Branch(_) => if root.is_singleton() {
-                // TODO Simplify once we have NLL.
-                if let Node::Branch(ref mut a) = *root {
-                    a.pop()
+            Node::Branch(_) =>
+                if root.is_singleton() {
+                    // TODO Simplify once we have NLL.
+                    if let Node::Branch(ref mut a) = *root {
+                        a.pop()
+                    } else {
+                        unreachable!()
+                    }
                 } else {
-                    unreachable!()
-                }
-            } else {
-                None
-            },
+                    None
+                },
         }
     }
 
