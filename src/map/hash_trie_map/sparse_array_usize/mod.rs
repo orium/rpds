@@ -18,10 +18,10 @@ pub struct SparseArrayUsize<T> {
 mod sparse_array_usize_utils {
     #[inline]
     pub fn map_index(bitmap: usize, virtual_index: usize) -> Option<usize> {
-        if bitmap & (1usize << virtual_index) == 0 {
+        if bitmap & (1_usize << virtual_index) == 0 {
             None
         } else {
-            let mask = (1usize << virtual_index) - 1;
+            let mask = (1_usize << virtual_index) - 1;
 
             Some((bitmap & mask).count_ones() as usize)
         }

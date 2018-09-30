@@ -490,14 +490,14 @@ impl<T> Index<usize> for Vector<T> {
 
     fn index(&self, index: usize) -> &T {
         self.get(index)
-            .expect(&format!("index out of bounds {}", index))
+            .unwrap_or_else(|| panic!("index out of bounds {}", index))
     }
 }
 
 impl<T: Clone> IndexMut<usize> for Vector<T> {
     fn index_mut(&mut self, index: usize) -> &mut T {
         self.get_mut(index)
-            .expect(&format!("index out of bounds {}", index))
+            .unwrap_or_else(|| panic!("index out of bounds {}", index))
     }
 }
 
