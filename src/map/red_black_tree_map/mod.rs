@@ -65,7 +65,7 @@ macro_rules! rbt_map {
 /// | `contains_key()`           |      Θ(1) | Θ(log(n)) |   Θ(log(n)) |
 /// | `size()`                   |      Θ(1) |      Θ(1) |        Θ(1) |
 /// | `clone()`                  |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | iterator creation          |      Θ(1) |      Θ(1) |        Θ(1) |
+/// | iterator creation          |      Θ(1) | Θ(log(n)) |   Θ(log(n)) |
 /// | iterator step              |      Θ(1) |      Θ(1) |   Θ(log(n)) |
 /// | iterator full              |      Θ(n) |      Θ(n) |        Θ(n) |
 ///
