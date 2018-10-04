@@ -922,13 +922,13 @@ where
 
         match (range.start_bound(), range.end_bound()) {
             (Excluded(s), Excluded(e)) if s == e =>
-                panic!("range start and end are equal and excluded in RedBlackTreeMap"),
+                panic!("range start and end are equal and excluded"),
             (Included(s), Included(e))
             | (Included(s), Excluded(e))
             | (Excluded(s), Included(e))
             | (Excluded(s), Excluded(e))
                 if s > e =>
-                panic!("range start is greater than range end in RedBlackTreeMap"),
+                panic!("range start is greater than range end"),
             _ => {}
         };
         RangeIterArc::new(self, range).map(|e| (&e.key, &e.value))
@@ -1061,103 +1061,126 @@ where
     }
 }
 
-#[derive(Debug)]
-pub struct IterArc<'a, K: 'a, V: 'a> {
-    range_iter: RangeIterArc<'a, K, V>,
-
-    // Number of elements left in the iterator. This is used for things like size_hint.
-    size: usize,
-}
-
-// This is a stack for navigating through the tree. It can be used to go either forwards or
-// backwards, but not both: when you call `dig` or `advance`, you must use the same value of
-// `backwards` for the entire lifetime of this stack.
-#[derive(Debug)]
-struct Stack<'a, K: 'a, V: 'a> {
-    // The invariant maintained by `stack` depends on whether we are moving forwards or backwards.
-    // In either case, the current node is at the top of the stack. If we are moving forwards, the
-    // rest of the stack consists of those ancestors of the current node that contain the current
-    // node in their left subtree. In other words, the keys in the stack increase as we go from the
-    // top of the stack to the bottom.
-    stack: Vec<&'a Node<K, V>>,
-}
-
-impl<'a, K: Ord, V> Stack<'a, K, V> {
-    fn new(map: &'a RedBlackTreeMap<K, V>) -> Stack<'a, K, V> {
-        let size = iter_utils::conservative_height(map.size()) + 1;
-
-        Stack {
-            stack: Vec::with_capacity(size),
-        }
-    }
-
-    #[inline]
-    fn current(&self) -> Option<&'a Arc<Entry<K, V>>> {
-        self.stack.last().map(|node| &node.entry)
-    }
-
-    fn dig(&mut self, backwards: bool) {
-        let child = self.stack.last().and_then(|node| {
-            let c = if backwards { &node.right } else { &node.left };
-            Node::borrow(c)
-        });
-
-        if let Some(c) = child {
-            self.stack.push(c);
-            self.dig(backwards);
-        }
-    }
-
-    // If backwards is false, this puts the first entry satisfying the bound on top of the stack.
-    fn dig_towards<Q>(&mut self, cur_node: &'a Node<K, V>, target: Bound<&Q>, backwards: bool)
-    where
-        K: Borrow<Q>,
-        Q: Ord + ?Sized,
-    {
-        use std::ops::Bound::*;
-
-        let good = if backwards {
-            match target {
-                Included(x) => cur_node.entry.key.borrow() <= x,
-                Excluded(x) => cur_node.entry.key.borrow() < x,
-                Unbounded => true,
-            }
-        } else {
-            match target {
-                Included(x) => cur_node.entry.key.borrow() >= x,
-                Excluded(x) => cur_node.entry.key.borrow() > x,
-                Unbounded => true,
-            }
-        };
-
-        if good {
-            self.stack.push(cur_node);
-        }
-
-        let child = if good == backwards {
-            &cur_node.right
-        } else {
-            &cur_node.left
-        };
-        if let Some(c) = child {
-            self.dig_towards(c.borrow(), target, backwards);
-        }
-    }
-
-    fn advance(&mut self, backwards: bool) {
-        if let Some(node) = self.stack.pop() {
-            let child = if backwards { &node.left } else { &node.right };
-
-            if let Some(c) = Node::borrow(child) {
-                self.stack.push(c);
-                self.dig(backwards);
-            }
-        }
-    }
-}
-
 mod iter_utils {
+    use super::{Entry, Node, RedBlackTreeMap};
+    use std::borrow::Borrow;
     use std::mem::size_of;
+    use std::ops::Bound;
+    use std::sync::Arc;
+
+    // This is a stack for navigating through the tree. It can be used to go either forwards or
+    // backwards, but not both: you choose the direction at construction time, and then every call to
+    // `advance` goes in that direction.
+    //
+    // Note that it would be possible to make `backwards` a generic parameter, but it's not clear that
+    // it's worth the effort.
+    #[derive(Debug)]
+    pub struct IterStack<'a, K: 'a, V: 'a> {
+        // The invariant maintained by `stack` depends on whether we are moving forwards or backwards.
+        // In either case, the current node is at the top of the stack. If we are moving forwards, the
+        // rest of the stack consists of those ancestors of the current node that contain the current
+        // node in their left subtree. In other words, the keys in the stack increase as we go from the
+        // top of the stack to the bottom.
+        stack:     Vec<&'a Node<K, V>>,
+        backwards: bool,
+    }
+
+    impl<'a, K: Ord, V> IterStack<'a, K, V> {
+        pub fn new<Q>(
+            map: &'a RedBlackTreeMap<K, V>,
+            bound: Bound<&Q>,
+            backwards: bool,
+        ) -> IterStack<'a, K, V>
+        where
+            K: Borrow<Q>,
+            Q: Ord + ?Sized,
+        {
+            let size = conservative_height(map.size()) + 1;
+
+            let mut stack = IterStack {
+                stack:     Vec::with_capacity(size),
+                backwards,
+            };
+
+            if let Some(ref root) = map.root {
+                stack.dig_towards(root.borrow(), bound);
+            }
+            stack
+        }
+
+        #[inline]
+        pub fn current(&self) -> Option<&'a Arc<Entry<K, V>>> {
+            self.stack.last().map(|node| &node.entry)
+        }
+
+        fn dig(&mut self) {
+            let child = self.stack.last().and_then(|node| {
+                let c = if self.backwards {
+                    &node.right
+                } else {
+                    &node.left
+                };
+                Node::borrow(c)
+            });
+
+            if let Some(c) = child {
+                self.stack.push(c);
+                self.dig();
+            }
+        }
+
+        // If backwards is false, this puts the first entry satisfying the bound on top of the stack.
+        fn dig_towards<Q>(&mut self, cur_node: &'a Node<K, V>, target: Bound<&Q>)
+        where
+            K: Borrow<Q>,
+            Q: Ord + ?Sized,
+        {
+            use std::ops::Bound::*;
+
+            let good = if self.backwards {
+                match target {
+                    Included(x) => cur_node.entry.key.borrow() <= x,
+                    Excluded(x) => cur_node.entry.key.borrow() < x,
+                    Unbounded => true,
+                }
+            } else {
+                match target {
+                    Included(x) => cur_node.entry.key.borrow() >= x,
+                    Excluded(x) => cur_node.entry.key.borrow() > x,
+                    Unbounded => true,
+                }
+            };
+
+            if good {
+                self.stack.push(cur_node);
+            }
+
+            let child = match (self.backwards, good) {
+                (false, true) => &cur_node.left,
+                (false, false) => &cur_node.right,
+                (true, true) => &cur_node.right,
+                (true, false) => &cur_node.left,
+            };
+            if let Some(c) = child {
+                self.dig_towards(c.borrow(), target);
+            }
+        }
+
+        pub fn advance(&mut self) {
+            if let Some(node) = self.stack.pop() {
+                let child = if self.backwards {
+                    &node.left
+                } else {
+                    &node.right
+                };
+
+                if let Some(c) = Node::borrow(child) {
+                    self.stack.push(c);
+                    self.dig();
+                }
+            }
+        }
+    }
 
     pub fn lg_floor(size: usize) -> usize {
         debug_assert!(size > 0);
@@ -1174,6 +1197,14 @@ mod iter_utils {
             0
         }
     }
+}
+
+#[derive(Debug)]
+pub struct IterArc<'a, K: 'a, V: 'a> {
+    range_iter: RangeIterArc<'a, K, V>,
+
+    // Number of elements left in the iterator. This is used in `size_hint()`.
+    size: usize,
 }
 
 impl<'a, K, V> IterArc<'a, K, V>
@@ -1224,12 +1255,18 @@ where
 
 impl<'a, K: Ord, V> ExactSizeIterator for IterArc<'a, K, V> {}
 
+// This implements a DoubleEndedIterator for iterating over a range.
+//
+// Upon construction, we initialize the stacks so that the forward stack is pointing at the first
+// element belonging to the range, and so that the backward stack is pointing at the last element
+// belonging to the range. Every time `next()` is called, we advance the forward stack; every time
+// `next_back()` is called, we advance the backward stack.
 #[derive(Debug)]
 pub struct RangeIterArc<'a, K: 'a, V: 'a> {
     map: &'a RedBlackTreeMap<K, V>,
 
-    stack_forward:  Stack<'a, K, V>,
-    stack_backward: Stack<'a, K, V>,
+    stack_forward:  iter_utils::IterStack<'a, K, V>,
+    stack_backward: iter_utils::IterStack<'a, K, V>,
 
     done: bool,
 }
@@ -1241,13 +1278,8 @@ impl<'a, K: Ord, V> RangeIterArc<'a, K, V> {
         Q: Ord + ?Sized,
         RB: RangeBounds<Q>,
     {
-        let mut forward = Stack::new(map);
-        let mut backward = Stack::new(map);
-
-        if let Some(ref root) = map.root {
-            forward.dig_towards(root.borrow(), bounds.start_bound(), false);
-            backward.dig_towards(root.borrow(), bounds.end_bound(), true);
-        }
+        let forward = iter_utils::IterStack::new(map, bounds.start_bound(), false);
+        let backward = iter_utils::IterStack::new(map, bounds.end_bound(), true);
 
         // We need to explicitly check for the case that the case that the range is empty
         // (either because we were passed an empty range like 1..1, or because we were passed a
@@ -1272,13 +1304,12 @@ impl<'a, K: Ord, V> RangeIterArc<'a, K, V> {
 
     // Checks if the forwards and backwards stacks are pointing to the same entry. If they are, it
     // means that yielding one more element will terminate the iteration.
-    fn almost_done(&self) -> bool {
-        let ptr = |stack: &Stack<_, _>| {
-            stack
-                .current()
-                .map(|arc| arc.borrow() as *const Entry<_, _>)
-        };
-        ptr(&self.stack_forward) == ptr(&self.stack_backward)
+    fn has_single_element(&self) -> bool {
+        match (self.stack_forward.current(), self.stack_backward.current()) {
+            (_, None) => true,
+            (None, _) => true,
+            (Some(ref f), Some(ref b)) => Arc::ptr_eq(f, b),
+        }
     }
 }
 
@@ -1292,10 +1323,10 @@ where
         if !self.done {
             let current = self.stack_forward.current();
 
-            if self.almost_done() {
+            if self.has_single_element() {
                 self.done = true;
             } else {
-                self.stack_forward.advance(false);
+                self.stack_forward.advance();
             }
 
             current
@@ -1313,10 +1344,10 @@ where
         if !self.done {
             let current = self.stack_backward.current();
 
-            if self.almost_done() {
+            if self.has_single_element() {
                 self.done = true;
             } else {
-                self.stack_backward.advance(true);
+                self.stack_backward.advance();
             }
 
             current

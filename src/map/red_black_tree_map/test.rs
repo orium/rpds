@@ -1288,20 +1288,34 @@ mod iter {
             3 => 6
         ];
 
-        macro_rules! cmp {
-            ($range:expr, $expected:expr) => {
-                assert_eq!(
-                    map.range($range).map(|(k, v)| (*k, *v)).collect::<Vec<_>>(),
-                    $expected
-                );
-            };
+        fn cmp<RB: RangeBounds<i32> + Clone>(
+            map: &RedBlackTreeMap<i32, i32>,
+            range: RB,
+            expected: Vec<(i32, i32)>,
+        ) {
+            assert_eq!(
+                map.range(range.clone())
+                    .map(|(k, v)| (*k, *v))
+                    .collect::<Vec<_>>(),
+                expected
+            );
+            assert_eq!(
+                map.range(range)
+                    .rev()
+                    .map(|(k, v)| (*k, *v))
+                    .collect::<Vec<_>>(),
+                expected.iter().cloned().rev().collect::<Vec<_>>()
+            );
         }
 
-        cmp!(.., vec![(0, 0), (1, 2), (2, 4), (3, 6)]);
-        cmp!(1.., vec![(1, 2), (2, 4), (3, 6)]);
-        cmp!(1..3, vec![(1, 2), (2, 4)]);
-        cmp!(1..=3, vec![(1, 2), (2, 4), (3, 6)]);
-        cmp!(..3, vec![(0, 0), (1, 2), (2, 4)]);
+        cmp(&map, .., vec![(0, 0), (1, 2), (2, 4), (3, 6)]);
+        cmp(&map, 1.., vec![(1, 2), (2, 4), (3, 6)]);
+        cmp(&map, 1..3, vec![(1, 2), (2, 4)]);
+        cmp(&map, 1..=3, vec![(1, 2), (2, 4), (3, 6)]);
+        cmp(&map, ..3, vec![(0, 0), (1, 2), (2, 4)]);
+
+        use std::ops::Bound::*;
+        cmp(&map, (Excluded(1), Included(3)), vec![(2, 4), (3, 6)]);
     }
 
     #[test]
