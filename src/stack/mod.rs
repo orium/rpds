@@ -46,17 +46,17 @@ macro_rules! stack {
 ///
 /// ## Temporal complexity
 ///
-/// | Operation         | Best case | Average | Worst case  |
-/// |:----------------- | ---------:| -------:| -----------:|
-/// | `new()`           |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `push()`          |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `pop()`           |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `peek()`          |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `size()`          |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `clone()`         |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | iterator creation |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | iterator step     |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | iterator full     |      Θ(n) |    Θ(n) |        Θ(n) |
+/// | Operation         | Average | Worst case  |
+/// |:----------------- | -------:| -----------:|
+/// | `new()`           |    Θ(1) |        Θ(1) |
+/// | `push()`          |    Θ(1) |        Θ(1) |
+/// | `pop()`           |    Θ(1) |        Θ(1) |
+/// | `peek()`          |    Θ(1) |        Θ(1) |
+/// | `size()`          |    Θ(1) |        Θ(1) |
+/// | `clone()`         |    Θ(1) |        Θ(1) |
+/// | iterator creation |    Θ(1) |        Θ(1) |
+/// | iterator step     |    Θ(1) |        Θ(1) |
+/// | iterator full     |    Θ(n) |        Θ(n) |
 ///
 /// # Implementation details
 ///

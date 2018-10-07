@@ -49,18 +49,18 @@ macro_rules! queue {
 ///
 /// ## Temporal complexity
 ///
-/// | Operation             | Best case | Average | Worst case  |
-/// |:--------------------- | ---------:| -------:| -----------:|
-/// | `new()`               |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `enqueue()`           |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `dequeue()`           |      Θ(1) |    Θ(1) |        Θ(n) |
-/// | `dequeue()` amortized |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `peek()`              |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `len()`               |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `clone()`             |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | iterator creation     |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | iterator step         |      Θ(1) |    Θ(1) |        Θ(n) |
-/// | iterator full         |      Θ(n) |    Θ(n) |        Θ(n) |
+/// | Operation             | Average | Worst case  |
+/// |:--------------------- | -------:| -----------:|
+/// | `new()`               |    Θ(1) |        Θ(1) |
+/// | `enqueue()`           |    Θ(1) |        Θ(1) |
+/// | `dequeue()`           |    Θ(1) |        Θ(n) |
+/// | `dequeue()` amortized |    Θ(1) |        Θ(1) |
+/// | `peek()`              |    Θ(1) |        Θ(1) |
+/// | `len()`               |    Θ(1) |        Θ(1) |
+/// | `clone()`             |    Θ(1) |        Θ(1) |
+/// | iterator creation     |    Θ(1) |        Θ(1) |
+/// | iterator step         |    Θ(1) |        Θ(n) |
+/// | iterator full         |    Θ(n) |        Θ(n) |
 ///
 /// # Implementation details
 ///

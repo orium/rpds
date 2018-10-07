@@ -53,18 +53,18 @@ macro_rules! vector {
 ///
 /// ## Temporal complexity
 ///
-/// | Operation                  | Best case | Average   | Worst case  |
-/// |:-------------------------- | ---------:| ---------:| -----------:|
-/// | `new()`                    |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | `set()`                    | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
-/// | `push_back()`              | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
-/// | `drop_last()`              | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
-/// | `first()`/`last()`/`get()` | Θ(log(n)) | Θ(log(n)) |   Θ(log(n)) |
-/// | `len()`                    |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | `clone()`                  |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | iterator creation          |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | iterator step              |      Θ(1) |      Θ(1) |   Θ(log(n)) |
-/// | iterator full              |      Θ(n) |      Θ(n) |        Θ(n) |
+/// | Operation                  | Average   | Worst case  |
+/// |:-------------------------- | ---------:| -----------:|
+/// | `new()`                    |      Θ(1) |        Θ(1) |
+/// | `set()`                    | Θ(log(n)) |   Θ(log(n)) |
+/// | `push_back()`              | Θ(log(n)) |   Θ(log(n)) |
+/// | `drop_last()`              | Θ(log(n)) |   Θ(log(n)) |
+/// | `first()`/`last()`/`get()` | Θ(log(n)) |   Θ(log(n)) |
+/// | `len()`                    |      Θ(1) |        Θ(1) |
+/// | `clone()`                  |      Θ(1) |        Θ(1) |
+/// | iterator creation          |      Θ(1) |        Θ(1) |
+/// | iterator step              |      Θ(1) |   Θ(log(n)) |
+/// | iterator full              |      Θ(n) |        Θ(n) |
 ///
 /// ### Proof sketch of the complexity of full iteration
 ///

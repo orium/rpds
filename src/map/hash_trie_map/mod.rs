@@ -68,18 +68,18 @@ macro_rules! ht_map {
 ///
 /// ## Temporal complexity
 ///
-/// | Operation                  | Best case | Average   | Worst case  |
-/// |:-------------------------- | ---------:| ---------:| -----------:|
-/// | `new()`                    |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | `insert()`                 |      Θ(1) |      Θ(1) |        Θ(n) |
-/// | `remove()`                 |      Θ(1) |      Θ(1) |        Θ(n) |
-/// | `get()`                    |      Θ(1) |      Θ(1) |        Θ(n) |
-/// | `contains_key()`           |      Θ(1) |      Θ(1) |        Θ(n) |
-/// | `size()`                   |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | `clone()`                  |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | iterator creation          |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | iterator step              |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | iterator full              |      Θ(n) |      Θ(n) |        Θ(n) |
+/// | Operation                  | Average   | Worst case  |
+/// |:-------------------------- | ---------:| -----------:|
+/// | `new()`                    |      Θ(1) |        Θ(1) |
+/// | `insert()`                 |      Θ(1) |        Θ(n) |
+/// | `remove()`                 |      Θ(1) |        Θ(n) |
+/// | `get()`                    |      Θ(1) |        Θ(n) |
+/// | `contains_key()`           |      Θ(1) |        Θ(n) |
+/// | `size()`                   |      Θ(1) |        Θ(1) |
+/// | `clone()`                  |      Θ(1) |        Θ(1) |
+/// | iterator creation          |      Θ(1) |        Θ(1) |
+/// | iterator step              |      Θ(1) |        Θ(1) |
+/// | iterator full              |      Θ(n) |        Θ(n) |
 ///
 /// # Implementation details
 ///

@@ -67,19 +67,19 @@ macro_rules! list {
 ///
 /// ## Temporal complexity
 ///
-/// | Operation         | Best case | Average | Worst case  |
-/// |:----------------- | ---------:| -------:| -----------:|
-/// | `new()`           |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `push_front()`    |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `drop_first()`    |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `reverse()`       |      Θ(n) |    Θ(n) |        Θ(n) |
-/// | `first()`         |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `last()`          |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `len()`           |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | `clone()`         |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | iterator creation |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | iterator step     |      Θ(1) |    Θ(1) |        Θ(1) |
-/// | iterator full     |      Θ(n) |    Θ(n) |        Θ(n) |
+/// | Operation         | Average | Worst case  |
+/// |:----------------- | -------:| -----------:|
+/// | `new()`           |    Θ(1) |        Θ(1) |
+/// | `push_front()`    |    Θ(1) |        Θ(1) |
+/// | `drop_first()`    |    Θ(1) |        Θ(1) |
+/// | `reverse()`       |    Θ(n) |        Θ(n) |
+/// | `first()`         |    Θ(1) |        Θ(1) |
+/// | `last()`          |    Θ(1) |        Θ(1) |
+/// | `len()`           |    Θ(1) |        Θ(1) |
+/// | `clone()`         |    Θ(1) |        Θ(1) |
+/// | iterator creation |    Θ(1) |        Θ(1) |
+/// | iterator step     |    Θ(1) |        Θ(1) |
+/// | iterator full     |    Θ(n) |        Θ(n) |
 ///
 /// # Implementation details
 ///

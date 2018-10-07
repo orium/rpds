@@ -49,18 +49,18 @@ macro_rules! rbt_set {
 ///
 /// ## Temporal complexity
 ///
-/// | Operation                  | Best case | Average   | Worst case  |
-/// |:-------------------------- | ---------:| ---------:| -----------:|
-/// | `new()`                    |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | `insert()`                 |      Θ(1) | Θ(log(n)) |   Θ(log(n)) |
-/// | `remove()`                 |      Θ(1) | Θ(log(n)) |   Θ(log(n)) |
-/// | `get()`                    |      Θ(1) | Θ(log(n)) |   Θ(log(n)) |
-/// | `contains()`               |      Θ(1) | Θ(log(n)) |   Θ(log(n)) |
-/// | `size()`                   |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | `clone()`                  |      Θ(1) |      Θ(1) |        Θ(1) |
-/// | iterator creation          |      Θ(1) | Θ(log(n)) |   Θ(log(n)) |
-/// | iterator step              |      Θ(1) |      Θ(1) |   Θ(log(n)) |
-/// | iterator full              |      Θ(n) |      Θ(n) |        Θ(n) |
+/// | Operation                  | Average   | Worst case  |
+/// |:-------------------------- | ---------:| -----------:|
+/// | `new()`                    |      Θ(1) |        Θ(1) |
+/// | `insert()`                 | Θ(log(n)) |   Θ(log(n)) |
+/// | `remove()`                 | Θ(log(n)) |   Θ(log(n)) |
+/// | `get()`                    | Θ(log(n)) |   Θ(log(n)) |
+/// | `contains()`               | Θ(log(n)) |   Θ(log(n)) |
+/// | `size()`                   |      Θ(1) |        Θ(1) |
+/// | `clone()`                  |      Θ(1) |        Θ(1) |
+/// | iterator creation          | Θ(log(n)) |   Θ(log(n)) |
+/// | iterator step              |      Θ(1) |   Θ(log(n)) |
+/// | iterator full              |      Θ(n) |        Θ(n) |
 ///
 /// # Implementation details
 ///
