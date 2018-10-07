@@ -1278,6 +1278,61 @@ mod iter {
 
         assert_eq!(left, 0);
     }
+
+    #[test]
+    fn test_range() {
+        let map = rbt_map![
+            0 => 0,
+            1 => 2,
+            2 => 4,
+            3 => 6
+        ];
+
+        fn cmp<RB: RangeBounds<i32> + Clone>(
+            map: &RedBlackTreeMap<i32, i32>,
+            range: RB,
+            expected: Vec<(i32, i32)>,
+        ) {
+            assert_eq!(
+                map.range(range.clone())
+                    .map(|(k, v)| (*k, *v))
+                    .collect::<Vec<_>>(),
+                expected
+            );
+            assert_eq!(
+                map.range(range)
+                    .rev()
+                    .map(|(k, v)| (*k, *v))
+                    .collect::<Vec<_>>(),
+                expected.iter().cloned().rev().collect::<Vec<_>>()
+            );
+        }
+
+        cmp(&map, .., vec![(0, 0), (1, 2), (2, 4), (3, 6)]);
+        cmp(&map, 1.., vec![(1, 2), (2, 4), (3, 6)]);
+        cmp(&map, 1..3, vec![(1, 2), (2, 4)]);
+        cmp(&map, 1..=3, vec![(1, 2), (2, 4), (3, 6)]);
+        cmp(&map, ..3, vec![(0, 0), (1, 2), (2, 4)]);
+
+        use std::ops::Bound::*;
+        cmp(&map, (Excluded(1), Included(3)), vec![(2, 4), (3, 6)]);
+    }
+
+    #[test]
+    fn test_range_empty() {
+        let map = rbt_map![
+            0 => 0,
+            1 => 2,
+            10 => 20,
+            11 => 22
+        ];
+
+        assert_eq!(map.range(1..1).next(), None);
+        assert_eq!(map.range(3..10).next(), None);
+        assert_eq!(map.range(..0).next(), None);
+        assert_eq!(map.range(3..=9).next(), None);
+        assert_eq!(map.range(13..).next(), None);
+    }
 }
 
 mod compile_time {
