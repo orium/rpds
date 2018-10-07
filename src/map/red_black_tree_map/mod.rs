@@ -1098,7 +1098,7 @@ mod iter_utils {
             let size = conservative_height(map.size()) + 1;
 
             let mut stack = IterStack {
-                stack:     Vec::with_capacity(size),
+                stack: Vec::with_capacity(size),
                 backwards,
             };
 
