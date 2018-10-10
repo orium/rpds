@@ -58,8 +58,8 @@ mod iter {
 
     #[test]
     fn test_iter_sorted() {
-        let map = rbt_set![5, 6, 2, 1];
-        let mut iterator = map.iter();
+        let set = rbt_set![5, 6, 2, 1];
+        let mut iterator = set.iter();
 
         assert_eq!(iterator.next(), Some(&1));
         assert_eq!(iterator.next(), Some(&2));
@@ -79,6 +79,23 @@ mod iter {
         }
 
         assert_eq!(left, 0);
+    }
+
+    #[test]
+    fn test_range_iterator() {
+        let set = rbt_set![-20, -12, -8, 0, 2, -10, -7, -3, 5, 8, 10, 13, 17, 20];
+        let mut iterator = set.range(-7..=13);
+
+        assert_eq!(iterator.next(), Some(&-7));
+        assert_eq!(iterator.next(), Some(&-3));
+        assert_eq!(iterator.next_back(), Some(&13));
+        assert_eq!(iterator.next_back(), Some(&10));
+        assert_eq!(iterator.next_back(), Some(&8));
+        assert_eq!(iterator.next(), Some(&0));
+        assert_eq!(iterator.next(), Some(&2));
+        assert_eq!(iterator.next(), Some(&5));
+        assert_eq!(iterator.next_back(), None);
+        assert_eq!(iterator.next(), None);
     }
 }
 
