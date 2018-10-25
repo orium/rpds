@@ -865,9 +865,10 @@ where
     H: Clone,
 {
     fn eq(&self, other: &HashTrieMap<K, V, H>) -> bool {
-        self.size() == other.size() && self
-            .iter()
-            .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
+        self.size() == other.size()
+            && self
+                .iter()
+                .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
     }
 }
 

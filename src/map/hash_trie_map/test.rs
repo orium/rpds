@@ -307,9 +307,9 @@ mod node {
             (0x1, 0b_0000_0110 | (0b0101 << 60)),
             (0x2, 0b_0000_1111 | (0b0111 << 60)),
         ]
-            .iter()
-            .cloned()
-            .collect();
+        .iter()
+        .cloned()
+        .collect();
 
         MockedHashBuilder::new(hash_mapping)
     }
