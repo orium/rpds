@@ -31,27 +31,27 @@ args=$(getopt -l "check,force" -o "cfh" -- "$@")
 eval set -- "$args"
 
 while [ $# -ge 1 ]; do
-        case "$1" in
-                --)
-                    # No more options left.
-                    shift
-                    break
-                    ;;
-                -c|--check)
-                    check=true
-                    shift
-                    ;;
-                -f|--force)
-                    force=true
-                    shift
-                    ;;
-                -h)
-                    echo "usage: $0 [--check]"
-                    exit 0
-                    ;;
-        esac
+    case "$1" in
+        --)
+            # No more options left.
+            shift
+            break
+            ;;
+        -c|--check)
+            check=true
+            shift
+            ;;
+        -f|--force)
+            force=true
+            shift
+            ;;
+        -h)
+            echo "usage: $0 [--check]"
+            exit 0
+            ;;
+    esac
 
-        shift
+    shift
 done
 
 if [ $(git status --porcelain README.md | wc -l) -ne 0 ] && ! $force; then
@@ -62,7 +62,9 @@ fi
 new_readme_filename=$(new_readme)
 
 if $check; then
-    if ! diff "$new_readme_filename" README.md > /dev/null; then
+    # The `--strip-trailing-cr` is necessary for this check to work on windows, since `git` will create a `README.md`
+    # with trailing `\r` on windows systems.
+    if ! diff --strip-trailing-cr "$new_readme_filename" README.md > /dev/null; then
         echo "README.md is outdated.  Run $0 to update it." 2>&1
         exit 1
     fi

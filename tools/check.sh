@@ -11,14 +11,18 @@ cd "$(git rev-parse --show-toplevel)"
 
 source "tools/utils.sh"
 
-assert_installed "cargo-deadlinks"
+# `cargo-deadlinks` does not work on windows.
+test $TRAVIS_OS_NAME = windows || assert_installed "cargo-deadlinks"
 assert_installed "cargo-fmt"
 
 cargo build --features fatal-warnings,serde --all-targets
 cargo test  --features fatal-warnings,serde
 cargo bench --features fatal-warnings,serde -- --test
 cargo doc   --features fatal-warnings,serde
-cargo deadlinks
+
+# `cargo-deadlinks` does not work on windows.
+test $TRAVIS_OS_NAME = windows || cargo deadlinks
+
 cargo package --allow-dirty
 cargo fmt -- --check
 ./tools/update-readme.sh --check
