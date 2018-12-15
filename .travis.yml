@@ -9,8 +9,7 @@ os:
 rust:
   - stable
   - beta
-# TODO Enable nightly when component `rustfmt` is available there.
-#  - nightly
+  - nightly
 
 addons:
   apt:
