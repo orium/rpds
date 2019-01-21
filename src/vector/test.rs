@@ -274,7 +274,7 @@ mod internal {
 
     #[test]
     fn test_degree() {
-        use self::vector_utils::degree;
+        use vector_utils::degree;
 
         assert_eq!(degree(1), 2);
         assert_eq!(degree(2), 4);
@@ -302,7 +302,7 @@ mod internal {
 
     #[test]
     fn test_mask() {
-        use self::vector_utils::mask;
+        use vector_utils::mask;
 
         assert_eq!(mask(1), 0b00001);
         assert_eq!(mask(2), 0b00011);
@@ -313,7 +313,7 @@ mod internal {
 
     #[test]
     fn test_bucket() {
-        use self::vector_utils::bucket;
+        use vector_utils::bucket;
 
         assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 0), 0b00001);
         assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 1), 0b00010);

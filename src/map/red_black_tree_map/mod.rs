@@ -239,9 +239,9 @@ where
     ///                  c   d
     /// ```
     fn balance(&mut self) {
-        use self::Color::Black as B;
-        use self::Color::Red as R;
         use std::mem::swap;
+        use Color::Black as B;
+        use Color::Red as R;
 
         match self.color {
             B => {
@@ -400,8 +400,8 @@ where
         left: Option<Arc<Node<K, V>>>,
         right: Option<Arc<Node<K, V>>>,
     ) -> bool {
-        use self::Color::Black as B;
-        use self::Color::Red as R;
+        use Color::Black as B;
+        use Color::Red as R;
 
         use std::mem::swap;
 
@@ -527,8 +527,8 @@ where
     }
 
     fn remove_balance_left(&mut self) {
-        use self::Color::Black as B;
-        use self::Color::Red as R;
+        use Color::Black as B;
+        use Color::Red as R;
 
         use std::mem::swap;
 
@@ -578,8 +578,8 @@ where
     }
 
     fn remove_balance_right(&mut self) {
-        use self::Color::Black as B;
-        use self::Color::Red as R;
+        use Color::Black as B;
+        use Color::Red as R;
 
         use std::mem::swap;
 

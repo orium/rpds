@@ -5,10 +5,10 @@
 
 mod sparse_array_usize;
 
-use self::sparse_array_usize::SparseArrayUsize;
 use super::entry::Entry;
 use crate::list;
 use crate::List;
+use sparse_array_usize::SparseArrayUsize;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
 use std::fmt::Display;

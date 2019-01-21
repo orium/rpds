@@ -12,7 +12,7 @@ mod bucket {
 
     #[test]
     fn test_list_remove_first() {
-        use self::bucket_utils::list_remove_first;
+        use bucket_utils::list_remove_first;
 
         let list_a_b_c = list!['a', 'b', 'c'];
         let list_b_c = list!['b', 'c'];
@@ -269,8 +269,8 @@ mod hasher_mocks {
 }
 
 mod node {
-    use self::hasher_mocks::*;
     use super::*;
+    use hasher_mocks::*;
     use pretty_assertions::assert_eq;
     use std::collections::HashMap;
 

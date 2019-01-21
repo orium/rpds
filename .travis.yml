@@ -27,15 +27,15 @@ addons:
 install:
   - rustup component add rustfmt
   # `cargo-deadlinks` does not work on windows.
-  - test $TRAVIS_OS_NAME = windows || cargo install cargo-deadlinks
+  - test "$TRAVIS_OS_NAME" = windows || cargo install cargo-deadlinks
 
 script:
   - ./tools/check.sh
 
 # TODO Do not build kcov when version >= 34 is available in the official repositories.
 after_success:
-  test $TRAVIS_OS_NAME = linux
-  && test $TRAVIS_RUST_VERSION = stable
+  test "$TRAVIS_OS_NAME" = linux
+  && test "$TRAVIS_RUST_VERSION" = stable
   && wget https://github.com/SimonKagstrom/kcov/archive/v36.tar.gz
   && tar xf v36.tar.gz
   && cd kcov-36
