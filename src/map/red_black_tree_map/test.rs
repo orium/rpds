@@ -995,7 +995,8 @@ mod internal {
 
     #[test]
     fn test_insert() {
-        use rand::Rng;
+        use rand::rngs::StdRng;
+        use rand::seq::SliceRandom;
         use rand::SeedableRng;
 
         let limit = 50_000;
@@ -1003,7 +1004,7 @@ mod internal {
             24, 73, 23, 5, 34, 57, 253, 46, 245, 73, 23, 155, 137, 250, 46, 46, 217, 3, 55, 157,
             137, 250, 46, 46, 217, 3, 55, 157, 34, 135, 34, 123,
         ];
-        let mut rng = rand::ChaChaRng::from_seed(seed);
+        let mut rng: StdRng = SeedableRng::from_seed(seed);
         let mut permutation: [u32; 64] = {
             let mut p: [u32; 64] = [0; 64];
 
@@ -1015,7 +1016,7 @@ mod internal {
         };
 
         for _ in 0..limit {
-            rng.shuffle(&mut permutation);
+            permutation.shuffle(&mut rng);
 
             insert_test(&permutation);
         }
@@ -1050,7 +1051,8 @@ mod internal {
 
     #[test]
     fn test_remove() {
-        use rand::Rng;
+        use rand::rngs::StdRng;
+        use rand::seq::SliceRandom;
         use rand::SeedableRng;
 
         let limit = 50_000;
@@ -1058,7 +1060,7 @@ mod internal {
             24, 73, 23, 5, 34, 57, 253, 46, 245, 73, 23, 155, 137, 250, 46, 46, 217, 3, 55, 157,
             137, 250, 46, 46, 217, 3, 55, 157, 34, 135, 34, 123,
         ];
-        let mut rng = rand::ChaChaRng::from_seed(seed);
+        let mut rng: StdRng = SeedableRng::from_seed(seed);
         let mut permutation_insert: [u32; 64] = {
             let mut p: [u32; 64] = [0; 64];
 
@@ -1071,8 +1073,8 @@ mod internal {
         let mut permutation_remove: [u32; 64] = permutation_insert;
 
         for _ in 0..limit {
-            rng.shuffle(&mut permutation_insert);
-            rng.shuffle(&mut permutation_remove);
+            permutation_insert.shuffle(&mut rng);
+            permutation_remove.shuffle(&mut rng);
 
             remove_test(&permutation_insert, &permutation_remove);
         }
