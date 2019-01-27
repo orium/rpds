@@ -9,7 +9,7 @@ set -e
 cd $(dirname "$0")
 cd "$(git rev-parse --show-toplevel)"
 
-function new_readme() {
+function new_readme {
     filename=$(mktemp)
 
     cp README.md "$filename"

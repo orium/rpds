@@ -1,4 +1,4 @@
-function assert_installed() {
+function assert_installed {
     local bin="$1"
 
     if ! [ -x "$(which "$bin" 2> /dev/null)" ]; then
