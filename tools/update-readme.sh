@@ -62,9 +62,7 @@ fi
 new_readme_filename=$(new_readme)
 
 if $check; then
-    # The `--strip-trailing-cr` is necessary for this check to work on windows, since `git` will create a `README.md`
-    # with trailing `\r` on windows systems.
-    if ! diff --strip-trailing-cr "$new_readme_filename" README.md > /dev/null; then
+    if ! diff "$new_readme_filename" README.md > /dev/null; then
         echo "README.md is outdated.  Run $0 to update it." 2>&1
         exit 1
     fi
