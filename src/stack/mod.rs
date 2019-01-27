@@ -164,7 +164,7 @@ impl<T> Clone for Stack<T> {
 }
 
 impl<T: Display> Display for Stack<T> {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("Stack(")?;

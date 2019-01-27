@@ -224,7 +224,7 @@ where
     T: Eq + Hash + Display,
     H: Clone,
 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("{")?;

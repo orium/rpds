@@ -632,7 +632,7 @@ fn test_partial_ord() {
     let vector_1_prime = vector!["a"];
     let vector_2 = vector!["b"];
     let vector_3 = vector![0.0];
-    let vector_4 = vector![::std::f32::NAN];
+    let vector_4 = vector![std::f32::NAN];
 
     assert_eq!(vector_1.partial_cmp(&vector_1_prime), Some(Ordering::Equal));
     assert_eq!(vector_1.partial_cmp(&vector_2), Some(Ordering::Less));
@@ -652,7 +652,7 @@ fn test_ord() {
 }
 
 fn hash<T: Hash>(vector: &Vector<T>) -> u64 {
-    let mut hasher = ::std::collections::hash_map::DefaultHasher::new();
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
 
     vector.hash(&mut hasher);
 

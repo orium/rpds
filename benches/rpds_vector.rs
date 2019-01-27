@@ -5,8 +5,8 @@
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
-use ::criterion::{black_box, criterion_group, criterion_main, Criterion};
-use ::rpds::Vector;
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use rpds::Vector;
 
 fn rpds_vector_push_back(c: &mut Criterion) {
     let limit = 10_000;

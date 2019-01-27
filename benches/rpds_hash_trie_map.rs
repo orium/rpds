@@ -5,8 +5,8 @@
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
-use ::criterion::{black_box, criterion_group, criterion_main, Criterion};
-use ::rpds::HashTrieMap;
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use rpds::HashTrieMap;
 
 fn rpds_hash_trie_map_insert(c: &mut Criterion) {
     let limit = 10_000;

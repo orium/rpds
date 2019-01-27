@@ -12,9 +12,8 @@ use std::iter::FromIterator;
 use std::sync::Arc;
 
 // TODO Use impl trait instead of this when available.
-type IterArc<'a, T> =
-    ::std::iter::Chain<crate::list::IterArc<'a, T>, LazilyReversedListIter<'a, T>>;
-pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
+type IterArc<'a, T> = std::iter::Chain<crate::list::IterArc<'a, T>, LazilyReversedListIter<'a, T>>;
+pub type Iter<'a, T> = std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
 
 /// Creates a [`Queue`](queue/struct.Queue.html) containing the given arguments:
 ///
@@ -107,7 +106,7 @@ impl<T> Queue<T> {
             self.out_list.drop_first_mut();
             true
         } else if !self.in_list.is_empty() {
-            ::std::mem::swap(&mut self.in_list, &mut self.out_list);
+            std::mem::swap(&mut self.in_list, &mut self.out_list);
 
             self.out_list.reverse_mut();
             self.out_list.drop_first_mut();
@@ -203,7 +202,7 @@ impl<T> Clone for Queue<T> {
 }
 
 impl<T: Display> Display for Queue<T> {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("Queue(")?;

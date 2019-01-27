@@ -14,7 +14,7 @@ use std::ops::RangeBounds;
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T> = red_black_tree_map::IterKeys<'a, T, ()>;
 pub type RangeIter<'a, T, RB, Q> =
-    ::std::iter::Map<red_black_tree_map::RangeIter<'a, T, (), RB, Q>, fn((&'a T, &())) -> &'a T>;
+    std::iter::Map<red_black_tree_map::RangeIter<'a, T, (), RB, Q>, fn((&'a T, &())) -> &'a T>;
 
 /// Creates a [`RedBlackTreeSet`](set/red_black_tree_set/struct.RedBlackTreeSet.html) containing the
 /// given arguments:
@@ -243,7 +243,7 @@ impl<T> Display for RedBlackTreeSet<T>
 where
     T: Ord + Display,
 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("{")?;

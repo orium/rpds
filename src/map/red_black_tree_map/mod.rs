@@ -15,11 +15,11 @@ use std::sync::Arc;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, K, V> =
-    ::std::iter::Map<IterArc<'a, K, V>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
-pub type IterKeys<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
-pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
+    std::iter::Map<IterArc<'a, K, V>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
+pub type IterKeys<'a, K, V> = std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
+pub type IterValues<'a, K, V> = std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
 pub type RangeIter<'a, K, V, RB, Q> =
-    ::std::iter::Map<RangeIterArc<'a, K, V, RB, Q>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
+    std::iter::Map<RangeIterArc<'a, K, V, RB, Q>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
 
 /// Creates a [`RedBlackTreeMap`](map/red_black_tree_map/struct.RedBlackTreeMap.html) containing the
 /// given arguments:
@@ -950,7 +950,7 @@ where
     K: Ord + Display,
     V: Display,
 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("{")?;

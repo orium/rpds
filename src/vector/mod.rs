@@ -15,7 +15,7 @@ use std::sync::Arc;
 use std::vec::Vec;
 
 // TODO Use impl trait instead of this when available.
-pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
+pub type Iter<'a, T> = std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
 
 const DEFAULT_BITS: u8 = 5;
 
@@ -547,7 +547,7 @@ impl<T> Display for Vector<T>
 where
     T: Display,
 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("[")?;

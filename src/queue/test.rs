@@ -359,7 +359,7 @@ fn test_partial_ord() {
     let queue_1_prime = queue!["a"];
     let queue_2 = queue!["b"];
     let queue_3 = queue![0.0];
-    let queue_4 = queue![::std::f32::NAN];
+    let queue_4 = queue![std::f32::NAN];
 
     assert_eq!(queue_1.partial_cmp(&queue_1_prime), Some(Ordering::Equal));
     assert_eq!(queue_1.partial_cmp(&queue_2), Some(Ordering::Less));
@@ -379,7 +379,7 @@ fn test_ord() {
 }
 
 fn hash<T: Hash>(queue: &Queue<T>) -> u64 {
-    let mut hasher = ::std::collections::hash_map::DefaultHasher::new();
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
 
     queue.hash(&mut hasher);
 

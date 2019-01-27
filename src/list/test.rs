@@ -254,7 +254,7 @@ fn test_partial_ord() {
     let list_1_prime = list!["a"];
     let list_2 = list!["b"];
     let list_3 = list![0.0];
-    let list_4 = list![::std::f32::NAN];
+    let list_4 = list![std::f32::NAN];
 
     assert_eq!(list_1.partial_cmp(&list_1_prime), Some(Ordering::Equal));
     assert_eq!(list_1.partial_cmp(&list_2), Some(Ordering::Less));
@@ -274,7 +274,7 @@ fn test_ord() {
 }
 
 fn hash<T: Hash>(list: &List<T>) -> u64 {
-    let mut hasher = ::std::collections::hash_map::DefaultHasher::new();
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
 
     list.hash(&mut hasher);
 

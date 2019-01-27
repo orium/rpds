@@ -11,7 +11,7 @@ use std::iter::FromIterator;
 use std::sync::Arc;
 
 // TODO Use impl trait instead of this when available.
-pub type Iter<'a, T> = ::std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
+pub type Iter<'a, T> = std::iter::Map<IterArc<'a, T>, fn(&Arc<T>) -> &T>;
 
 #[doc(hidden)]
 #[macro_export]
@@ -285,7 +285,7 @@ impl<T> Clone for List<T> {
 }
 
 impl<T: Display> Display for List<T> {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("[")?;

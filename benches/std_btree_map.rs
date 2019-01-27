@@ -5,7 +5,7 @@
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
-use ::criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::collections::BTreeMap;
 
 fn std_btree_map_insert(c: &mut Criterion) {

@@ -26,9 +26,9 @@ type HashValue = u64;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, K, V> =
-    ::std::iter::Map<IterArc<'a, K, V>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
-pub type IterKeys<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
-pub type IterValues<'a, K, V> = ::std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
+    std::iter::Map<IterArc<'a, K, V>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
+pub type IterKeys<'a, K, V> = std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
+pub type IterValues<'a, K, V> = std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
 
 const DEFAULT_DEGREE: u8 = 8 * size_of::<usize>() as u8;
 
@@ -823,7 +823,7 @@ where
     V: Display,
     H: Clone,
 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
 
         fmt.write_str("{")?;

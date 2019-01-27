@@ -224,7 +224,7 @@ mod hasher_mocks {
     }
 
     pub struct LimitedHashSpaceHasher {
-        inner_hasher: ::std::collections::hash_map::DefaultHasher,
+        inner_hasher: std::collections::hash_map::DefaultHasher,
         hash_space_size: usize,
     }
 
