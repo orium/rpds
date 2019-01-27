@@ -28,4 +28,7 @@ kcov --verify target/cov \
     --exclude-line='unreachable!' \
     target/debug/$build $@ 2>&1 >/dev/null
 
-echo "You can find the test coverage results at file://$(pwd)/target/cov/$build/index.html"
+# TODO The symbolic link that kcov generates is broken, so we have to do this workaround.
+report_dir=$(readlink target/cov/$build | sed 's,/*$,,' | rev | cut -d/ -f1 | rev)
+
+echo "You can find the test coverage results at file://$(pwd)/target/cov/$report_dir/index.html"
