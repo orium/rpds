@@ -5,7 +5,7 @@
 * Implemented `RedBlackTree{Map,Set}::range()` iterator.
 * Implemented `IndexMut` and `Vector::get_mut()`.
 * Added `#[must_use]` to the immutable methods of all data structures.
-* Improved performance of `Improved `List::reverse_mut()`.
+* Improved performance of `List::reverse_mut()`.
 * Improved performance of `RedBlackTreeSet` serialization.
 
 ## 0.5.0
