@@ -4,7 +4,6 @@
  */
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
-#![cfg_attr(feature = "cargo-clippy", feature(tool_lints))]
 #![cfg_attr(feature = "cargo-clippy", deny(clippy::correctness))]
 #![cfg_attr(feature = "cargo-clippy", warn(clippy::pedantic))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::match_bool))]

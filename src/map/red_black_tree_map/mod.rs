@@ -1283,7 +1283,7 @@ where
         }
     }
 
-    fn remaining_range_is_empty(&self) -> bool {
+    fn is_remaining_range_empty(&self) -> bool {
         match (&self.stack_forward, &self.stack_backward) {
             (Some(stack_forward), Some(stack_backward)) => {
                 match (stack_forward.current(), stack_backward.current()) {
@@ -1296,7 +1296,7 @@ where
     }
 
     fn current_forward(&self) -> Option<&'a Arc<Entry<K, V>>> {
-        match self.remaining_range_is_empty() {
+        match self.is_remaining_range_empty() {
             true => None,
             false => self.stack_forward.as_ref().unwrap().current(),
         }
@@ -1310,7 +1310,7 @@ where
     }
 
     fn current_backward(&self) -> Option<&'a Arc<Entry<K, V>>> {
-        match self.remaining_range_is_empty() {
+        match self.is_remaining_range_empty() {
             true => None,
             false => self.stack_backward.as_ref().unwrap().current(),
         }

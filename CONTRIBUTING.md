@@ -6,7 +6,7 @@ If you are contributing with a pull request you might want to know about a few s
 
 * [`./tools/check.sh`](tools/check.sh)  — Checks that everything is fine.  This includes checking that everything
   builds, the unit tests pass, and the code is correctly formatted.  If you need to format the code run
-  `cargo +nightly fmt`.
+  `cargo fmt`.
 * [`./tools/codecov.sh`](tools/codecov.sh)  — Creates a code coverage report.  There is not a strict code coverage
   threshold, but we do want pretty much everything tested.
 * [`./tools/update-readme.sh`](tools/update-readme.sh) — The [`README.md`](README.md) is auto-generated based on the
