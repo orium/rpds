@@ -54,7 +54,7 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-if [ $(git status --porcelain README.md | wc -l) -ne 0 ] && ! $force; then
+if [ $(git status --porcelain README.md | wc -l) -ne 0 ] && ! $force && ! $check; then
     echo "error: \`README.md\` was modified.  Use \`--force\` to overwrite it." >&2
     exit 1
 fi
