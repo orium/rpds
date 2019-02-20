@@ -4,7 +4,7 @@
 [![Downloads](https://img.shields.io/crates/d/rpds.svg)](https://crates.io/crates/rpds)
 [![Github stars](https://img.shields.io/github/stars/orium/rpds.svg?logo=github)](https://github.com/orium/rpds/stargazers)
 [![Documentation (latest)](https://docs.rs/rpds/badge.svg)](https://docs.rs/rpds/)
-[![License](https://img.shields.io/crates/l/rpds.svg)](./LICENSE)
+[![License](https://img.shields.io/crates/l/rpds.svg)](./LICENSE.md)
 
 # Rust Persistent Data Structures
 
