@@ -16,12 +16,12 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 
 function on_failure {
-    echo
-    echo -e "${RED}Whoopsie-daisy: something failed!$NC"
+    echo >&2
+    echo -e "${RED}Whoopsie-daisy: something failed!$NC" >&2
 }
 
 # `cargo-deadlinks` does not work on windows.
-test "$TRAVIS_OS_NAME" = windows || assert_installed "cargo-deadlinks"
+test "$(os)" = windows || assert_installed "cargo-deadlinks"
 assert_installed "cargo-fmt"
 
 trap on_failure ERR
