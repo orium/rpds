@@ -41,7 +41,7 @@
 //!   8. [`RedBlackTreeSet`](#redblacktreeset)
 //!
 //! ### `List`
-//! [![List documentation](https://img.shields.io/badge/doc-List-303070.svg)](list/struct.List.html)
+//! [![List documentation](https://img.shields.io/badge/doc-List-303070.svg)](https://docs.rs/rpds/latest/rpds/list/struct.List.html)
 //!
 //! Your classic functional list.
 //!
@@ -64,7 +64,7 @@
 //! ```
 //!
 //! ### `Vector`
-//! [![`Vector` documentation](https://img.shields.io/badge/doc-Vector-303070.svg)](vector/struct.Vector.html)
+//! [![`Vector` documentation](https://img.shields.io/badge/doc-Vector-303070.svg)](https://docs.rs/rpds/latest/rpds/vector/struct.Vector.html)
 //!
 //! A sequence that can be indexed.  The implementation is described in
 //! [Understanding Persistent Vector Part 1](http://hypirion.com/musings/understanding-persistent-vector-pt-1)
@@ -90,7 +90,7 @@
 //! ```
 //!
 //! ### `Stack`
-//! [![`Stack` documentation](https://img.shields.io/badge/doc-Stack-303070.svg)](stack/struct.Stack.html)
+//! [![`Stack` documentation](https://img.shields.io/badge/doc-Stack-303070.svg)](https://docs.rs/rpds/latest/rpds/stack/struct.Stack.html)
 //!
 //! A LIFO (last in, first out) data structure.  This is just a [`List`](#list) in disguise.
 //!
@@ -113,7 +113,7 @@
 //! ```
 //!
 //! ### `Queue`
-//! [![`Queue` documentation](https://img.shields.io/badge/doc-Queue-303070.svg)](queue/struct.Queue.html)
+//! [![`Queue` documentation](https://img.shields.io/badge/doc-Queue-303070.svg)](https://docs.rs/rpds/latest/rpds/queue/struct.Queue.html)
 //!
 //! A FIFO (first in, first out) data structure.
 //!
@@ -135,7 +135,7 @@
 //! ```
 //!
 //! ### `HashTrieMap`
-//! [![`HashTrieMap` documentation](https://img.shields.io/badge/doc-HashTrieMap-303070.svg)](map/hash_trie_map/struct.HashTrieMap.html)
+//! [![`HashTrieMap` documentation](https://img.shields.io/badge/doc-HashTrieMap-303070.svg)](https://docs.rs/rpds/latest/rpds/map/hash_trie_map/struct.HashTrieMap.html)
 //!
 //! A map implemented with a [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie).
 //! See [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf) for
@@ -164,7 +164,7 @@
 //! ```
 //!
 //! ### `HashTrieSet`
-//! [![`HashTrieSet` documentation](https://img.shields.io/badge/doc-HashTrieSet-303070.svg)](set/hash_trie_set/struct.HashTrieSet.html)
+//! [![`HashTrieSet` documentation](https://img.shields.io/badge/doc-HashTrieSet-303070.svg)](https://docs.rs/rpds/latest/rpds/set/hash_trie_set/struct.HashTrieSet.html)
 //!
 //! A set implemented with a [`HashTrieMap`](#hashtriemap).
 //!
@@ -189,7 +189,7 @@
 //! ```
 //!
 //! ### `RedBlackTreeMap`
-//! [![`RedBlackTreeMap` documentation](https://img.shields.io/badge/doc-RedBlackTreeMap-303070.svg)](map/red_black_tree_map/struct.RedBlackTreeMap.html)
+//! [![`RedBlackTreeMap` documentation](https://img.shields.io/badge/doc-RedBlackTreeMap-303070.svg)](https://docs.rs/rpds/latest/rpds/map/red_black_tree_map/struct.RedBlackTreeMap.html)
 //!
 //! A map implemented with a [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree).
 //!
@@ -218,7 +218,7 @@
 //! ```
 //!
 //! ### `RedBlackTreeSet`
-//! [![`RedBlackTreeSet` documentation](https://img.shields.io/badge/doc-RedBlackTreeSet-303070.svg)](set/red_black_tree_set/struct.RedBlackTreeSet.html)
+//! [![`RedBlackTreeSet` documentation](https://img.shields.io/badge/doc-RedBlackTreeSet-303070.svg)](https://docs.rs/rpds/latest/rpds/set/red_black_tree_set/struct.RedBlackTreeSet.html)
 //!
 //! A set implemented with a [`RedBlackTreeMap`](#redblacktreemap).
 //!

@@ -17,8 +17,7 @@ function new_readme {
     sed -i '/^$/q' "$filename"
 
     grep --no-filename '//!' src/lib.rs \
-        | sed 's,^//!\( \|\),,' \
-        | grep -v '\[!\[.* documentation\](.*)\](.*/struct\..*\.html)' >> "$filename"
+        | sed 's,^//!\( \|\),,' >> "$filename"
 
     echo "$filename"
 }
