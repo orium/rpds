@@ -17,7 +17,9 @@ function new_readme {
     sed -i '/^$/q' "$filename"
 
     grep --no-filename '//!' src/lib.rs \
-        | sed 's,^//!\( \|\),,' >> "$filename"
+        | sed 's,^//!\( \|\),,' \
+        | sed 's,\](\./\([^)]*\.html\)),](https://docs.rs/rpds/latest/rpds/\1),' \
+        | grep -v DROP_LINE_IN_README >> "$filename"
 
     echo "$filename"
 }
