@@ -4,14 +4,14 @@
  */
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
-#![cfg_attr(feature = "cargo-clippy", deny(clippy::correctness))]
-#![cfg_attr(feature = "cargo-clippy", warn(clippy::pedantic))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::match_bool))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::if_not_else))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::stutter))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::similar_names))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::use_self))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::single_match_else))]
+#![deny(clippy::correctness)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::match_bool)]
+#![allow(clippy::if_not_else)]
+#![allow(clippy::stutter)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::use_self)]
+#![allow(clippy::single_match_else)]
 // Note: If you change this remember to update `README.md`.  To do so run `./tools/update-readme.sh`.
 //! # Rust Persistent Data Structures
 //!
