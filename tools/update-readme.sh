@@ -9,6 +9,8 @@ set -e
 cd $(dirname "$0")
 cd "$(git rev-parse --show-toplevel)"
 
+source "tools/utils.sh"
+
 function new_readme {
     filename=$(mktemp)
 
@@ -18,7 +20,7 @@ function new_readme {
 
     grep --no-filename '//!' src/lib.rs \
         | sed 's,^//!\( \|\),,' \
-        | sed 's,\](\./\([^)]*\.html\)),](https://docs.rs/rpds/latest/rpds/\1),' \
+        | sed "s,\](\./\([^)]*\.html\)),](https://docs.rs/$(project_name)/latest/$(project_name)/\1)," \
         | grep -v DROP_LINE_IN_README >> "$filename"
 
     echo "$filename"

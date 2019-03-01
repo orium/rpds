@@ -26,6 +26,6 @@ kcov --verify target/cov \
     target/debug/$build $@ 2>&1 >/dev/null
 
 # TODO The symbolic link that kcov generates is broken, so we have to do this workaround.
-report_dir=$(readlink target/cov/$build | sed 's,/*$,,' | rev | cut -d/ -f1 | rev)
+report_dir=$(readlink target/cov/$build | sed 's,/*$,,' | tac -s'/' | head -1)
 
 echo "You can find the test coverage results at file://$(pwd)/target/cov/$report_dir/index.html"
