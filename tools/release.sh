@@ -57,12 +57,14 @@ if [ "$answer" != "yes" ]; then
     exit 0
 fi
 
-echo "Running tests..."
+echo -n "Running tests... "
 
-if ! ./tools/check.sh 2>&1 > /dev/null; then
+if ! ./tools/check.sh 2>/dev/null > /dev/null; then
     echo "It failed :(" >&2
     exit 0
 fi
+
+echo "done."
 
 set_version "$release_version"
 

@@ -8,6 +8,8 @@ mod sparse_array_usize;
 use super::entry::Entry;
 use crate::list;
 use crate::List;
+use crate::ListSync;
+use archery::SharedPointerKindArc;
 use sparse_array_usize::SparseArrayUsize;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
@@ -160,7 +162,7 @@ enum Node<K, V> {
 #[derive(Debug, PartialEq, Eq)]
 enum Bucket<K, V> {
     Single(EntryWithHash<K, V>),
-    Collision(List<EntryWithHash<K, V>>),
+    Collision(ListSync<EntryWithHash<K, V>>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -413,11 +415,11 @@ mod bucket_utils {
 
     /// Returns `true` if an element was removed.
     pub fn list_remove_first<T: Clone, F: Fn(&T) -> bool>(
-        list: &mut List<T>,
+        list: &mut ListSync<T>,
         predicate: F,
     ) -> bool {
         let mut before_needle: Vec<T> = Vec::with_capacity(list.len());
-        let remaining: &mut List<T> = list;
+        let remaining: &mut ListSync<T> = list;
         let mut removed = false;
 
         while !remaining.is_empty() {
@@ -487,7 +489,7 @@ where
             }
             Bucket::Single(existing_entry) => {
                 // TODO In theory we should not need to clone `existing_entry`.
-                let entries = list!(entry, existing_entry.clone());
+                let entries = list_sync!(entry, existing_entry.clone());
 
                 *self = Bucket::Collision(entries);
 
@@ -881,7 +883,7 @@ pub struct IterArc<'a, K, V> {
 enum IterStackElement<'a, K, V> {
     Branch(Peekable<slice::Iter<'a, Arc<Node<K, V>>>>),
     LeafSingle(&'a EntryWithHash<K, V>),
-    LeafCollision(Peekable<list::Iter<'a, EntryWithHash<K, V>>>),
+    LeafCollision(Peekable<list::Iter<'a, EntryWithHash<K, V>, SharedPointerKindArc>>),
 }
 
 impl<'a, K, V> IterStackElement<'a, K, V>

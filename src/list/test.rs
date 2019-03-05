@@ -5,6 +5,18 @@
 
 use super::*;
 use pretty_assertions::assert_eq;
+use static_assertions::assert_impl;
+
+assert_impl!(
+    list_sync_is_send_and_sync;
+    ListSync<i32>,
+    Send, Sync
+);
+
+#[allow(dead_code)]
+fn compile_time_macro_list_sync_is_send_and_sync() -> impl Send + Sync {
+    list_sync!(0)
+}
 
 mod iter {
     use super::*;
@@ -64,20 +76,6 @@ mod iter {
         }
 
         assert_eq!(left, 0);
-    }
-}
-
-mod compile_time {
-    use super::*;
-
-    #[test]
-    fn test_is_send() {
-        let _: Box<dyn Send> = Box::new(List::<i32>::new());
-    }
-
-    #[test]
-    fn test_is_sync() {
-        let _: Box<dyn Sync> = Box::new(List::<i32>::new());
     }
 }
 
@@ -249,6 +247,18 @@ fn test_eq() {
 }
 
 #[test]
+fn test_eq_pointer_kind_consistent() {
+    let list_a = list!["a"];
+    let list_a_sync = list_sync!["a"];
+    let list_b = list!["b"];
+    let list_b_sync = list_sync!["b"];
+
+    assert!(list_a == list_a_sync);
+    assert!(list_a != list_b_sync);
+    assert!(list_b == list_b_sync);
+}
+
+#[test]
 fn test_partial_ord() {
     let list_1 = list!["a"];
     let list_1_prime = list!["a"];
@@ -273,7 +283,23 @@ fn test_ord() {
     assert_eq!(list_2.cmp(&list_1), Ordering::Greater);
 }
 
-fn hash<T: Hash>(list: &List<T>) -> u64 {
+#[test]
+fn test_ord_pointer_kind_consistent() {
+    let list_a = list!["a"];
+    let list_a_sync = list_sync!["a"];
+    let list_b = list!["b"];
+    let list_b_sync = list_sync!["b"];
+
+    assert!(list_a <= list_a_sync);
+    assert!(list_a < list_b_sync);
+    assert!(list_b >= list_b_sync);
+
+    assert!(list_a_sync >= list_a);
+    assert!(list_b_sync > list_a);
+    assert!(list_b_sync <= list_b);
+}
+
+fn hash<T: Hash, P: SharedPointerKind>(list: &List<T, P>) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
 
     list.hash(&mut hasher);
@@ -290,6 +316,14 @@ fn test_hash() {
     assert_eq!(hash(&list_1), hash(&list_1));
     assert_eq!(hash(&list_1), hash(&list_1_prime));
     assert_ne!(hash(&list_1), hash(&list_2));
+}
+
+#[test]
+fn test_hash_pointer_kind_consistent() {
+    let list = list!["a"];
+    let list_sync = list_sync!["a"];
+
+    assert_eq!(hash(&list), hash(&list_sync));
 }
 
 #[test]

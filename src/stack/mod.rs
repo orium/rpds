@@ -3,14 +3,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use crate::List;
+use crate::{List, ListSync};
+use archery::SharedPointerKindArc;
 use std::cmp::Ordering;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 
 // TODO Use impl trait for return value when available
-pub type Iter<'a, T> = crate::list::Iter<'a, T>;
+pub type Iter<'a, T> = crate::list::Iter<'a, T, SharedPointerKindArc>;
 
 /// Creates a [`Stack`](stack/struct.Stack.html) containing the given arguments:
 ///
@@ -63,13 +64,15 @@ macro_rules! stack {
 /// This is a thin wrapper around a [`List`](../list/struct.List.html).
 #[derive(Debug)]
 pub struct Stack<T> {
-    list: List<T>,
+    list: ListSync<T>,
 }
 
 impl<T> Stack<T> {
     #[must_use]
     pub fn new() -> Stack<T> {
-        Stack { list: List::new() }
+        Stack {
+            list: List::new_with_ptr_kind(),
+        }
     }
 
     #[must_use]

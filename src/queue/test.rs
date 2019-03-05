@@ -12,7 +12,7 @@ mod lazily_reversed_list_iter {
 
     #[test]
     fn test_iter() {
-        let list = list![0, 1, 2];
+        let list = list_sync![0, 1, 2];
         let mut iterator = LazilyReversedListIter::new(&list);
 
         assert_eq!(iterator.next().map(|v| **v), Some(2));
@@ -20,7 +20,7 @@ mod lazily_reversed_list_iter {
         assert_eq!(iterator.next().map(|v| **v), Some(0));
         assert_eq!(iterator.next(), None);
 
-        let empty_list: List<i32> = List::new();
+        let empty_list: ListSync<i32> = ListSync::new_sync();
         let mut iterator = LazilyReversedListIter::new(&empty_list);
 
         assert_eq!(iterator.next(), None);
@@ -28,7 +28,7 @@ mod lazily_reversed_list_iter {
 
     #[test]
     fn test_iter_size_hint() {
-        let list = list![0, 1, 2];
+        let list = list_sync![0, 1, 2];
         let mut iterator = LazilyReversedListIter::new(&list);
 
         assert_eq!(iterator.size_hint(), (3, Some(3)));
@@ -42,7 +42,7 @@ mod lazily_reversed_list_iter {
 
         assert_eq!(iterator.size_hint(), (0, Some(0)));
 
-        let empty_list: List<i32> = List::new();
+        let empty_list: ListSync<i32> = ListSync::new_sync();
         let iterator = LazilyReversedListIter::new(&empty_list);
 
         assert_eq!(iterator.size_hint(), (0, Some(0)));
