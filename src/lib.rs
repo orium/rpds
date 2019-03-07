@@ -303,4 +303,5 @@ pub use crate::queue::Queue;
 pub use crate::set::hash_trie_set::HashTrieSet;
 pub use crate::set::red_black_tree_set::RedBlackTreeSet;
 pub use crate::stack::Stack;
+pub use crate::stack::StackSync;
 pub use crate::vector::Vector;

@@ -3,15 +3,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use crate::{List, ListSync};
-use archery::SharedPointerKindArc;
+use crate::List;
+use archery::*;
 use std::cmp::Ordering;
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 
 // TODO Use impl trait for return value when available
-pub type Iter<'a, T> = crate::list::Iter<'a, T, SharedPointerKindArc>;
+pub type Iter<'a, T, P> = crate::list::Iter<'a, T, P>;
 
 /// Creates a [`Stack`](stack/struct.Stack.html) containing the given arguments:
 ///
@@ -31,6 +31,37 @@ macro_rules! stack {
         {
             #[allow(unused_mut)]
             let mut s = $crate::Stack::new();
+            $(
+                s.push_mut($e);
+            )*
+            s
+        }
+    };
+}
+
+/// Creates a [`Stack`](stack/struct.Stack.html) that implements `Sync`, containing the given
+/// arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let mut s = Stack::new_sync()
+///     .push(1)
+///     .push(2)
+///     .push(3);
+///
+/// assert_eq!(stack_sync![1, 2, 3], s);
+///
+/// fn is_sync() -> impl Sync {
+///     stack_sync![0, 1, 1, 2, 3, 5, 8]
+/// }
+/// ```
+#[macro_export]
+macro_rules! stack_sync {
+    ($($e:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut s = $crate::Stack::new_sync();
             $(
                 s.push_mut($e);
             )*
@@ -63,13 +94,35 @@ macro_rules! stack {
 ///
 /// This is a thin wrapper around a [`List`](../list/struct.List.html).
 #[derive(Debug)]
-pub struct Stack<T> {
-    list: ListSync<T>,
+pub struct Stack<T, P = SharedPointerKindRc>
+where
+    P: SharedPointerKind,
+{
+    list: List<T, P>,
 }
 
-impl<T> Stack<T> {
+pub type StackSync<T> = Stack<T, SharedPointerKindArc>;
+
+impl<T> StackSync<T> {
     #[must_use]
-    pub fn new() -> Stack<T> {
+    pub fn new_sync() -> StackSync<T> {
+        Stack::new_with_ptr_kind()
+    }
+}
+
+impl<T> Stack<T, SharedPointerKindRc> {
+    #[must_use]
+    pub fn new() -> Stack<T, SharedPointerKindRc> {
+        Stack::new_with_ptr_kind()
+    }
+}
+
+impl<T, P> Stack<T, P>
+where
+    P: SharedPointerKind,
+{
+    #[must_use]
+    pub fn new_with_ptr_kind() -> Stack<T, P> {
         Stack {
             list: List::new_with_ptr_kind(),
         }
@@ -81,7 +134,7 @@ impl<T> Stack<T> {
     }
 
     #[must_use]
-    pub fn pop(&self) -> Option<Stack<T>> {
+    pub fn pop(&self) -> Option<Stack<T, P>> {
         let mut new_stack = self.clone();
 
         if new_stack.pop_mut() {
@@ -96,7 +149,7 @@ impl<T> Stack<T> {
     }
 
     #[must_use]
-    pub fn push(&self, v: T) -> Stack<T> {
+    pub fn push(&self, v: T) -> Stack<T, P> {
         let mut new_stack = self.clone();
 
         new_stack.push_mut(v);
@@ -121,52 +174,75 @@ impl<T> Stack<T> {
     }
 
     #[must_use]
-    pub fn iter(&self) -> Iter<'_, T> {
+    pub fn iter(&self) -> Iter<'_, T, P> {
         self.list.iter()
     }
 }
 
-impl<T> Default for Stack<T> {
-    fn default() -> Stack<T> {
-        Stack::new()
+impl<T, P> Default for Stack<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn default() -> Stack<T, P> {
+        Stack::new_with_ptr_kind()
     }
 }
 
-impl<T: PartialEq> PartialEq for Stack<T> {
-    fn eq(&self, other: &Stack<T>) -> bool {
+impl<T: PartialEq, P, PO> PartialEq<Stack<T, PO>> for Stack<T, P>
+where
+    P: SharedPointerKind,
+    PO: SharedPointerKind,
+{
+    fn eq(&self, other: &Stack<T, PO>) -> bool {
         self.list.eq(&other.list)
     }
 }
 
-impl<T: Eq> Eq for Stack<T> {}
+impl<T: Eq, P> Eq for Stack<T, P> where P: SharedPointerKind {}
 
-impl<T: PartialOrd<T>> PartialOrd<Stack<T>> for Stack<T> {
-    fn partial_cmp(&self, other: &Stack<T>) -> Option<Ordering> {
+impl<T: PartialOrd<T>, P, PO> PartialOrd<Stack<T, PO>> for Stack<T, P>
+where
+    P: SharedPointerKind,
+    PO: SharedPointerKind,
+{
+    fn partial_cmp(&self, other: &Stack<T, PO>) -> Option<Ordering> {
         self.list.partial_cmp(&other.list)
     }
 }
 
-impl<T: Ord> Ord for Stack<T> {
-    fn cmp(&self, other: &Stack<T>) -> Ordering {
+impl<T: Ord, P> Ord for Stack<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn cmp(&self, other: &Stack<T, P>) -> Ordering {
         self.list.cmp(&other.list)
     }
 }
 
-impl<T: Hash> Hash for Stack<T> {
+impl<T: Hash, P> Hash for Stack<T, P>
+where
+    P: SharedPointerKind,
+{
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.list.hash(state)
     }
 }
 
-impl<T> Clone for Stack<T> {
-    fn clone(&self) -> Stack<T> {
+impl<T, P> Clone for Stack<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn clone(&self) -> Stack<T, P> {
         Stack {
             list: List::clone(&self.list),
         }
     }
 }
 
-impl<T: Display> Display for Stack<T> {
+impl<T: Display, P> Display for Stack<T, P>
+where
+    P: SharedPointerKind,
+{
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
 
@@ -184,17 +260,23 @@ impl<T: Display> Display for Stack<T> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a Stack<T> {
+impl<'a, T, P> IntoIterator for &'a Stack<T, P>
+where
+    P: SharedPointerKind,
+{
     type Item = &'a T;
-    type IntoIter = Iter<'a, T>;
+    type IntoIter = Iter<'a, T, P>;
 
-    fn into_iter(self) -> Iter<'a, T> {
+    fn into_iter(self) -> Iter<'a, T, P> {
         self.list.iter()
     }
 }
 
-impl<T> FromIterator<T> for Stack<T> {
-    fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> Stack<T> {
+impl<T, P> FromIterator<T> for Stack<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> Stack<T, P> {
         Stack {
             list: List::from_iter(into_iter),
         }
@@ -207,20 +289,22 @@ pub mod serde {
     use ::serde::de::{Deserialize, Deserializer};
     use ::serde::ser::{Serialize, Serializer};
 
-    impl<T> Serialize for Stack<T>
+    impl<T, P> Serialize for Stack<T, P>
     where
         T: Serialize,
+        P: SharedPointerKind,
     {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             self.list.serialize(serializer)
         }
     }
 
-    impl<'de, T> Deserialize<'de> for Stack<T>
+    impl<'de, T, P> Deserialize<'de> for Stack<T, P>
     where
         T: Deserialize<'de>,
+        P: SharedPointerKind,
     {
-        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Stack<T>, D::Error> {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Stack<T, P>, D::Error> {
             Deserialize::deserialize(deserializer).map(|list| Stack { list })
         }
     }

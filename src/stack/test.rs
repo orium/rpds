@@ -5,6 +5,18 @@
 
 use super::*;
 use pretty_assertions::assert_eq;
+use static_assertions::assert_impl;
+
+assert_impl!(
+    stack_sync_is_send_and_sync;
+    StackSync<i32>,
+    Send, Sync
+);
+
+#[allow(dead_code)]
+fn compile_time_macro_stack_sync_is_send_and_sync() -> impl Send + Sync {
+    stack_sync!(0)
+}
 
 mod iter {
     #[test]
@@ -54,20 +66,6 @@ mod iter {
         }
 
         assert_eq!(left, 0);
-    }
-}
-
-mod compile_time {
-    use super::*;
-
-    #[test]
-    fn test_is_send() {
-        let _: Box<dyn Send> = Box::new(Stack::<i32>::new());
-    }
-
-    #[test]
-    fn test_is_sync() {
-        let _: Box<dyn Sync> = Box::new(Stack::<i32>::new());
     }
 }
 
@@ -179,6 +177,18 @@ fn test_eq() {
 }
 
 #[test]
+fn test_eq_pointer_kind_consistent() {
+    let stack_a = stack!["a"];
+    let stack_a_sync = stack_sync!["a"];
+    let stack_b = stack!["b"];
+    let stack_b_sync = stack_sync!["b"];
+
+    assert!(stack_a == stack_a_sync);
+    assert!(stack_a != stack_b_sync);
+    assert!(stack_b == stack_b_sync);
+}
+
+#[test]
 fn test_partial_ord() {
     let stack_1 = stack!["a"];
     let stack_1_prime = stack!["a"];
@@ -203,7 +213,23 @@ fn test_ord() {
     assert_eq!(stack_2.cmp(&stack_1), Ordering::Greater);
 }
 
-fn hash<T: Hash>(stack: &Stack<T>) -> u64 {
+#[test]
+fn test_ord_pointer_kind_consistent() {
+    let stack_a = stack!["a"];
+    let stack_a_sync = stack_sync!["a"];
+    let stack_b = stack!["b"];
+    let stack_b_sync = stack_sync!["b"];
+
+    assert!(stack_a <= stack_a_sync);
+    assert!(stack_a < stack_b_sync);
+    assert!(stack_b >= stack_b_sync);
+
+    assert!(stack_a_sync >= stack_a);
+    assert!(stack_b_sync > stack_a);
+    assert!(stack_b_sync <= stack_b);
+}
+
+fn hash<T: Hash, P: SharedPointerKind>(stack: &Stack<T, P>) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
 
     stack.hash(&mut hasher);
@@ -220,6 +246,14 @@ fn test_hash() {
     assert_eq!(hash(&stack_1), hash(&stack_1));
     assert_eq!(hash(&stack_1), hash(&stack_1_prime));
     assert_ne!(hash(&stack_1), hash(&stack_2));
+}
+
+#[test]
+fn test_hash_pointer_kind_consistent() {
+    let stack = stack!["a"];
+    let stack_sync = stack_sync!["a"];
+
+    assert_eq!(hash(&stack), hash(&stack_sync));
 }
 
 #[test]

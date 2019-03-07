@@ -286,7 +286,7 @@ where
         self.iter_ptr().map(|v| v.borrow())
     }
 
-    pub fn iter_ptr(&self) -> IterPtr<'_, T, P> {
+    pub(crate) fn iter_ptr(&self) -> IterPtr<'_, T, P> {
         IterPtr::new(self)
     }
 }
