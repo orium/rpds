@@ -142,10 +142,7 @@ where
 
 pub type ListSync<T> = List<T, SharedPointerKindArc>;
 
-impl<T> ListSync<T>
-where
-    T: Send + Sync, // No point in having a `ListSync` if these don't hold.
-{
+impl<T> ListSync<T> {
     #[must_use]
     pub fn new_sync() -> ListSync<T> {
         List::new_with_ptr_kind()
