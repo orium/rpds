@@ -77,6 +77,10 @@ name = "rpds_queue"
 harness = false
 
 [[bench]]
+name = "rpds_queue_sync"
+harness = false
+
+[[bench]]
 name = "std_vec_deque"
 harness = false
 

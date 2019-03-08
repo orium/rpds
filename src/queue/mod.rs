@@ -3,9 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use crate::{List, ListSync};
-use archery::SharedPointer;
-use archery::SharedPointerKindArc;
+use crate::List;
+use archery::*;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::Display;
@@ -13,12 +12,9 @@ use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 
 // TODO Use impl trait instead of this when available.
-type IterArc<'a, T> = std::iter::Chain<
-    crate::list::IterPtr<'a, T, SharedPointerKindArc>,
-    LazilyReversedListIter<'a, T>,
->;
-pub type Iter<'a, T> =
-    std::iter::Map<IterArc<'a, T>, fn(&SharedPointer<T, SharedPointerKindArc>) -> &T>;
+type IterPtr<'a, T, P> =
+    std::iter::Chain<crate::list::IterPtr<'a, T, P>, LazilyReversedListIter<'a, T, P>>;
+pub type Iter<'a, T, P> = std::iter::Map<IterPtr<'a, T, P>, fn(&SharedPointer<T, P>) -> &T>;
 
 /// Creates a [`Queue`](queue/struct.Queue.html) containing the given arguments:
 ///
@@ -38,6 +34,37 @@ macro_rules! queue {
         {
             #[allow(unused_mut)]
             let mut q = $crate::Queue::new();
+            $(
+                q.enqueue_mut($e);
+            )*
+            q
+        }
+    };
+}
+
+/// Creates a [`Queue`](queue/struct.Queue.html) that implements `Sync`, containing the given
+/// arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let q = Queue::new_sync()
+///     .enqueue(1)
+///     .enqueue(2)
+///     .enqueue(3);
+///
+/// assert_eq!(queue_sync![1, 2, 3], q);
+///
+/// fn is_sync() -> impl Sync {
+///     queue_sync![0, 1, 3]
+/// }
+/// ```
+#[macro_export]
+macro_rules! queue_sync {
+    ($($e:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut q = $crate::Queue::new_sync();
             $(
                 q.enqueue_mut($e);
             )*
@@ -72,14 +99,36 @@ macro_rules! queue {
 /// This queue is implemented as described in
 /// [Immutability in C# Part Four: An Immutable Queue](https://goo.gl/hWyMuS).
 #[derive(Debug)]
-pub struct Queue<T> {
-    in_list: ListSync<T>,
-    out_list: ListSync<T>,
+pub struct Queue<T, P = SharedPointerKindRc>
+where
+    P: SharedPointerKind,
+{
+    in_list: List<T, P>,
+    out_list: List<T, P>,
+}
+
+pub type QueueSync<T> = Queue<T, SharedPointerKindArc>;
+
+impl<T> QueueSync<T> {
+    #[must_use]
+    pub fn new_sync() -> QueueSync<T> {
+        Queue::new_with_ptr_kind()
+    }
 }
 
 impl<T> Queue<T> {
     #[must_use]
     pub fn new() -> Queue<T> {
+        Queue::new_with_ptr_kind()
+    }
+}
+
+impl<T, P> Queue<T, P>
+where
+    P: SharedPointerKind,
+{
+    #[must_use]
+    pub fn new_with_ptr_kind() -> Queue<T, P> {
         Queue {
             in_list: List::new_with_ptr_kind(),
             out_list: List::new_with_ptr_kind(),
@@ -96,7 +145,7 @@ impl<T> Queue<T> {
     }
 
     #[must_use]
-    pub fn dequeue(&self) -> Option<Queue<T>> {
+    pub fn dequeue(&self) -> Option<Queue<T, P>> {
         let mut new_queue = self.clone();
 
         if new_queue.dequeue_mut() {
@@ -122,7 +171,7 @@ impl<T> Queue<T> {
     }
 
     #[must_use]
-    pub fn enqueue(&self, v: T) -> Queue<T> {
+    pub fn enqueue(&self, v: T) -> Queue<T, P> {
         let mut new_queue = self.clone();
 
         new_queue.enqueue_mut(v);
@@ -147,44 +196,61 @@ impl<T> Queue<T> {
     }
 
     #[must_use]
-    pub fn iter(&self) -> Iter<'_, T> {
-        self.iter_arc().map(|v| v.borrow())
+    pub fn iter(&self) -> Iter<'_, T, P> {
+        self.iter_ptr().map(|v| v.borrow())
     }
 
-    fn iter_arc(&self) -> IterArc<'_, T> {
+    fn iter_ptr(&self) -> IterPtr<'_, T, P> {
         self.out_list
             .iter_ptr()
             .chain(LazilyReversedListIter::new(&self.in_list))
     }
 }
 
-impl<T> Default for Queue<T> {
-    fn default() -> Queue<T> {
-        Queue::new()
+impl<T, P> Default for Queue<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn default() -> Queue<T, P> {
+        Queue::new_with_ptr_kind()
     }
 }
 
-impl<T: PartialEq> PartialEq for Queue<T> {
-    fn eq(&self, other: &Queue<T>) -> bool {
+impl<T: PartialEq, P, PO> PartialEq<Queue<T, PO>> for Queue<T, P>
+where
+    P: SharedPointerKind,
+    PO: SharedPointerKind,
+{
+    fn eq(&self, other: &Queue<T, PO>) -> bool {
         self.len() == other.len() && self.iter().eq(other.iter())
     }
 }
 
-impl<T: Eq> Eq for Queue<T> {}
+impl<T: Eq, P> Eq for Queue<T, P> where P: SharedPointerKind {}
 
-impl<T: PartialOrd<T>> PartialOrd<Queue<T>> for Queue<T> {
-    fn partial_cmp(&self, other: &Queue<T>) -> Option<Ordering> {
+impl<T: PartialOrd<T>, P, PO> PartialOrd<Queue<T, PO>> for Queue<T, P>
+where
+    P: SharedPointerKind,
+    PO: SharedPointerKind,
+{
+    fn partial_cmp(&self, other: &Queue<T, PO>) -> Option<Ordering> {
         self.iter().partial_cmp(other.iter())
     }
 }
 
-impl<T: Ord> Ord for Queue<T> {
-    fn cmp(&self, other: &Queue<T>) -> Ordering {
+impl<T: Ord, P> Ord for Queue<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn cmp(&self, other: &Queue<T, P>) -> Ordering {
         self.iter().cmp(other.iter())
     }
 }
 
-impl<T: Hash> Hash for Queue<T> {
+impl<T: Hash, P> Hash for Queue<T, P>
+where
+    P: SharedPointerKind,
+{
     fn hash<H: Hasher>(&self, state: &mut H) {
         // Add the hash of length so that if two collections are added one after the other it
         // doesn't hash to the same thing as a single collection with the same elements in the same
@@ -197,8 +263,11 @@ impl<T: Hash> Hash for Queue<T> {
     }
 }
 
-impl<T> Clone for Queue<T> {
-    fn clone(&self) -> Queue<T> {
+impl<T, P> Clone for Queue<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn clone(&self) -> Queue<T, P> {
         Queue {
             in_list: self.in_list.clone(),
             out_list: self.out_list.clone(),
@@ -206,7 +275,10 @@ impl<T> Clone for Queue<T> {
     }
 }
 
-impl<T: Display> Display for Queue<T> {
+impl<T: Display, P> Display for Queue<T, P>
+where
+    P: SharedPointerKind,
+{
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
 
@@ -224,17 +296,23 @@ impl<T: Display> Display for Queue<T> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a Queue<T> {
+impl<'a, T, P> IntoIterator for &'a Queue<T, P>
+where
+    P: SharedPointerKind,
+{
     type Item = &'a T;
-    type IntoIter = Iter<'a, T>;
+    type IntoIter = Iter<'a, T, P>;
 
-    fn into_iter(self) -> Iter<'a, T> {
+    fn into_iter(self) -> Iter<'a, T, P> {
         self.iter()
     }
 }
 
-impl<T> FromIterator<T> for Queue<T> {
-    fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> Queue<T> {
+impl<T, P> FromIterator<T> for Queue<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> Queue<T, P> {
         Queue {
             out_list: List::from_iter(into_iter),
             in_list: List::new_with_ptr_kind(),
@@ -242,31 +320,39 @@ impl<T> FromIterator<T> for Queue<T> {
     }
 }
 
-pub enum LazilyReversedListIter<'a, T: 'a> {
+pub enum LazilyReversedListIter<'a, T: 'a, P>
+where
+    P: SharedPointerKind,
+{
     Uninitialized {
-        list: &'a ListSync<T>,
+        list: &'a List<T, P>,
     },
     Initialized {
-        vec: Vec<&'a SharedPointer<T, SharedPointerKindArc>>,
+        vec: Vec<&'a SharedPointer<T, P>>,
         current: Option<usize>,
     },
 }
 
-impl<'a, T> LazilyReversedListIter<'a, T> {
-    fn new(list: &ListSync<T>) -> LazilyReversedListIter<'_, T> {
+impl<'a, T, P> LazilyReversedListIter<'a, T, P>
+where
+    P: SharedPointerKind,
+{
+    fn new(list: &List<T, P>) -> LazilyReversedListIter<'_, T, P> {
         LazilyReversedListIter::Uninitialized { list }
     }
 }
 
-impl<'a, T> Iterator for LazilyReversedListIter<'a, T> {
-    type Item = &'a SharedPointer<T, SharedPointerKindArc>;
+impl<'a, T, P> Iterator for LazilyReversedListIter<'a, T, P>
+where
+    P: SharedPointerKind,
+{
+    type Item = &'a SharedPointer<T, P>;
 
-    fn next(&mut self) -> Option<&'a SharedPointer<T, SharedPointerKindArc>> {
+    fn next(&mut self) -> Option<&'a SharedPointer<T, P>> {
         match self {
             LazilyReversedListIter::Uninitialized { list } => {
                 let len = list.len();
-                let mut vec: Vec<&'a SharedPointer<T, SharedPointerKindArc>> =
-                    Vec::with_capacity(len);
+                let mut vec: Vec<&'a SharedPointer<T, P>> = Vec::with_capacity(len);
 
                 for v in list.iter_ptr() {
                     vec.push(v);
@@ -310,7 +396,7 @@ impl<'a, T> Iterator for LazilyReversedListIter<'a, T> {
     }
 }
 
-impl<'a, T> ExactSizeIterator for LazilyReversedListIter<'a, T> {}
+impl<'a, T, P> ExactSizeIterator for LazilyReversedListIter<'a, T, P> where P: SharedPointerKind {}
 
 #[cfg(feature = "serde")]
 pub mod serde {
@@ -318,20 +404,22 @@ pub mod serde {
     use ::serde::de::{Deserialize, Deserializer};
     use ::serde::ser::{Serialize, Serializer};
 
-    impl<T> Serialize for Queue<T>
+    impl<T, P> Serialize for Queue<T, P>
     where
         T: Serialize,
+        P: SharedPointerKind,
     {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             serializer.collect_seq(self)
         }
     }
 
-    impl<'de, T> Deserialize<'de> for Queue<T>
+    impl<'de, T, P> Deserialize<'de> for Queue<T, P>
     where
         T: Deserialize<'de>,
+        P: SharedPointerKind,
     {
-        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Queue<T>, D::Error> {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Queue<T, P>, D::Error> {
             Deserialize::deserialize(deserializer).map(|list| Queue {
                 out_list: list,
                 in_list: List::new_with_ptr_kind(),

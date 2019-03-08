@@ -5,6 +5,18 @@
 
 use super::*;
 use pretty_assertions::assert_eq;
+use static_assertions::assert_impl;
+
+assert_impl!(
+    queue_sync_is_send_and_sync;
+    QueueSync<i32>,
+    Send, Sync
+);
+
+#[allow(dead_code)]
+fn compile_time_macro_queue_sync_is_send_and_sync() -> impl Send + Sync {
+    queue_sync!(0)
+}
 
 mod lazily_reversed_list_iter {
     use super::*;
@@ -12,7 +24,7 @@ mod lazily_reversed_list_iter {
 
     #[test]
     fn test_iter() {
-        let list = list_sync![0, 1, 2];
+        let list = list![0, 1, 2];
         let mut iterator = LazilyReversedListIter::new(&list);
 
         assert_eq!(iterator.next().map(|v| **v), Some(2));
@@ -20,7 +32,7 @@ mod lazily_reversed_list_iter {
         assert_eq!(iterator.next().map(|v| **v), Some(0));
         assert_eq!(iterator.next(), None);
 
-        let empty_list: ListSync<i32> = ListSync::new_sync();
+        let empty_list: List<i32> = List::new();
         let mut iterator = LazilyReversedListIter::new(&empty_list);
 
         assert_eq!(iterator.next(), None);
@@ -28,7 +40,7 @@ mod lazily_reversed_list_iter {
 
     #[test]
     fn test_iter_size_hint() {
-        let list = list_sync![0, 1, 2];
+        let list = list![0, 1, 2];
         let mut iterator = LazilyReversedListIter::new(&list);
 
         assert_eq!(iterator.size_hint(), (3, Some(3)));
@@ -42,7 +54,7 @@ mod lazily_reversed_list_iter {
 
         assert_eq!(iterator.size_hint(), (0, Some(0)));
 
-        let empty_list: ListSync<i32> = ListSync::new_sync();
+        let empty_list: List<i32> = List::new();
         let iterator = LazilyReversedListIter::new(&empty_list);
 
         assert_eq!(iterator.size_hint(), (0, Some(0)));
@@ -150,20 +162,6 @@ mod internal {
 
         assert_eq!(queue_3.out_list, list_1_2_3);
         assert!(queue_3.in_list.is_empty());
-    }
-}
-
-mod compile_time {
-    use super::*;
-
-    #[test]
-    fn test_is_send() {
-        let _: Box<dyn Send> = Box::new(Queue::<i32>::new());
-    }
-
-    #[test]
-    fn test_is_sync() {
-        let _: Box<dyn Sync> = Box::new(Queue::<i32>::new());
     }
 }
 
@@ -354,6 +352,18 @@ fn test_eq() {
 }
 
 #[test]
+fn test_eq_pointer_kind_consistent() {
+    let queue_a = queue!["a"];
+    let queue_a_sync = queue_sync!["a"];
+    let queue_b = queue!["b"];
+    let queue_b_sync = queue_sync!["b"];
+
+    assert!(queue_a == queue_a_sync);
+    assert!(queue_a != queue_b_sync);
+    assert!(queue_b == queue_b_sync);
+}
+
+#[test]
 fn test_partial_ord() {
     let queue_1 = queue!["a"];
     let queue_1_prime = queue!["a"];
@@ -378,7 +388,23 @@ fn test_ord() {
     assert_eq!(queue_2.cmp(&queue_1), Ordering::Greater);
 }
 
-fn hash<T: Hash>(queue: &Queue<T>) -> u64 {
+#[test]
+fn test_ord_pointer_kind_consistent() {
+    let queue_a = queue!["a"];
+    let queue_a_sync = queue_sync!["a"];
+    let queue_b = queue!["b"];
+    let queue_b_sync = queue_sync!["b"];
+
+    assert!(queue_a <= queue_a_sync);
+    assert!(queue_a < queue_b_sync);
+    assert!(queue_b >= queue_b_sync);
+
+    assert!(queue_a_sync >= queue_a);
+    assert!(queue_b_sync > queue_a);
+    assert!(queue_b_sync <= queue_b);
+}
+
+fn hash<T: Hash, P: SharedPointerKind>(queue: &Queue<T, P>) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
 
     queue.hash(&mut hasher);
@@ -395,6 +421,14 @@ fn test_hash() {
     assert_eq!(hash(&queue_1), hash(&queue_1));
     assert_eq!(hash(&queue_1), hash(&queue_1_prime));
     assert_ne!(hash(&queue_1), hash(&queue_2));
+}
+
+#[test]
+fn test_hash_pointer_kind_consistent() {
+    let queue = queue!["a"];
+    let queue_sync = queue_sync!["a"];
+
+    assert_eq!(hash(&queue), hash(&queue_sync));
 }
 
 #[test]

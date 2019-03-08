@@ -110,9 +110,9 @@ impl<T> StackSync<T> {
     }
 }
 
-impl<T> Stack<T, SharedPointerKindRc> {
+impl<T> Stack<T> {
     #[must_use]
-    pub fn new() -> Stack<T, SharedPointerKindRc> {
+    pub fn new() -> Stack<T> {
         Stack::new_with_ptr_kind()
     }
 }

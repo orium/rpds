@@ -300,6 +300,7 @@ pub use crate::list::ListSync;
 pub use crate::map::hash_trie_map::HashTrieMap;
 pub use crate::map::red_black_tree_map::RedBlackTreeMap;
 pub use crate::queue::Queue;
+pub use crate::queue::QueueSync;
 pub use crate::set::hash_trie_set::HashTrieSet;
 pub use crate::set::red_black_tree_set::RedBlackTreeSet;
 pub use crate::stack::Stack;
