@@ -11,21 +11,49 @@ cd "$(git rev-parse --show-toplevel)"
 
 source "tools/utils.sh"
 
-assert_installed "jq"
-assert_installed "kcov"
+function on_finish() {
+    # TODO See workarounds below.
+    find src/ -name '*.rs' \
+        | xargs -d '\n' -n1 sed -i 's,// WORKAROUND TARPAULIN ,,g'
+}
 
-# If we don't pass this to rustc, functions that are unreachable from the unit
-# tests will be removed from the binary and would not count as uncovered code.
-export RUSTFLAGS='-C link-dead-code'
+assert_installed "cargo-tarpaulin"
 
-build=$(unit_tests_build)
+output_format=Html
 
-kcov --verify target/cov \
-    --exclude-pattern='cargo/registry/,test' \
-    --exclude-line='unreachable!' \
-    target/debug/$build $@ 2>&1 >/dev/null
+args=$(getopt -l "xml" -o "x" -- "$@")
 
-# TODO The symbolic link that kcov generates is broken, so we have to do this workaround.
-report_dir=$(readlink target/cov/$build | sed 's,/*$,,' | tac -s'/' | head -1)
+eval set -- "$args"
 
-echo "You can find the test coverage results at file://$(pwd)/target/cov/$report_dir/index.html"
+while [ $# -ge 1 ]; do
+    case "$1" in
+        --)
+            # No more options left.
+            shift
+            break
+            ;;
+        -x|--xml)
+            output_format=Xml
+            shift
+            ;;
+    esac
+
+    shift
+done
+
+trap on_finish EXIT
+
+# TODO This is a workaround for a tarpaulin bug: https://github.com/xd009642/tarpaulin/issues/136#issuecomment-471340525
+find src/ -name '*.rs' \
+    | xargs -d '\n' -n1 sed -i 's,\(#\[inline.*\]\),// WORKAROUND TARPAULIN \0,'
+
+# TODO This may be fixed in the future.
+find src/ -name '*.rs' \
+    | xargs -d '\n' -n1 sed -i 's,static_assertions::assert_eq_size!,// WORKAROUND TARPAULIN \0,'
+
+cargo tarpaulin --features serde --force-clean --ignore-tests --out $output_format
+
+if [ "$output_format" == "Html" ]; then
+    echo
+    echo "You can find the test coverage results at file://$(pwd)/tarpaulin-report.html"
+fi

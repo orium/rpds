@@ -15,40 +15,21 @@ matrix:
   allow_failures:
     - rust: nightly
 
-addons:
-  apt:
-    packages:
-      # Dependencies needed to build kcov.
-      # TODO Remove when kcov >= 34 is available in the official repositories.
-      - libelf-dev
-      - libdw-dev
-      - binutils-dev
-      - libiberty-dev
-
-      # Dependencies of the code coverage tool.
-      - jq
-
 install:
   - rustup component add rustfmt
+
   # `cargo-deadlinks` does not work on windows.
   - test "$TRAVIS_OS_NAME" = windows || cargo install cargo-deadlinks
 
 script:
   - ./tools/check.sh
 
-# TODO Do not build kcov when version >= 34 is available in the official repositories.
 after_success:
   test "$TRAVIS_OS_NAME" = linux
   && test "$TRAVIS_RUST_VERSION" = stable
-  && wget https://github.com/SimonKagstrom/kcov/archive/v36.tar.gz
-  && tar xf v36.tar.gz
-  && cd kcov-36
-  && mkdir build
-  && cd build
-  && cmake ..
-  && make
-  && sudo make install
-  && cd ../../
-  && rm -rf kcov-36 v36.tar.gz
-  && travis_wait ./tools/codecov.sh
+  && sudo apt-get update
+  && sudo apt-get install libssl-dev pkg-config cmake zlib1g-dev
+  && echo TODO remove the rust flags once tarpaulin is stable.
+  && RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
+  && travis_wait ./tools/codecov.sh --xml
   && bash <(curl -s https://codecov.io/bash)

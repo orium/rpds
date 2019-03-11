@@ -1,7 +1,7 @@
 /.idea/
-*.iml
 
 /target/
 *.rs.bk
 
 /Cargo.lock
+/tarpaulin-report.html
