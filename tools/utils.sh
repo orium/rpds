@@ -19,13 +19,6 @@ function os {
     fi
 }
 
-function unit_tests_build {
-    # TODO Maybe in the future there will be a better way.  See https://github.com/rust-lang/cargo/issues/1924.
-    cargo test --no-run --message-format=json 2>/dev/null \
-        | jq -r "select(.profile.test == true) | .filenames[]" \
-        | tac -s'/' | head -1
-}
-
 function project_name {
     cargo pkgid | tac -s'/' | head -1 | cut -d'#' -f1
 }
