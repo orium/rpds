@@ -20,7 +20,8 @@ function on_failure {
     echo -e "${RED}Whoopsie-daisy: something failed!$NC" >&2
 }
 
-assert_installed "cargo-deadlinks"
+# `cargo-deadlinks` does not work on windows.
+test "$(os)" = windows || assert_installed "cargo-deadlinks"
 assert_installed "cargo-fmt"
 
 trap on_failure ERR
@@ -30,7 +31,8 @@ cargo test  --features fatal-warnings,serde
 cargo bench --features fatal-warnings,serde -- --test
 cargo doc   --features fatal-warnings,serde
 
-cargo deadlinks
+# `cargo-deadlinks` does not work on windows.
+test "$TRAVIS_OS_NAME" = windows || cargo deadlinks
 
 cargo package --allow-dirty
 cargo fmt -- --check
