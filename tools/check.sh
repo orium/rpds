@@ -25,15 +25,23 @@ assert_installed "cargo-fmt"
 
 trap on_failure ERR
 
+echo 'Building:'
 cargo build --features fatal-warnings,serde --all-targets
+echo 'Testing:'
 cargo test  --features fatal-warnings,serde
+echo 'Checking the benchmarks:'
 cargo bench --features fatal-warnings,serde -- --test
+echo 'Checking documentation:'
 cargo doc   --features fatal-warnings,serde
 
+echo 'Checking links:'
 cargo deadlinks
 
+echo 'Checking packaging:'
 cargo package --allow-dirty
+echo 'Checking code style:'
 cargo fmt -- --check
+echo 'Checking readme:'
 ./tools/update-readme.sh --check
 
 echo
