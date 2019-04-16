@@ -112,21 +112,11 @@ where
     K: Ord,
 {
     fn new_red(entry: Entry<K, V>) -> Node<K, V> {
-        Node {
-            entry: Arc::new(entry),
-            color: Color::Red,
-            left: None,
-            right: None,
-        }
+        Node { entry: Arc::new(entry), color: Color::Red, left: None, right: None }
     }
 
     fn new_black(entry: Entry<K, V>) -> Node<K, V> {
-        Node {
-            entry: Arc::new(entry),
-            color: Color::Black,
-            left: None,
-            right: None,
-        }
+        Node { entry: Arc::new(entry), color: Color::Black, left: None, right: None }
     }
 
     fn borrow(node: &Option<Arc<Node<K, V>>>) -> Option<&Node<K, V>> {
@@ -720,10 +710,7 @@ where
 {
     #[must_use]
     pub fn new() -> RedBlackTreeMap<K, V> {
-        RedBlackTreeMap {
-            root: None,
-            size: 0,
-        }
+        RedBlackTreeMap { root: None, size: 0 }
     }
 
     #[must_use]
@@ -732,26 +719,17 @@ where
         K: Borrow<Q>,
         Q: Ord,
     {
-        self.root
-            .as_ref()
-            .and_then(|r| r.get(key))
-            .map(|e| &e.value)
+        self.root.as_ref().and_then(|r| r.get(key)).map(|e| &e.value)
     }
 
     #[must_use]
     pub fn first(&self) -> Option<(&K, &V)> {
-        self.root
-            .as_ref()
-            .map(|r| r.first())
-            .map(|e| (&e.key, &e.value))
+        self.root.as_ref().map(|r| r.first()).map(|e| (&e.key, &e.value))
     }
 
     #[must_use]
     pub fn last(&self) -> Option<(&K, &V)> {
-        self.root
-            .as_ref()
-            .map(|r| r.last())
-            .map(|e| (&e.key, &e.value))
+        self.root.as_ref().map(|r| r.last()).map(|e| (&e.key, &e.value))
     }
 
     #[must_use]
@@ -887,10 +865,7 @@ where
     K: Ord,
 {
     fn clone(&self) -> RedBlackTreeMap<K, V> {
-        RedBlackTreeMap {
-            root: self.root.clone(),
-            size: self.size,
-        }
+        RedBlackTreeMap { root: self.root.clone(), size: self.size }
     }
 }
 
@@ -909,9 +884,7 @@ where
 {
     fn eq(&self, other: &RedBlackTreeMap<K, V>) -> bool {
         self.size() == other.size()
-            && self
-                .iter()
-                .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
+            && self.iter().all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
     }
 }
 
@@ -1034,10 +1007,7 @@ mod iter_utils {
         {
             let size = conservative_height(map.size()) + 1;
 
-            let mut stack = IterStack {
-                stack: Vec::with_capacity(size),
-                backwards,
-            };
+            let mut stack = IterStack { stack: Vec::with_capacity(size), backwards };
 
             if let Some(ref root) = map.root {
                 stack.dig_towards(root.borrow(), start_bound, end_bound);
@@ -1087,11 +1057,7 @@ mod iter_utils {
             Q: Ord + ?Sized,
         {
             let child = self.stack.last().and_then(|node| {
-                let c = if self.backwards {
-                    &node.right
-                } else {
-                    &node.left
-                };
+                let c = if self.backwards { &node.right } else { &node.left };
                 Node::borrow(c)
             });
 
@@ -1148,11 +1114,7 @@ mod iter_utils {
             Q: Ord + ?Sized,
         {
             if let Some(node) = self.stack.pop() {
-                let child = if self.backwards {
-                    &node.left
-                } else {
-                    &node.right
-                };
+                let child = if self.backwards { &node.left } else { &node.right };
 
                 if let Some(c) = Node::borrow(child) {
                     self.stack.push(c);
@@ -1194,10 +1156,7 @@ where
     K: Ord,
 {
     fn new(map: &RedBlackTreeMap<K, V>) -> IterArc<'_, K, V> {
-        IterArc {
-            range_iter: RangeIterArc::new(map, ..),
-            size: map.size,
-        }
+        IterArc { range_iter: RangeIterArc::new(map, ..), size: map.size }
     }
 }
 
@@ -1255,23 +1214,14 @@ where
     RB: RangeBounds<Q>,
 {
     fn new(map: &'a RedBlackTreeMap<K, V>, range: RB) -> RangeIterArc<'_, K, V, RB, Q> {
-        RangeIterArc {
-            map,
-            stack_forward: None,
-            stack_backward: None,
-            range,
-            _q: PhantomData,
-        }
+        RangeIterArc { map, stack_forward: None, stack_backward: None, range, _q: PhantomData }
     }
 
     fn init_if_needed(&mut self, backwards: bool) {
         use iter_utils::IterStack;
 
-        let stack_field = if backwards {
-            &mut self.stack_backward
-        } else {
-            &mut self.stack_forward
-        };
+        let stack_field =
+            if backwards { &mut self.stack_backward } else { &mut self.stack_forward };
 
         if stack_field.is_none() {
             *stack_field = Some(IterStack::new(
@@ -1386,9 +1336,7 @@ pub mod serde {
         fn deserialize<D: Deserializer<'de>>(
             deserializer: D,
         ) -> Result<RedBlackTreeMap<K, V>, D::Error> {
-            deserializer.deserialize_map(RedBlackTreeMapVisitor {
-                phantom: PhantomData,
-            })
+            deserializer.deserialize_map(RedBlackTreeMapVisitor { phantom: PhantomData })
         }
     }
 

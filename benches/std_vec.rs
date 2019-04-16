@@ -107,12 +107,5 @@ fn std_vec_iterate(c: &mut Criterion) {
     });
 }
 
-criterion_group!(
-    benches,
-    std_vec_push,
-    std_vec_pop,
-    std_vec_reverse,
-    std_vec_get,
-    std_vec_iterate
-);
+criterion_group!(benches, std_vec_push, std_vec_pop, std_vec_reverse, std_vec_get, std_vec_iterate);
 criterion_main!(benches);

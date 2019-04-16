@@ -47,20 +47,11 @@ mod bucket {
         let bucket_single = Bucket::Single(entry_a.clone());
         let bucket_collision = Bucket::Collision(list_sync![entry_b.clone(), entry_a.clone()]);
 
-        assert_eq!(
-            bucket_single.get(entry_a.key(), entry_a.key_hash),
-            Some(entry_a.borrow())
-        );
+        assert_eq!(bucket_single.get(entry_a.key(), entry_a.key_hash), Some(entry_a.borrow()));
         assert_eq!(bucket_single.get(entry_b.key(), entry_b.key_hash), None);
 
-        assert_eq!(
-            bucket_collision.get(entry_a.key(), entry_a.key_hash),
-            Some(entry_a.borrow())
-        );
-        assert_eq!(
-            bucket_collision.get(entry_b.key(), entry_b.key_hash),
-            Some(entry_b.borrow())
-        );
+        assert_eq!(bucket_collision.get(entry_a.key(), entry_a.key_hash), Some(entry_a.borrow()));
+        assert_eq!(bucket_collision.get(entry_b.key(), entry_b.key_hash), Some(entry_b.borrow()));
         assert_eq!(bucket_collision.get(entry_c.key(), entry_c.key_hash), None);
     }
 
@@ -78,16 +69,10 @@ mod bucket {
         let bucket_single_a = Bucket::Single(entry_a.clone());
         let bucket_single_a9 = Bucket::Single(entry_a9.clone());
         let bucket_collision_b_a = Bucket::Collision(list_sync![entry_b.clone(), entry_a.clone()]);
-        let bucket_collision_a_b_c = Bucket::Collision(list_sync![
-            entry_a.clone(),
-            entry_b.clone(),
-            entry_c.clone()
-        ]);
-        let bucket_collision_b9_a_c = Bucket::Collision(list_sync![
-            entry_b9.clone(),
-            entry_a.clone(),
-            entry_c.clone()
-        ]);
+        let bucket_collision_a_b_c =
+            Bucket::Collision(list_sync![entry_a.clone(), entry_b.clone(), entry_c.clone()]);
+        let bucket_collision_b9_a_c =
+            Bucket::Collision(list_sync![entry_b9.clone(), entry_a.clone(), entry_c.clone()]);
         let bucket_collision_d_a_b_c = Bucket::Collision(list_sync![
             entry_d.clone(),
             entry_a.clone(),
@@ -128,54 +113,31 @@ mod bucket {
 
         let bucket_single_a = Bucket::Single(entry_a.clone());
         let bucket_collision_b_c = Bucket::Collision(list_sync![entry_b.clone(), entry_c.clone()]);
-        let bucket_collision_a_b_c = Bucket::Collision(list_sync![
-            entry_a.clone(),
-            entry_b.clone(),
-            entry_c.clone()
-        ]);
+        let bucket_collision_a_b_c =
+            Bucket::Collision(list_sync![entry_a.clone(), entry_b.clone(), entry_c.clone()]);
 
         let mut bucket_ref: Option<&mut Bucket<u8, i32>> = None;
-        assert!(!Bucket::remove(
-            &mut bucket_ref,
-            entry_a.key(),
-            entry_a.key_hash
-        ));
+        assert!(!Bucket::remove(&mut bucket_ref, entry_a.key(), entry_a.key_hash));
         assert_eq!(bucket_ref, None);
 
         let mut bucket = bucket_single_a.clone();
         let mut bucket_ref = Some(&mut bucket);
-        assert!(Bucket::remove(
-            &mut bucket_ref,
-            entry_a.key(),
-            entry_a.key_hash
-        ));
+        assert!(Bucket::remove(&mut bucket_ref, entry_a.key(), entry_a.key_hash));
         assert_eq!(bucket_ref, None);
 
         let mut bucket = bucket_single_a.clone();
         let mut bucket_ref = Some(&mut bucket);
-        assert!(!Bucket::remove(
-            &mut bucket_ref,
-            entry_b.key(),
-            entry_b.key_hash
-        ));
+        assert!(!Bucket::remove(&mut bucket_ref, entry_b.key(), entry_b.key_hash));
         assert_eq!(bucket_ref, Some(&mut bucket_single_a.clone()));
 
         let mut bucket = bucket_collision_a_b_c.clone();
         let mut bucket_ref = Some(&mut bucket);
-        assert!(Bucket::remove(
-            &mut bucket_ref,
-            entry_a.key(),
-            entry_a.key_hash
-        ));
+        assert!(Bucket::remove(&mut bucket_ref, entry_a.key(), entry_a.key_hash));
         assert_eq!(bucket_ref, Some(&mut bucket_collision_b_c.clone()));
 
         let mut bucket = bucket_collision_a_b_c.clone();
         let mut bucket_ref = Some(&mut bucket);
-        assert!(!Bucket::remove(
-            &mut bucket_ref,
-            entry_d.key(),
-            entry_d.key_hash
-        ));
+        assert!(!Bucket::remove(&mut bucket_ref, entry_d.key(), entry_d.key_hash));
         assert_eq!(bucket_ref, Some(&mut bucket_collision_a_b_c.clone()));
     }
 }
@@ -210,10 +172,7 @@ mod hasher_mocks {
         type Hasher = MockedHasher;
 
         fn build_hasher(&self) -> MockedHasher {
-            MockedHasher {
-                last_byte: None,
-                byte_map: self.byte_map.clone(),
-            }
+            MockedHasher { last_byte: None, byte_map: self.byte_map.clone() }
         }
     }
 
@@ -239,10 +198,7 @@ mod hasher_mocks {
 
     impl LimitedHashSpaceHashBuilder {
         pub fn new(hash_space_size: usize) -> LimitedHashSpaceHashBuilder {
-            LimitedHashSpaceHashBuilder {
-                inner_hash_builder: RandomState::new(),
-                hash_space_size,
-            }
+            LimitedHashSpaceHashBuilder { inner_hash_builder: RandomState::new(), hash_space_size }
         }
     }
 
@@ -405,12 +361,7 @@ mod node {
             Node::Branch(array)
         };
 
-        HashTrieMap {
-            root: Arc::new(node_root),
-            size: 5,
-            degree: 16,
-            hasher_builder: hash_builder,
-        }
+        HashTrieMap { root: Arc::new(node_root), size: 5, degree: 16, hasher_builder: hash_builder }
     }
 
     #[test]
@@ -586,12 +537,8 @@ mod node {
         let removed_b_a = map_a_b_c_d_e.remove(&0xB).remove(&0xA);
         let removed_d = map_a_b_c_d_e.remove(&0xD);
         let removed_d_e = map_a_b_c_d_e.remove(&0xD).remove(&0xE);
-        let removed_all = map_a_b_c_d_e
-            .remove(&0xA)
-            .remove(&0xB)
-            .remove(&0xC)
-            .remove(&0xD)
-            .remove(&0xE);
+        let removed_all =
+            map_a_b_c_d_e.remove(&0xA).remove(&0xB).remove(&0xC).remove(&0xD).remove(&0xE);
 
         assert_eq!(removed_c.root, map_a_b_d_e.root);
         assert_eq!(removed_b.root, map_a_c_d_e.root);

@@ -231,54 +231,27 @@ fn test_remove_mut() {
 
 #[test]
 fn test_is_disjoint() {
-    assert!(!HashTrieSet::is_disjoint(
-        &ht_set![1, 2, 3],
-        &ht_set![1, 2, 3]
-    ));
+    assert!(!HashTrieSet::is_disjoint(&ht_set![1, 2, 3], &ht_set![1, 2, 3]));
     assert!(!HashTrieSet::is_disjoint(&ht_set![1, 2, 3], &ht_set![0, 1]));
-    assert!(HashTrieSet::is_disjoint(
-        &ht_set![1, 2, 3, 7, 16],
-        &ht_set![0, 4, 17]
-    ));
+    assert!(HashTrieSet::is_disjoint(&ht_set![1, 2, 3, 7, 16], &ht_set![0, 4, 17]));
 }
 
 #[test]
 fn test_is_subset() {
     assert!(HashTrieSet::is_subset(&ht_set![], &ht_set![1, 2, 3]));
     assert!(HashTrieSet::is_subset(&ht_set![1, 2, 3], &ht_set![1, 2, 3]));
-    assert!(!HashTrieSet::is_subset(
-        &ht_set![1, 2, 3],
-        &ht_set![1, 2, 5, 6]
-    ));
-    assert!(HashTrieSet::is_subset(
-        &ht_set![1, 2, 3],
-        &ht_set![1, 2, 3, 5, 6]
-    ));
-    assert!(!HashTrieSet::is_subset(
-        &ht_set![1, 2, 3, 5, 6],
-        &ht_set![1, 2, 3]
-    ));
+    assert!(!HashTrieSet::is_subset(&ht_set![1, 2, 3], &ht_set![1, 2, 5, 6]));
+    assert!(HashTrieSet::is_subset(&ht_set![1, 2, 3], &ht_set![1, 2, 3, 5, 6]));
+    assert!(!HashTrieSet::is_subset(&ht_set![1, 2, 3, 5, 6], &ht_set![1, 2, 3]));
 }
 
 #[test]
 fn test_is_superset() {
     assert!(HashTrieSet::is_superset(&ht_set![1, 2, 3], &ht_set![]));
-    assert!(HashTrieSet::is_superset(
-        &ht_set![1, 2, 3],
-        &ht_set![1, 2, 3]
-    ));
-    assert!(!HashTrieSet::is_superset(
-        &ht_set![1, 2, 5, 6],
-        &ht_set![1, 2, 3]
-    ));
-    assert!(HashTrieSet::is_superset(
-        &ht_set![1, 2, 3, 5, 6],
-        &ht_set![1, 2, 3]
-    ));
-    assert!(!HashTrieSet::is_superset(
-        &ht_set![1, 2, 3],
-        &ht_set![1, 2, 3, 5, 6]
-    ));
+    assert!(HashTrieSet::is_superset(&ht_set![1, 2, 3], &ht_set![1, 2, 3]));
+    assert!(!HashTrieSet::is_superset(&ht_set![1, 2, 5, 6], &ht_set![1, 2, 3]));
+    assert!(HashTrieSet::is_superset(&ht_set![1, 2, 3, 5, 6], &ht_set![1, 2, 3]));
+    assert!(!HashTrieSet::is_superset(&ht_set![1, 2, 3], &ht_set![1, 2, 3, 5, 6]));
 }
 
 #[test]

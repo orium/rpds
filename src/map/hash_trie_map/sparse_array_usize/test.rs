@@ -13,11 +13,7 @@ fn test_new() {
 
     assert_eq!(empty_array.bitmap, 0);
     assert_eq!(empty_array.array.len(), 0);
-    assert_eq!(
-        empty_array.array.capacity(),
-        0,
-        "Capacity of the branch array is wasteful"
-    );
+    assert_eq!(empty_array.array.capacity(), 0, "Capacity of the branch array is wasteful");
 }
 
 #[test]

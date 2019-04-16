@@ -30,10 +30,7 @@ mod sparse_array_usize_utils {
 
 impl<T> SparseArrayUsize<T> {
     pub fn new() -> SparseArrayUsize<T> {
-        SparseArrayUsize {
-            bitmap: 0,
-            array: Vec::new(),
-        }
+        SparseArrayUsize { bitmap: 0, array: Vec::new() }
     }
 
     #[inline]
@@ -94,10 +91,7 @@ impl<T> SparseArrayUsize<T> {
 
 impl<T: Clone> Clone for SparseArrayUsize<T> {
     fn clone(&self) -> SparseArrayUsize<T> {
-        SparseArrayUsize {
-            bitmap: self.bitmap,
-            array: Vec::clone(&self.array),
-        }
+        SparseArrayUsize { bitmap: self.bitmap, array: Vec::clone(&self.array) }
     }
 }
 

@@ -82,16 +82,12 @@ where
 {
     #[must_use]
     pub fn new() -> RedBlackTreeSet<T> {
-        RedBlackTreeSet {
-            map: RedBlackTreeMap::new(),
-        }
+        RedBlackTreeSet { map: RedBlackTreeMap::new() }
     }
 
     #[must_use]
     pub fn insert(&self, v: T) -> RedBlackTreeSet<T> {
-        RedBlackTreeSet {
-            map: self.map.insert(v, ()),
-        }
+        RedBlackTreeSet { map: self.map.insert(v, ()) }
     }
 
     pub fn insert_mut(&mut self, v: T) {
@@ -104,9 +100,7 @@ where
         T: Borrow<V>,
         V: Ord,
     {
-        RedBlackTreeSet {
-            map: self.map.remove(v),
-        }
+        RedBlackTreeSet { map: self.map.remove(v) }
     }
 
     pub fn remove_mut<V: ?Sized>(&mut self, v: &V) -> bool
@@ -213,9 +207,7 @@ where
     T: Ord,
 {
     fn clone(&self) -> RedBlackTreeSet<T> {
-        RedBlackTreeSet {
-            map: self.map.clone(),
-        }
+        RedBlackTreeSet { map: self.map.clone() }
     }
 }
 
@@ -312,9 +304,7 @@ pub mod serde {
         fn deserialize<D: Deserializer<'de>>(
             deserializer: D,
         ) -> Result<RedBlackTreeSet<T>, D::Error> {
-            deserializer.deserialize_seq(RedBlackTreeSetVisitor {
-                phantom: PhantomData,
-            })
+            deserializer.deserialize_seq(RedBlackTreeSetVisitor { phantom: PhantomData })
         }
     }
 

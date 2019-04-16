@@ -257,11 +257,7 @@ impl<T> Vector<T> {
     pub fn new_with_bits(bits: u8) -> Vector<T> {
         assert!(bits > 0, "number of bits for the vector must be positive");
 
-        Vector {
-            root: Arc::new(Node::new_empty_leaf()),
-            bits,
-            length: 0,
-        }
+        Vector { root: Arc::new(Node::new_empty_leaf()), bits, length: 0 }
     }
 
     #[must_use]
@@ -336,9 +332,8 @@ impl<T> Vector<T> {
 
         let height = self.height();
         let bits = self.bits;
-        Arc::make_mut(&mut self.root).assoc(v, height, |height| {
-            vector_utils::bucket(bits, index, height)
-        });
+        Arc::make_mut(&mut self.root)
+            .assoc(v, height, |height| vector_utils::bucket(bits, index, height));
         let adds_item: bool = index >= self.length;
 
         if adds_item {
@@ -483,15 +478,13 @@ impl<T> Index<usize> for Vector<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &T {
-        self.get(index)
-            .unwrap_or_else(|| panic!("index out of bounds {}", index))
+        self.get(index).unwrap_or_else(|| panic!("index out of bounds {}", index))
     }
 }
 
 impl<T: Clone> IndexMut<usize> for Vector<T> {
     fn index_mut(&mut self, index: usize) -> &mut T {
-        self.get_mut(index)
-            .unwrap_or_else(|| panic!("index out of bounds {}", index))
+        self.get_mut(index).unwrap_or_else(|| panic!("index out of bounds {}", index))
     }
 }
 
@@ -535,11 +528,7 @@ impl<T: Hash> Hash for Vector<T> {
 
 impl<T> Clone for Vector<T> {
     fn clone(&self) -> Vector<T> {
-        Vector {
-            root: Arc::clone(&self.root),
-            bits: self.bits,
-            length: self.length,
-        }
+        Vector { root: Arc::clone(&self.root), bits: self.bits, length: self.length }
     }
 }
 
@@ -606,14 +595,7 @@ struct IterStackElement<'a, T> {
 
 impl<'a, T> IterStackElement<'a, T> {
     fn new(node: &Node<T>, backwards: bool) -> IterStackElement<'_, T> {
-        IterStackElement {
-            node,
-            index: if backwards {
-                node.used() as isize - 1
-            } else {
-                0
-            },
-        }
+        IterStackElement { node, index: if backwards { node.used() as isize - 1 } else { 0 } }
     }
 
     fn current_node(&self) -> &'a Node<T> {
@@ -673,11 +655,8 @@ impl<'a, T> IterArc<'a, T> {
     }
 
     fn init_if_needed(&mut self, backwards: bool) {
-        let stack_field = if backwards {
-            &mut self.stack_backward
-        } else {
-            &mut self.stack_forward
-        };
+        let stack_field =
+            if backwards { &mut self.stack_backward } else { &mut self.stack_forward };
 
         if stack_field.is_none() {
             let mut stack: Vec<IterStackElement<'_, T>> =
@@ -804,9 +783,7 @@ pub mod serde {
         T: Deserialize<'de>,
     {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Vector<T>, D::Error> {
-            deserializer.deserialize_seq(VectorVisitor {
-                phantom: PhantomData,
-            })
+            deserializer.deserialize_seq(VectorVisitor { phantom: PhantomData })
         }
     }
 

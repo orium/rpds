@@ -133,10 +133,7 @@ where
     P: SharedPointerKind,
 {
     fn clone(&self) -> Node<T, P> {
-        Node {
-            value: SharedPointer::clone(&self.value),
-            next: self.next.clone(),
-        }
+        Node { value: SharedPointer::clone(&self.value), next: self.next.clone() }
     }
 }
 
@@ -162,11 +159,7 @@ where
 {
     #[must_use]
     pub fn new_with_ptr_kind() -> List<T, P> {
-        List {
-            head: None,
-            last: None,
-            length: 0,
-        }
+        List { head: None, last: None, length: 0 }
     }
 
     #[must_use]
@@ -210,10 +203,7 @@ where
             self.last = Some(SharedPointer::clone(&v));
         }
 
-        let new_head = Node {
-            value: v,
-            next: self.head.take(),
-        };
+        let new_head = Node { value: v, next: self.head.take() };
 
         self.head = Some(SharedPointer::new(new_head));
         self.length += 1;
@@ -248,10 +238,7 @@ where
     }
 
     pub fn reverse_mut(&mut self) {
-        self.last = self
-            .head
-            .as_ref()
-            .map(|next| SharedPointer::clone(&next.value));
+        self.last = self.head.as_ref().map(|next| SharedPointer::clone(&next.value));
 
         let mut prev: Option<SharedPointer<Node<T, P>, P>> = None;
         let mut current: Option<SharedPointer<Node<T, P>, P>> = self.head.take();
@@ -351,11 +338,7 @@ where
     P: SharedPointerKind,
 {
     fn clone(&self) -> List<T, P> {
-        List {
-            head: self.head.clone(),
-            last: self.last.clone(),
-            length: self.length,
-        }
+        List { head: self.head.clone(), last: self.last.clone(), length: self.length }
     }
 }
 
@@ -429,10 +412,7 @@ where
     P: SharedPointerKind,
 {
     fn new(list: &List<T, P>) -> IterPtr<'_, T, P> {
-        IterPtr {
-            next: list.head.as_ref().map(|node| node.as_ref()),
-            length: list.len(),
-        }
+        IterPtr { next: list.head.as_ref().map(|node| node.as_ref()), length: list.len() }
     }
 }
 
@@ -444,10 +424,7 @@ where
 
     fn next(&mut self) -> Option<&'a SharedPointer<T, P>> {
         match self.next {
-            Some(Node {
-                value: ref v,
-                next: ref t,
-            }) => {
+            Some(Node { value: ref v, next: ref t }) => {
                 self.next = t.as_ref().map(|node| node.as_ref());
                 self.length -= 1;
                 Some(v)
@@ -487,10 +464,8 @@ pub mod serde {
         P: SharedPointerKind,
     {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<List<T, P>, D::Error> {
-            deserializer.deserialize_seq(ListVisitor {
-                _phantom_t: PhantomData,
-                _phantom_p: PhantomData,
-            })
+            deserializer
+                .deserialize_seq(ListVisitor { _phantom_t: PhantomData, _phantom_p: PhantomData })
         }
     }
 

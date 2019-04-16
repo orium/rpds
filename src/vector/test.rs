@@ -52,13 +52,8 @@ mod node {
 
     #[test]
     fn test_drop_last_multi_level() {
-        let mut node_three: Node<u32> = Vector::new_with_bits(1)
-            .push_back(0)
-            .push_back(1)
-            .push_back(2)
-            .root
-            .as_ref()
-            .clone();
+        let mut node_three: Node<u32> =
+            Vector::new_with_bits(1).push_back(0).push_back(1).push_back(2).root.as_ref().clone();
         let mut node_four: Node<u32> = Vector::new_with_bits(1)
             .push_back(0)
             .push_back(1)
@@ -326,20 +321,10 @@ mod internal {
         let empty_leaf: Node<u32> = Node::new_empty_leaf();
         let empty_branch: Node<u32> = Node::new_empty_branch();
         let singleton_leaf: Node<u32> = vector![0].root.as_ref().clone();
-        let compressed_branch: Node<u32> = Vector::new_with_bits(1)
-            .push_back(0)
-            .push_back(1)
-            .push_back(3)
-            .root
-            .as_ref()
-            .clone();
+        let compressed_branch: Node<u32> =
+            Vector::new_with_bits(1).push_back(0).push_back(1).push_back(3).root.as_ref().clone();
         let (uncompressed_branch, uncompressed_branch_leaf) = {
-            let leaf = Vector::new_with_bits(1)
-                .push_back(0)
-                .push_back(1)
-                .root
-                .as_ref()
-                .clone();
+            let leaf = Vector::new_with_bits(1).push_back(0).push_back(1).root.as_ref().clone();
 
             let a_branch = {
                 let mut a = Vec::with_capacity(2);

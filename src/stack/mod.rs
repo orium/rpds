@@ -123,9 +123,7 @@ where
 {
     #[must_use]
     pub fn new_with_ptr_kind() -> Stack<T, P> {
-        Stack {
-            list: List::new_with_ptr_kind(),
-        }
+        Stack { list: List::new_with_ptr_kind() }
     }
 
     #[must_use]
@@ -233,9 +231,7 @@ where
     P: SharedPointerKind,
 {
     fn clone(&self) -> Stack<T, P> {
-        Stack {
-            list: List::clone(&self.list),
-        }
+        Stack { list: List::clone(&self.list) }
     }
 }
 
@@ -277,9 +273,7 @@ where
     P: SharedPointerKind,
 {
     fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> Stack<T, P> {
-        Stack {
-            list: List::from_iter(into_iter),
-        }
+        Stack { list: List::from_iter(into_iter) }
     }
 }
 

@@ -46,14 +46,8 @@ impl<K, V> Node<K, V> {
         };
 
         self_ok
-            && self
-                .left
-                .as_ref()
-                .map_or(true, |l| l.red_nodes_have_black_children())
-            && self
-                .right
-                .as_ref()
-                .map_or(true, |r| r.red_nodes_have_black_children())
+            && self.left.as_ref().map_or(true, |l| l.red_nodes_have_black_children())
+            && self.right.as_ref().map_or(true, |r| r.red_nodes_have_black_children())
     }
 
     fn has_binary_search_property(&self) -> bool
@@ -97,23 +91,11 @@ where
     K: Ord + Clone,
 {
     fn check_consistent(&self) -> Result<(), InvariantViolation> {
-        if !self
-            .root
-            .as_ref()
-            .map_or(true, |r| r.has_binary_search_property())
-        {
+        if !self.root.as_ref().map_or(true, |r| r.has_binary_search_property()) {
             Result::Err(InvariantViolation::BinarySearch)
-        } else if !self
-            .root
-            .as_ref()
-            .map_or(true, |r| r.red_nodes_have_black_children())
-        {
+        } else if !self.root.as_ref().map_or(true, |r| r.red_nodes_have_black_children()) {
             Result::Err(InvariantViolation::RedNodeBlackChildren)
-        } else if !self
-            .root
-            .as_ref()
-            .map_or(true, |r| r.is_black_height_balanced())
-        {
+        } else if !self.root.as_ref().map_or(true, |r| r.is_black_height_balanced()) {
             Result::Err(InvariantViolation::BlackHeightBalanced)
         } else if !self.root.as_ref().map_or(true, |r| r.color == Color::Black) {
             Result::Err(InvariantViolation::BlackRoot)
@@ -130,19 +112,11 @@ mod node {
     use pretty_assertions::assert_eq;
 
     fn dummy_entry<T: Clone>(v: T) -> Entry<T, T> {
-        Entry {
-            key: v.clone(),
-            value: v,
-        }
+        Entry { key: v.clone(), value: v }
     }
 
     fn dummy_node<T: Clone>(v: T) -> Node<T, T> {
-        Node {
-            entry: Arc::new(dummy_entry(v)),
-            color: Color::Red,
-            left: None,
-            right: None,
-        }
+        Node { entry: Arc::new(dummy_entry(v)), color: Color::Red, left: None, right: None }
     }
 
     fn dummy_node_with_children<T: Clone>(
@@ -538,11 +512,7 @@ mod node {
             right: Some(Arc::new(dummy_node("c"))),
         };
 
-        assert!(Node::remove_fuse(
-            &mut node,
-            Some(Arc::new(left)),
-            Some(Arc::new(right))
-        ));
+        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), Some(Arc::new(right))));
         assert_eq!(node, expected_node);
 
         let left = Node {
@@ -564,11 +534,7 @@ mod node {
             right: Some(Arc::new(right.clone())),
         };
 
-        assert!(Node::remove_fuse(
-            &mut node,
-            Some(Arc::new(left)),
-            Some(Arc::new(right))
-        ));
+        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), Some(Arc::new(right))));
         assert_eq!(node, expected_node);
 
         let left = Node {
@@ -600,11 +566,7 @@ mod node {
             })),
         };
 
-        assert!(Node::remove_fuse(
-            &mut node,
-            Some(Arc::new(left)),
-            Some(Arc::new(right))
-        ));
+        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), Some(Arc::new(right))));
         assert_eq!(node, expected_node);
 
         let left = Node {
@@ -631,11 +593,7 @@ mod node {
             })),
         };
 
-        assert!(Node::remove_fuse(
-            &mut node,
-            Some(Arc::new(left)),
-            Some(Arc::new(right))
-        ));
+        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), Some(Arc::new(right))));
         assert_eq!(node, expected_node);
 
         let left = Node {
@@ -667,11 +625,7 @@ mod node {
             })),
         };
 
-        assert!(Node::remove_fuse(
-            &mut node,
-            Some(Arc::new(left)),
-            Some(Arc::new(right))
-        ));
+        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), Some(Arc::new(right))));
         assert_eq!(node, expected_node);
 
         let left = Node {
@@ -702,11 +656,7 @@ mod node {
             n
         };
 
-        assert!(Node::remove_fuse(
-            &mut node,
-            Some(Arc::new(left)),
-            Some(Arc::new(right))
-        ));
+        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), Some(Arc::new(right))));
         assert_eq!(node, expected_node);
     }
 
@@ -1298,16 +1248,11 @@ mod iter {
             expected: Vec<(i32, i32)>,
         ) {
             assert_eq!(
-                map.range(range.clone())
-                    .map(|(k, v)| (*k, *v))
-                    .collect::<Vec<_>>(),
+                map.range(range.clone()).map(|(k, v)| (*k, *v)).collect::<Vec<_>>(),
                 expected
             );
             assert_eq!(
-                map.range(range)
-                    .rev()
-                    .map(|(k, v)| (*k, *v))
-                    .collect::<Vec<_>>(),
+                map.range(range).rev().map(|(k, v)| (*k, *v)).collect::<Vec<_>>(),
                 expected.iter().cloned().rev().collect::<Vec<_>>()
             );
         }
@@ -1356,10 +1301,7 @@ mod compile_time {
 #[test]
 fn test_macro_rbt_map() {
     let set_1 = RedBlackTreeMap::new().insert(1, 2);
-    let set_1_2_3 = RedBlackTreeMap::new()
-        .insert(1, 2)
-        .insert(2, 3)
-        .insert(3, 4);
+    let set_1_2_3 = RedBlackTreeMap::new().insert(1, 2).insert(2, 3).insert(3, 4);
 
     assert_eq!(RedBlackTreeMap::<u32, u32>::new(), rbt_map![]);
     assert_eq!(set_1, rbt_map![1 => 2]);

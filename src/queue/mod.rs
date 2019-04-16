@@ -129,10 +129,7 @@ where
 {
     #[must_use]
     pub fn new_with_ptr_kind() -> Queue<T, P> {
-        Queue {
-            in_list: List::new_with_ptr_kind(),
-            out_list: List::new_with_ptr_kind(),
-        }
+        Queue { in_list: List::new_with_ptr_kind(), out_list: List::new_with_ptr_kind() }
     }
 
     #[must_use]
@@ -201,9 +198,7 @@ where
     }
 
     fn iter_ptr(&self) -> IterPtr<'_, T, P> {
-        self.out_list
-            .iter_ptr()
-            .chain(LazilyReversedListIter::new(&self.in_list))
+        self.out_list.iter_ptr().chain(LazilyReversedListIter::new(&self.in_list))
     }
 }
 
@@ -268,10 +263,7 @@ where
     P: SharedPointerKind,
 {
     fn clone(&self) -> Queue<T, P> {
-        Queue {
-            in_list: self.in_list.clone(),
-            out_list: self.out_list.clone(),
-        }
+        Queue { in_list: self.in_list.clone(), out_list: self.out_list.clone() }
     }
 }
 
@@ -313,10 +305,7 @@ where
     P: SharedPointerKind,
 {
     fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> Queue<T, P> {
-        Queue {
-            out_list: List::from_iter(into_iter),
-            in_list: List::new_with_ptr_kind(),
-        }
+        Queue { out_list: List::from_iter(into_iter), in_list: List::new_with_ptr_kind() }
     }
 }
 
@@ -324,13 +313,8 @@ pub enum LazilyReversedListIter<'a, T: 'a, P>
 where
     P: SharedPointerKind,
 {
-    Uninitialized {
-        list: &'a List<T, P>,
-    },
-    Initialized {
-        vec: Vec<&'a SharedPointer<T, P>>,
-        current: Option<usize>,
-    },
+    Uninitialized { list: &'a List<T, P> },
+    Initialized { vec: Vec<&'a SharedPointer<T, P>>, current: Option<usize> },
 }
 
 impl<'a, T, P> LazilyReversedListIter<'a, T, P>
@@ -366,10 +350,7 @@ where
                 self.next()
             }
 
-            LazilyReversedListIter::Initialized {
-                ref vec,
-                ref mut current,
-            } => {
+            LazilyReversedListIter::Initialized { ref vec, ref mut current } => {
                 let v = current.map(|i| vec[i]);
 
                 *current = match *current {
@@ -386,9 +367,7 @@ where
     fn size_hint(&self) -> (usize, Option<usize>) {
         let len = match self {
             LazilyReversedListIter::Uninitialized { list } => list.len(),
-            LazilyReversedListIter::Initialized {
-                current: Some(i), ..
-            } => i + 1,
+            LazilyReversedListIter::Initialized { current: Some(i), .. } => i + 1,
             LazilyReversedListIter::Initialized { current: None, .. } => 0,
         };
 
@@ -420,10 +399,8 @@ pub mod serde {
         P: SharedPointerKind,
     {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Queue<T, P>, D::Error> {
-            Deserialize::deserialize(deserializer).map(|list| Queue {
-                out_list: list,
-                in_list: List::new_with_ptr_kind(),
-            })
+            Deserialize::deserialize(deserializer)
+                .map(|list| Queue { out_list: list, in_list: List::new_with_ptr_kind() })
         }
     }
 }

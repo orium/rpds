@@ -135,11 +135,7 @@ fn test_last() {
 fn test_drop_first() {
     let empty_list: List<i32> = List::new();
     let singleton_list = List::new().push_front("hello");
-    let list = List::new()
-        .push_front(3)
-        .push_front(2)
-        .push_front(1)
-        .push_front(0);
+    let list = List::new().push_front(3).push_front(2).push_front(1).push_front(0);
 
     assert!(empty_list.is_empty());
     assert_eq!(singleton_list.drop_first().unwrap().first(), None);
@@ -171,16 +167,8 @@ fn test_drop_first_mut() {
 fn test_reverse() {
     let empty_list: List<i32> = List::new();
     let singleton_list = List::new().push_front("hello");
-    let list = List::new()
-        .push_front(3)
-        .push_front(2)
-        .push_front(1)
-        .push_front(0);
-    let list_reversed = List::new()
-        .push_front(0)
-        .push_front(1)
-        .push_front(2)
-        .push_front(3);
+    let list = List::new().push_front(3).push_front(2).push_front(1).push_front(0);
+    let list_reversed = List::new().push_front(0).push_front(1).push_front(2).push_front(3);
 
     assert_eq!(empty_list.reverse(), empty_list);
     assert_eq!(empty_list.reverse().last(), None);

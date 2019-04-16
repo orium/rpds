@@ -388,10 +388,7 @@ where
             Node::Branch(subtrees) => subtrees.size() == 0,
             Node::Leaf(Bucket::Single(_)) => false,
             Node::Leaf(Bucket::Collision(entries)) => {
-                debug_assert!(
-                    entries.len() >= 2,
-                    "collisions must have at least two entries"
-                );
+                debug_assert!(entries.len() >= 2, "collisions must have at least two entries");
                 false
             }
         }
@@ -457,10 +454,9 @@ where
         match self {
             Bucket::Single(entry) if entry.matches(key, key_hash) => Some(entry.borrow()),
             Bucket::Single(_) => None,
-            Bucket::Collision(entries) => entries
-                .iter()
-                .find(|e| e.matches(key, key_hash))
-                .map(|e| e.borrow()),
+            Bucket::Collision(entries) => {
+                entries.iter().find(|e| e.matches(key, key_hash)).map(|e| e.borrow())
+            }
         }
     }
 
@@ -578,10 +574,7 @@ where
     fn new<H: BuildHasher>(key: K, value: V, hash_builder: &H) -> EntryWithHash<K, V> {
         let key_hash = node_utils::hash(&key, hash_builder);
 
-        EntryWithHash {
-            entry: Arc::new(Entry::new(key, value)),
-            key_hash,
-        }
+        EntryWithHash { entry: Arc::new(Entry::new(key, value)), key_hash }
     }
 
     fn key(&self) -> &K {
@@ -607,10 +600,7 @@ where
     K: Eq + Hash,
 {
     fn clone(&self) -> EntryWithHash<K, V> {
-        EntryWithHash {
-            entry: Arc::clone(&self.entry),
-            key_hash: self.key_hash,
-        }
+        EntryWithHash { entry: Arc::clone(&self.entry), key_hash: self.key_hash }
     }
 }
 
@@ -642,17 +632,9 @@ where
     #[must_use]
     pub fn new_with_hasher_and_degree(hasher_builder: H, degree: u8) -> HashTrieMap<K, V, H> {
         assert!(degree.is_power_of_two(), "degree must be a power of two");
-        assert!(
-            degree <= DEFAULT_DEGREE,
-            format!("degree must not exceed {}", DEFAULT_DEGREE)
-        );
+        assert!(degree <= DEFAULT_DEGREE, format!("degree must not exceed {}", DEFAULT_DEGREE));
 
-        HashTrieMap {
-            root: Arc::new(Node::new_empty_branch()),
-            size: 0,
-            degree,
-            hasher_builder,
-        }
+        HashTrieMap { root: Arc::new(Node::new_empty_branch()), size: 0, degree, hasher_builder }
     }
 
     #[must_use]
@@ -663,9 +645,7 @@ where
     {
         let key_hash = node_utils::hash(key, &self.hasher_builder);
 
-        self.root
-            .get(key, key_hash, 0, self.degree)
-            .map(|e| e.value())
+        self.root.get(key, key_hash, 0, self.degree).map(|e| e.value())
     }
 
     #[must_use]
@@ -806,9 +786,7 @@ where
 {
     fn eq(&self, other: &HashTrieMap<K, V, H>) -> bool {
         self.size() == other.size()
-            && self
-                .iter()
-                .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
+            && self.iter().all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
     }
 }
 
@@ -949,10 +927,7 @@ where
             stack.push(IterStackElement::new(map.root.borrow()));
         }
 
-        let mut iter = IterArc {
-            stack,
-            size: map.size(),
-        };
+        let mut iter = IterArc { stack, size: map.size() };
 
         iter.dig();
 
@@ -1046,9 +1021,7 @@ pub mod serde {
         fn deserialize<D: Deserializer<'de>>(
             deserializer: D,
         ) -> Result<HashTrieMap<K, V, H>, D::Error> {
-            deserializer.deserialize_map(HashTrieMapVisitor {
-                phantom: PhantomData,
-            })
+            deserializer.deserialize_map(HashTrieMapVisitor { phantom: PhantomData })
         }
     }
 

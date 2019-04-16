@@ -81,9 +81,7 @@ where
 {
     #[must_use]
     pub fn new() -> HashTrieSet<T> {
-        HashTrieSet {
-            map: HashTrieMap::new(),
-        }
+        HashTrieSet { map: HashTrieMap::new() }
     }
 
     pub fn new_with_degree(degree: u8) -> HashTrieSet<T> {
@@ -97,22 +95,16 @@ where
     H: Clone,
 {
     pub fn new_with_hasher(hasher_builder: H) -> HashTrieSet<T, H> {
-        HashTrieSet {
-            map: HashTrieMap::new_with_hasher(hasher_builder),
-        }
+        HashTrieSet { map: HashTrieMap::new_with_hasher(hasher_builder) }
     }
 
     pub fn new_with_hasher_and_degree(hasher_builder: H, degree: u8) -> HashTrieSet<T, H> {
-        HashTrieSet {
-            map: HashTrieMap::new_with_hasher_and_degree(hasher_builder, degree),
-        }
+        HashTrieSet { map: HashTrieMap::new_with_hasher_and_degree(hasher_builder, degree) }
     }
 
     #[must_use]
     pub fn insert(&self, v: T) -> HashTrieSet<T, H> {
-        HashTrieSet {
-            map: self.map.insert(v, ()),
-        }
+        HashTrieSet { map: self.map.insert(v, ()) }
     }
 
     pub fn insert_mut(&mut self, v: T) {
@@ -125,9 +117,7 @@ where
         T: Borrow<V>,
         V: Hash + Eq,
     {
-        HashTrieSet {
-            map: self.map.remove(v),
-        }
+        HashTrieSet { map: self.map.remove(v) }
     }
 
     pub fn remove_mut<V: ?Sized>(&mut self, v: &V) -> bool
@@ -186,9 +176,7 @@ where
     H: Clone,
 {
     fn clone(&self) -> HashTrieSet<T, H> {
-        HashTrieSet {
-            map: self.map.clone(),
-        }
+        HashTrieSet { map: self.map.clone() }
     }
 }
 
@@ -296,9 +284,7 @@ pub mod serde {
         fn deserialize<D: Deserializer<'de>>(
             deserializer: D,
         ) -> Result<HashTrieSet<T, H>, D::Error> {
-            deserializer.deserialize_seq(HashTrieSetVisitor {
-                phantom: PhantomData,
-            })
+            deserializer.deserialize_seq(HashTrieSetVisitor { phantom: PhantomData })
         }
     }
 

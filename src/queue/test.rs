@@ -283,20 +283,8 @@ fn test_dequeue() {
     let empty_queue: Queue<i32> = Queue::new();
     let singleton_queue = Queue::new().enqueue("hello");
     let queue = Queue::new().enqueue(0).enqueue(1).enqueue(2).enqueue(3);
-    let queue_2 = Queue::new()
-        .enqueue(0)
-        .enqueue(1)
-        .dequeue()
-        .unwrap()
-        .enqueue(2)
-        .enqueue(3);
-    let queue_3 = Queue::new()
-        .enqueue(0)
-        .enqueue(1)
-        .enqueue(2)
-        .enqueue(3)
-        .dequeue()
-        .unwrap();
+    let queue_2 = Queue::new().enqueue(0).enqueue(1).dequeue().unwrap().enqueue(2).enqueue(3);
+    let queue_3 = Queue::new().enqueue(0).enqueue(1).enqueue(2).enqueue(3).dequeue().unwrap();
 
     assert!(empty_queue.dequeue().is_none());
     assert_eq!(singleton_queue.dequeue().unwrap().peek(), None);

@@ -274,63 +274,27 @@ fn test_remove_mut() {
 
 #[test]
 fn test_is_disjoint() {
-    assert!(!RedBlackTreeSet::is_disjoint(
-        &rbt_set![1, 2, 3],
-        &rbt_set![1, 2, 3]
-    ));
-    assert!(!RedBlackTreeSet::is_disjoint(
-        &rbt_set![1, 2, 3],
-        &rbt_set![0, 1]
-    ));
-    assert!(RedBlackTreeSet::is_disjoint(
-        &rbt_set![1, 2, 3, 7, 16],
-        &rbt_set![0, 4, 17]
-    ));
+    assert!(!RedBlackTreeSet::is_disjoint(&rbt_set![1, 2, 3], &rbt_set![1, 2, 3]));
+    assert!(!RedBlackTreeSet::is_disjoint(&rbt_set![1, 2, 3], &rbt_set![0, 1]));
+    assert!(RedBlackTreeSet::is_disjoint(&rbt_set![1, 2, 3, 7, 16], &rbt_set![0, 4, 17]));
 }
 
 #[test]
 fn test_is_subset() {
     assert!(RedBlackTreeSet::is_subset(&rbt_set![], &rbt_set![1, 2, 3]));
-    assert!(RedBlackTreeSet::is_subset(
-        &rbt_set![1, 2, 3],
-        &rbt_set![1, 2, 3]
-    ));
-    assert!(!RedBlackTreeSet::is_subset(
-        &rbt_set![1, 2, 3],
-        &rbt_set![1, 2, 5, 6]
-    ));
-    assert!(RedBlackTreeSet::is_subset(
-        &rbt_set![1, 2, 3],
-        &rbt_set![1, 2, 3, 5, 6]
-    ));
-    assert!(!RedBlackTreeSet::is_subset(
-        &rbt_set![1, 2, 3, 5, 6],
-        &rbt_set![1, 2, 3]
-    ));
+    assert!(RedBlackTreeSet::is_subset(&rbt_set![1, 2, 3], &rbt_set![1, 2, 3]));
+    assert!(!RedBlackTreeSet::is_subset(&rbt_set![1, 2, 3], &rbt_set![1, 2, 5, 6]));
+    assert!(RedBlackTreeSet::is_subset(&rbt_set![1, 2, 3], &rbt_set![1, 2, 3, 5, 6]));
+    assert!(!RedBlackTreeSet::is_subset(&rbt_set![1, 2, 3, 5, 6], &rbt_set![1, 2, 3]));
 }
 
 #[test]
 fn test_is_superset() {
-    assert!(RedBlackTreeSet::is_superset(
-        &rbt_set![1, 2, 3],
-        &rbt_set![]
-    ));
-    assert!(RedBlackTreeSet::is_superset(
-        &rbt_set![1, 2, 3],
-        &rbt_set![1, 2, 3]
-    ));
-    assert!(!RedBlackTreeSet::is_superset(
-        &rbt_set![1, 2, 5, 6],
-        &rbt_set![1, 2, 3]
-    ));
-    assert!(RedBlackTreeSet::is_superset(
-        &rbt_set![1, 2, 3, 5, 6],
-        &rbt_set![1, 2, 3]
-    ));
-    assert!(!RedBlackTreeSet::is_superset(
-        &rbt_set![1, 2, 3],
-        &rbt_set![1, 2, 3, 5, 6]
-    ));
+    assert!(RedBlackTreeSet::is_superset(&rbt_set![1, 2, 3], &rbt_set![]));
+    assert!(RedBlackTreeSet::is_superset(&rbt_set![1, 2, 3], &rbt_set![1, 2, 3]));
+    assert!(!RedBlackTreeSet::is_superset(&rbt_set![1, 2, 5, 6], &rbt_set![1, 2, 3]));
+    assert!(RedBlackTreeSet::is_superset(&rbt_set![1, 2, 3, 5, 6], &rbt_set![1, 2, 3]));
+    assert!(!RedBlackTreeSet::is_superset(&rbt_set![1, 2, 3], &rbt_set![1, 2, 3, 5, 6]));
 }
 
 #[test]

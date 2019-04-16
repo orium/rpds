@@ -2,6 +2,7 @@ edition = "2018"
 
 use_field_init_shorthand = true
 use_try_shorthand = true
+use_small_heuristics = "max"
 
 # TODO Awaiting stabilization
 # comment_width = 100
