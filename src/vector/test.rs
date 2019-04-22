@@ -5,6 +5,33 @@
 
 use super::*;
 use pretty_assertions::assert_eq;
+use static_assertions::assert_impl;
+
+assert_impl!(
+    vector_sync_is_send_and_sync;
+    VectorSync<i32>,
+    Send, Sync
+);
+
+#[allow(dead_code)]
+fn compile_time_macro_vector_sync_is_send_and_sync() -> impl Send + Sync {
+    vector_sync!(0)
+}
+
+impl<T: PartialEq, P> PartialEq for Node<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn eq(&self, other: &Node<T, P>) -> bool {
+        match (self, other) {
+            (Node::Branch(v), Node::Branch(vo)) => v == vo,
+            (Node::Leaf(v), Node::Leaf(vo)) => v == vo,
+            _ => false,
+        }
+    }
+}
+
+impl<T: Eq, P> Eq for Node<T, P> where P: SharedPointerKind {}
 
 mod node {
     use super::*;
@@ -66,8 +93,8 @@ mod node {
         let node_three_after_drop = {
             let a_leaf = {
                 let mut a = Vec::with_capacity(2);
-                a.push(Arc::new(0));
-                a.push(Arc::new(1));
+                a.push(SharedPointer::new(0));
+                a.push(SharedPointer::new(1));
                 a
             };
 
@@ -75,7 +102,7 @@ mod node {
 
             let a_branch = {
                 let mut a = Vec::with_capacity(2);
-                a.push(Arc::new(leaf));
+                a.push(SharedPointer::new(leaf));
                 a
             };
 
@@ -85,8 +112,8 @@ mod node {
         let node_four_after_drop = {
             let a_leaf_0 = {
                 let mut a = Vec::with_capacity(2);
-                a.push(Arc::new(0));
-                a.push(Arc::new(1));
+                a.push(SharedPointer::new(0));
+                a.push(SharedPointer::new(1));
                 a
             };
 
@@ -94,7 +121,7 @@ mod node {
 
             let a_leaf_1 = {
                 let mut a = Vec::with_capacity(2);
-                a.push(Arc::new(2));
+                a.push(SharedPointer::new(2));
                 a
             };
 
@@ -102,8 +129,8 @@ mod node {
 
             let a_branch = {
                 let mut a = Vec::with_capacity(2);
-                a.push(Arc::new(leaf_0));
-                a.push(Arc::new(leaf_1));
+                a.push(SharedPointer::new(leaf_0));
+                a.push(SharedPointer::new(leaf_1));
                 a
             };
 
@@ -324,11 +351,12 @@ mod internal {
         let compressed_branch: Node<u32> =
             Vector::new_with_bits(1).push_back(0).push_back(1).push_back(3).root.as_ref().clone();
         let (uncompressed_branch, uncompressed_branch_leaf) = {
-            let leaf = Vector::new_with_bits(1).push_back(0).push_back(1).root.as_ref().clone();
+            let leaf: Node<_, SharedPointerKindRc> =
+                Vector::new_with_bits(1).push_back(0).push_back(1).root.as_ref().clone();
 
             let a_branch = {
                 let mut a = Vec::with_capacity(2);
-                a.push(Arc::new(leaf.clone()));
+                a.push(SharedPointer::new(leaf.clone()));
                 a
             };
 
@@ -341,7 +369,7 @@ mod internal {
         assert_eq!(Vector::compress_root(&mut compressed_branch.clone()), None);
         assert_eq!(
             Vector::compress_root(&mut uncompressed_branch.clone()),
-            Some(Arc::new(uncompressed_branch_leaf.clone())),
+            Some(SharedPointer::new(uncompressed_branch_leaf.clone())),
         );
     }
 
@@ -367,20 +395,6 @@ mod internal {
         assert!(!dummy_vector_with_length(1025).is_root_full());
         assert!(dummy_vector_with_length(32768).is_root_full());
         assert!(!dummy_vector_with_length(32769).is_root_full());
-    }
-}
-
-mod compile_time {
-    use super::*;
-
-    #[test]
-    fn test_is_send() {
-        let _: Box<dyn Send> = Box::new(Vector::<i32>::new());
-    }
-
-    #[test]
-    fn test_is_sync() {
-        let _: Box<dyn Sync> = Box::new(Vector::<i32>::new());
     }
 }
 
@@ -612,6 +626,18 @@ fn test_eq() {
 }
 
 #[test]
+fn test_eq_pointer_kind_consistent() {
+    let vector_a = vector!["a"];
+    let vector_a_sync = vector_sync!["a"];
+    let vector_b = vector!["b"];
+    let vector_b_sync = vector_sync!["b"];
+
+    assert!(vector_a == vector_a_sync);
+    assert!(vector_a != vector_b_sync);
+    assert!(vector_b == vector_b_sync);
+}
+
+#[test]
 fn test_partial_ord() {
     let vector_1 = vector!["a"];
     let vector_1_prime = vector!["a"];
@@ -636,7 +662,23 @@ fn test_ord() {
     assert_eq!(vector_2.cmp(&vector_1), Ordering::Greater);
 }
 
-fn hash<T: Hash>(vector: &Vector<T>) -> u64 {
+#[test]
+fn test_ord_pointer_kind_consistent() {
+    let vector_a = vector!["a"];
+    let vector_a_sync = vector_sync!["a"];
+    let vector_b = vector!["b"];
+    let vector_b_sync = vector_sync!["b"];
+
+    assert!(vector_a <= vector_a_sync);
+    assert!(vector_a < vector_b_sync);
+    assert!(vector_b >= vector_b_sync);
+
+    assert!(vector_a_sync >= vector_a);
+    assert!(vector_b_sync > vector_a);
+    assert!(vector_b_sync <= vector_b);
+}
+
+fn hash<T: Hash, P: SharedPointerKind>(vector: &Vector<T, P>) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
 
     vector.hash(&mut hasher);
@@ -653,6 +695,14 @@ fn test_hash() {
     assert_eq!(hash(&vector_1), hash(&vector_1));
     assert_eq!(hash(&vector_1), hash(&vector_1_prime));
     assert_ne!(hash(&vector_1), hash(&vector_2));
+}
+
+#[test]
+fn test_hash_pointer_kind_consistent() {
+    let vector = vector!["a"];
+    let vector_sync = vector_sync!["a"];
+
+    assert_eq!(hash(&vector), hash(&vector_sync));
 }
 
 #[test]

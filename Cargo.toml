@@ -89,6 +89,10 @@ name = "rpds_vector"
 harness = false
 
 [[bench]]
+name = "rpds_vector_sync"
+harness = false
+
+[[bench]]
 name = "std_hash_map"
 harness = false
 

@@ -306,3 +306,4 @@ pub use crate::set::red_black_tree_set::RedBlackTreeSet;
 pub use crate::stack::Stack;
 pub use crate::stack::StackSync;
 pub use crate::vector::Vector;
+pub use crate::vector::VectorSync;
