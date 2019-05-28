@@ -27,7 +27,6 @@ after_success:
   && test "$TRAVIS_RUST_VERSION" = stable
   && sudo apt-get update
   && sudo apt-get install libssl-dev pkg-config cmake zlib1g-dev
-  && echo TODO remove the rust flags once tarpaulin is stable.
-  && RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin
+  && cargo install cargo-tarpaulin
   && travis_wait ./tools/codecov.sh --xml
   && bash <(curl -s https://codecov.io/bash)
