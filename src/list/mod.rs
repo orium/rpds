@@ -398,6 +398,23 @@ where
     }
 }
 
+impl<T, P> Drop for List<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn drop(&mut self) {
+        let mut head = self.head.take();
+        while let Some(node) = head {
+            if let Ok(mut node) = SharedPointer::try_unwrap(node) {
+                head = node.next.take();
+            }
+            else {
+                break;
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct IterPtr<'a, T, P>
 where
