@@ -25,7 +25,7 @@ mod iter {
     #[test]
     fn test_drop_list() {
         // When it is dropped, it will set the variable it owned to false.
-        struct DropStruct<'a> (&'a mut bool);
+        struct DropStruct<'a>(&'a mut bool);
         impl<'a> Drop for DropStruct<'a> {
             fn drop(&mut self) {
                 *self.0 = false;
