@@ -23,71 +23,6 @@ mod iter {
     use pretty_assertions::assert_eq;
 
     #[test]
-    fn test_drop_list() {
-        // When it is dropped, it will set the variable it owned to false.
-        struct DropStruct<'a>(&'a mut bool);
-        impl<'a> Drop for DropStruct<'a> {
-            fn drop(&mut self) {
-                *self.0 = false;
-            }
-        }
-
-        // test that we actually dropped the elements
-        let (mut a, mut b, mut c, mut d, mut e) = (true, true, true, true, true);
-        let (pa, pb, pc, pd, pe) = (
-            &a as *const bool,
-            &b as *const bool,
-            &c as *const bool,
-            &d as *const bool,
-            &e as *const bool,
-        );
-
-        let mut x = List::new();
-        x.push_front_mut(DropStruct(&mut a));
-        x.push_front_mut(DropStruct(&mut b));
-        x.push_front_mut(DropStruct(&mut c));
-
-        unsafe {
-            assert_eq!(vec![*pa, *pb, *pc, *pd, *pe], vec![true, true, true, true, true]);
-        }
-
-        let x2 = x.drop_first().unwrap().drop_first().unwrap();
-
-        drop(x);
-        unsafe {
-            assert_eq!(vec![*pa, *pb, *pc, *pd, *pe], vec![true, false, false, true, true]);
-        }
-
-        let y = x2.push_front(DropStruct(&mut d));
-
-        drop(x2);
-        unsafe {
-            assert_eq!(vec![*pa, *pb, *pc, *pd, *pe], vec![true, false, false, true, true]);
-        }
-
-        let z = y.push_front(DropStruct(&mut e));
-
-        drop(y);
-        unsafe {
-            assert_eq!(vec![*pa, *pb, *pc, *pd, *pe], vec![true, false, false, true, true]);
-        }
-
-        drop(z);
-        unsafe {
-            assert_eq!(vec![*pa, *pb, *pc, *pd, *pe], vec![false, false, false, false, false]);
-        }
-    }
-
-    #[test]
-    fn test_drop_large() {
-        let limit = 1024 * 1024;
-        let mut list = List::new();
-        for i in 0..limit {
-            list.push_front_mut(i);
-        }
-    }
-
-    #[test]
     fn test_iter() {
         let limit = 1024;
         let mut list = List::new();
@@ -387,6 +322,71 @@ fn test_clone() {
     assert!(clone.iter().eq(list.iter()));
     assert_eq!(clone.len(), list.len());
     assert_eq!(clone.last(), list.last());
+}
+
+#[test]
+fn test_drop_list() {
+    // When it is dropped, it will set the variable it owned to false.
+    use std::cell::Cell;
+    struct DropStruct<'a>(&'a Cell<bool>);
+    impl<'a> Drop for DropStruct<'a> {
+        fn drop(&mut self) {
+            self.0.set(false);
+        }
+    }
+
+    // test that we actually dropped the elements
+    let (a, b, c, d, e) =
+        (Cell::new(true), Cell::new(true), Cell::new(true), Cell::new(true), Cell::new(true));
+
+    let mut x = List::new();
+    x.push_front_mut(DropStruct(&a));
+    x.push_front_mut(DropStruct(&b));
+    x.push_front_mut(DropStruct(&c));
+
+    assert_eq!(
+        vec![a.get(), b.get(), c.get(), d.get(), e.get()],
+        vec![true, true, true, true, true]
+    );
+
+    let x2 = x.drop_first().unwrap().drop_first().unwrap();
+
+    drop(x);
+    assert_eq!(
+        vec![a.get(), b.get(), c.get(), d.get(), e.get()],
+        vec![true, false, false, true, true]
+    );
+
+    let y = x2.push_front(DropStruct(&d));
+
+    drop(x2);
+    assert_eq!(
+        vec![a.get(), b.get(), c.get(), d.get(), e.get()],
+        vec![true, false, false, true, true]
+    );
+
+    let z = y.push_front(DropStruct(&e));
+
+    drop(y);
+    assert_eq!(
+        vec![a.get(), b.get(), c.get(), d.get(), e.get()],
+        vec![true, false, false, true, true]
+    );
+
+    drop(z);
+    assert_eq!(
+        vec![a.get(), b.get(), c.get(), d.get(), e.get()],
+        vec![false, false, false, false, false]
+    );
+}
+
+#[test]
+fn test_drop_large() {
+    let limit = 1024 * 1024;
+    let mut list = List::new();
+    for i in 0..limit {
+        list.push_front_mut(i);
+    }
 }
 
 #[cfg(feature = "serde")]
