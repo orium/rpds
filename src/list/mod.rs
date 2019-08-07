@@ -398,7 +398,7 @@ where
     }
 }
 
-// drop list non-recursively to prevent stack overflow.
+// Drop the list iteratively to prevent stack overflow.
 impl<T, P> Drop for List<T, P>
 where
     P: SharedPointerKind,
