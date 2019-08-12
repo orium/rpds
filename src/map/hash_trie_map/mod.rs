@@ -322,7 +322,7 @@ where
         };
 
         if let Some(node) = new_node {
-            crate::utils::replace(self, node);
+            crate::utils::replace_arc(self, node);
         }
     }
 

@@ -5,6 +5,18 @@
 
 use super::*;
 use pretty_assertions::assert_eq;
+use static_assertions::assert_impl_all;
+
+assert_impl_all!(
+    red_black_tree_map_sync_is_send_and_sync;
+    RedBlackTreeMapSync<i32, i32>,
+    Send, Sync
+);
+
+#[allow(dead_code)]
+fn compile_time_macro_red_black_tree_map_sync_is_send_and_sync() -> impl Send + Sync {
+    rbt_map_sync!(0 => 0)
+}
 
 #[derive(Debug)]
 enum InvariantViolation {
@@ -15,14 +27,17 @@ enum InvariantViolation {
     BlackHeightBalanced,
 }
 
-impl<K, V> Node<K, V> {
+impl<K, V, P> Node<K, V, P>
+where
+    P: SharedPointerKind,
+{
     fn count(&self) -> usize {
         1 + self.left.as_ref().map_or(0, |l| l.count())
             + self.right.as_ref().map_or(0, |r| r.count())
     }
 
     fn is_black_height_balanced(&self) -> bool {
-        fn black_height<K, V>(node: &Node<K, V>) -> Result<usize, ()> {
+        fn black_height<K, V, P: SharedPointerKind>(node: &Node<K, V, P>) -> Result<usize, ()> {
             let bheight_left = node.left.as_ref().map_or(Ok(0), |l| black_height(l))?;
             let bheight_right = node.right.as_ref().map_or(Ok(0), |r| black_height(r))?;
 
@@ -54,7 +69,10 @@ impl<K, V> Node<K, V> {
     where
         K: Clone + Ord,
     {
-        fn go<K: Clone + Ord, V>(node: &Node<K, V>, last: &mut Option<K>) -> bool {
+        fn go<K: Clone + Ord, V, P: SharedPointerKind>(
+            node: &Node<K, V, P>,
+            last: &mut Option<K>,
+        ) -> bool {
             let ok_left = node.left.as_ref().map_or(true, |l| go(l, last));
 
             let new_last = node.entry.key.clone();
@@ -73,13 +91,13 @@ impl<K, V> Node<K, V> {
         go(self, &mut last)
     }
 
-    fn make_black(self) -> Node<K, V> {
+    fn make_black(self) -> Node<K, V, P> {
         let mut node = self;
         node.color = Color::Black;
         node
     }
 
-    fn make_red(self) -> Node<K, V> {
+    fn make_red(self) -> Node<K, V, P> {
         let mut node = self;
         node.color = Color::Red;
         node
@@ -107,6 +125,22 @@ where
     }
 }
 
+impl<K, V, P> PartialEq for Node<K, V, P>
+where
+    K: PartialEq,
+    V: PartialEq,
+    P: SharedPointerKind,
+{
+    fn eq(&self, other: &Node<K, V, P>) -> bool {
+        self.entry == other.entry
+            && self.color == other.color
+            && self.left == other.left
+            && self.right == other.right
+    }
+}
+
+impl<K: Eq, V: Eq, P> Eq for Node<K, V, P> where P: SharedPointerKind {}
+
 mod node {
     use super::*;
     use pretty_assertions::assert_eq;
@@ -115,20 +149,25 @@ mod node {
         Entry { key: v.clone(), value: v }
     }
 
-    fn dummy_node<T: Clone>(v: T) -> Node<T, T> {
-        Node { entry: Arc::new(dummy_entry(v)), color: Color::Red, left: None, right: None }
+    fn dummy_node<T: Clone>(v: T) -> Node<T, T, SharedPointerKindRc> {
+        Node {
+            entry: SharedPointer::new(dummy_entry(v)),
+            color: Color::Red,
+            left: None,
+            right: None,
+        }
     }
 
     fn dummy_node_with_children<T: Clone>(
         v: T,
-        left: Option<Node<T, T>>,
-        right: Option<Node<T, T>>,
-    ) -> Node<T, T> {
+        left: Option<Node<T, T, SharedPointerKindRc>>,
+        right: Option<Node<T, T, SharedPointerKindRc>>,
+    ) -> Node<T, T, SharedPointerKindRc> {
         Node {
-            entry: Arc::new(dummy_entry(v)),
+            entry: SharedPointer::new(dummy_entry(v)),
             color: Color::Red,
-            left: left.map(|n| Arc::new(n)),
-            right: right.map(|n| Arc::new(n)),
+            left: left.map(|n| SharedPointer::new(n)),
+            right: right.map(|n| SharedPointer::new(n)),
         }
     }
 
@@ -149,7 +188,7 @@ mod node {
     ///                     │ 3 │
     ///                     ╰───╯
     /// ```
-    fn dummy_tree_0_1_2_3() -> Node<i32, i32> {
+    fn dummy_tree_0_1_2_3() -> Node<i32, i32, SharedPointerKindRc> {
         let node_0 = dummy_node(0);
         let node_3 = dummy_node(3);
         let node_2 = dummy_node_with_children(2, None, Some(node_3));
@@ -251,114 +290,114 @@ mod node {
         //                   ╱ ╲
         //                  c   d
 
-        let entry_x = Arc::new(Entry::new('x', ()));
-        let entry_y = Arc::new(Entry::new('y', ()));
-        let entry_z = Arc::new(Entry::new('z', ()));
+        let entry_x = SharedPointer::new(Entry::new('x', ()));
+        let entry_y = SharedPointer::new(Entry::new('y', ()));
+        let entry_z = SharedPointer::new(Entry::new('z', ()));
 
-        let tree_a = Arc::new(Node::new_black(Entry::new('a', ())));
-        let tree_b = Arc::new(Node::new_black(Entry::new('b', ())));
-        let tree_c = Arc::new(Node::new_black(Entry::new('c', ())));
-        let tree_d = Arc::new(Node::new_black(Entry::new('d', ())));
+        let tree_a = SharedPointer::new(Node::new_black(Entry::new('a', ())));
+        let tree_b = SharedPointer::new(Node::new_black(Entry::new('b', ())));
+        let tree_c = SharedPointer::new(Node::new_black(Entry::new('c', ())));
+        let tree_d = SharedPointer::new(Node::new_black(Entry::new('d', ())));
 
-        let mut tree_case_1 = Node {
-            entry: Arc::clone(&entry_z),
+        let mut tree_case_1: Node<_, _, SharedPointerKindRc> = Node {
+            entry: SharedPointer::clone(&entry_z),
             color: Color::Black,
-            left: Some(Arc::new(Node {
-                entry: Arc::clone(&entry_y),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::clone(&entry_y),
                 color: Color::Red,
-                left: Some(Arc::new(Node {
-                    entry: Arc::clone(&entry_x),
+                left: Some(SharedPointer::new(Node {
+                    entry: SharedPointer::clone(&entry_x),
                     color: Color::Red,
-                    left: Some(Arc::clone(&tree_a)),
-                    right: Some(Arc::clone(&tree_b)),
+                    left: Some(SharedPointer::clone(&tree_a)),
+                    right: Some(SharedPointer::clone(&tree_b)),
                 })),
-                right: Some(Arc::clone(&tree_c)),
+                right: Some(SharedPointer::clone(&tree_c)),
             })),
-            right: Some(Arc::clone(&tree_d)),
+            right: Some(SharedPointer::clone(&tree_d)),
         };
 
-        let mut tree_case_2 = Node {
-            entry: Arc::clone(&entry_z),
+        let mut tree_case_2: Node<_, _, SharedPointerKindRc> = Node {
+            entry: SharedPointer::clone(&entry_z),
             color: Color::Black,
-            left: Some(Arc::new(Node {
-                entry: Arc::clone(&entry_x),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::clone(&entry_x),
                 color: Color::Red,
-                left: Some(Arc::clone(&tree_a)),
-                right: Some(Arc::new(Node {
-                    entry: Arc::clone(&entry_y),
+                left: Some(SharedPointer::clone(&tree_a)),
+                right: Some(SharedPointer::new(Node {
+                    entry: SharedPointer::clone(&entry_y),
                     color: Color::Red,
-                    left: Some(Arc::clone(&tree_b)),
-                    right: Some(Arc::clone(&tree_c)),
+                    left: Some(SharedPointer::clone(&tree_b)),
+                    right: Some(SharedPointer::clone(&tree_c)),
                 })),
             })),
-            right: Some(Arc::clone(&tree_d)),
+            right: Some(SharedPointer::clone(&tree_d)),
         };
 
-        let mut tree_case_3 = Node {
-            entry: Arc::clone(&entry_x),
+        let mut tree_case_3: Node<_, _, SharedPointerKindRc> = Node {
+            entry: SharedPointer::clone(&entry_x),
             color: Color::Black,
-            left: Some(Arc::clone(&tree_a)),
-            right: Some(Arc::new(Node {
-                entry: Arc::clone(&entry_z),
+            left: Some(SharedPointer::clone(&tree_a)),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::clone(&entry_z),
                 color: Color::Red,
-                left: Some(Arc::new(Node {
-                    entry: Arc::clone(&entry_y),
+                left: Some(SharedPointer::new(Node {
+                    entry: SharedPointer::clone(&entry_y),
                     color: Color::Red,
-                    left: Some(Arc::clone(&tree_b)),
-                    right: Some(Arc::clone(&tree_c)),
+                    left: Some(SharedPointer::clone(&tree_b)),
+                    right: Some(SharedPointer::clone(&tree_c)),
                 })),
-                right: Some(Arc::clone(&tree_d)),
-            })),
-        };
-
-        let mut tree_case_4 = Node {
-            entry: Arc::clone(&entry_x),
-            color: Color::Black,
-            left: Some(Arc::clone(&tree_a)),
-            right: Some(Arc::new(Node {
-                entry: Arc::clone(&entry_y),
-                color: Color::Red,
-                left: Some(Arc::clone(&tree_b)),
-                right: Some(Arc::new(Node {
-                    entry: Arc::clone(&entry_z),
-                    color: Color::Red,
-                    left: Some(Arc::clone(&tree_c)),
-                    right: Some(Arc::clone(&tree_d)),
-                })),
+                right: Some(SharedPointer::clone(&tree_d)),
             })),
         };
 
-        let mut tree_none_of_the_above = Node {
-            entry: Arc::clone(&entry_z),
+        let mut tree_case_4: Node<_, _, SharedPointerKindRc> = Node {
+            entry: SharedPointer::clone(&entry_x),
             color: Color::Black,
-            left: Some(Arc::new(Node {
-                entry: Arc::clone(&entry_y),
+            left: Some(SharedPointer::clone(&tree_a)),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::clone(&entry_y),
                 color: Color::Red,
-                left: Some(Arc::new(Node {
-                    entry: Arc::clone(&entry_x),
+                left: Some(SharedPointer::clone(&tree_b)),
+                right: Some(SharedPointer::new(Node {
+                    entry: SharedPointer::clone(&entry_z),
+                    color: Color::Red,
+                    left: Some(SharedPointer::clone(&tree_c)),
+                    right: Some(SharedPointer::clone(&tree_d)),
+                })),
+            })),
+        };
+
+        let mut tree_none_of_the_above: Node<_, _, SharedPointerKindRc> = Node {
+            entry: SharedPointer::clone(&entry_z),
+            color: Color::Black,
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::clone(&entry_y),
+                color: Color::Red,
+                left: Some(SharedPointer::new(Node {
+                    entry: SharedPointer::clone(&entry_x),
                     color: Color::Black,
-                    left: Some(Arc::clone(&tree_a)),
-                    right: Some(Arc::clone(&tree_b)),
+                    left: Some(SharedPointer::clone(&tree_a)),
+                    right: Some(SharedPointer::clone(&tree_b)),
                 })),
-                right: Some(Arc::clone(&tree_c)),
+                right: Some(SharedPointer::clone(&tree_c)),
             })),
-            right: Some(Arc::clone(&tree_d)),
+            right: Some(SharedPointer::clone(&tree_d)),
         };
 
-        let mut tree_balanced = Node {
-            entry: Arc::clone(&entry_y),
+        let mut tree_balanced: Node<_, _, SharedPointerKindRc> = Node {
+            entry: SharedPointer::clone(&entry_y),
             color: Color::Red,
-            left: Some(Arc::new(Node {
-                entry: Arc::clone(&entry_x),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::clone(&entry_x),
                 color: Color::Black,
-                left: Some(Arc::clone(&tree_a)),
-                right: Some(Arc::clone(&tree_b)),
+                left: Some(SharedPointer::clone(&tree_a)),
+                right: Some(SharedPointer::clone(&tree_b)),
             })),
-            right: Some(Arc::new(Node {
-                entry: Arc::clone(&entry_z),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::clone(&entry_z),
                 color: Color::Black,
-                left: Some(Arc::clone(&tree_c)),
-                right: Some(Arc::clone(&tree_d)),
+                left: Some(SharedPointer::clone(&tree_c)),
+                right: Some(SharedPointer::clone(&tree_d)),
             })),
         };
 
@@ -387,24 +426,24 @@ mod node {
     fn test_insert() {
         let mut node = None;
         let is_new_key = Node::insert(&mut node, 0, 1);
-        let expected_node = Node::new_black(Entry::new(0, 1));
+        let expected_node: Node<_, _, SharedPointerKindRc> = Node::new_black(Entry::new(0, 1));
 
         assert!(is_new_key);
         assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
 
         let is_new_key = Node::insert(&mut node, 0, 2);
-        let expected_node = Node::new_black(Entry::new(0, 2));
+        let expected_node: Node<_, _, SharedPointerKindRc> = Node::new_black(Entry::new(0, 2));
 
         assert!(!is_new_key);
         assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
 
         let is_new_key = Node::insert(&mut node, 10, 3);
-        let expected_node = Node {
-            entry: Arc::new(Entry::new(0, 2)),
+        let expected_node: Node<_, _, SharedPointerKindRc> = Node {
+            entry: SharedPointer::new(Entry::new(0, 2)),
             color: Color::Black,
             left: None,
-            right: Some(Arc::new(Node {
-                entry: Arc::new(Entry::new(10, 3)),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(Entry::new(10, 3)),
                 color: Color::Red,
                 left: None,
                 right: None,
@@ -415,12 +454,12 @@ mod node {
         assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
 
         let is_new_key = Node::insert(&mut node, 10, 4);
-        let expected_node = Node {
-            entry: Arc::new(Entry::new(0, 2)),
+        let expected_node: Node<_, _, SharedPointerKindRc> = Node {
+            entry: SharedPointer::new(Entry::new(0, 2)),
             color: Color::Black,
             left: None,
-            right: Some(Arc::new(Node {
-                entry: Arc::new(Entry::new(10, 4)),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(Entry::new(10, 4)),
                 color: Color::Red,
                 left: None,
                 right: None,
@@ -432,17 +471,17 @@ mod node {
 
         let is_new_key = Node::insert(&mut node, 5, 5);
         // It is going to get rebalanced (by case 3).
-        let expected_node = Node {
-            entry: Arc::new(Entry::new(5, 5)),
+        let expected_node: Node<_, _, SharedPointerKindRc> = Node {
+            entry: SharedPointer::new(Entry::new(5, 5)),
             color: Color::Black,
-            left: Some(Arc::new(Node {
-                entry: Arc::new(Entry::new(0, 2)),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(Entry::new(0, 2)),
                 color: Color::Black,
                 left: None,
                 right: None,
             })),
-            right: Some(Arc::new(Node {
-                entry: Arc::new(Entry::new(10, 4)),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(Entry::new(10, 4)),
                 color: Color::Black,
                 left: None,
                 right: None,
@@ -454,17 +493,17 @@ mod node {
 
         let is_new_key = Node::insert(&mut node, 0, 1);
         // It is going to get rebalanced (by case 3).
-        let expected_node = Node {
-            entry: Arc::new(Entry::new(5, 5)),
+        let expected_node: Node<_, _, SharedPointerKindRc> = Node {
+            entry: SharedPointer::new(Entry::new(5, 5)),
             color: Color::Black,
-            left: Some(Arc::new(Node {
-                entry: Arc::new(Entry::new(0, 1)),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(Entry::new(0, 1)),
                 color: Color::Black,
                 left: None,
                 right: None,
             })),
-            right: Some(Arc::new(Node {
-                entry: Arc::new(Entry::new(10, 4)),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(Entry::new(10, 4)),
                 color: Color::Black,
                 left: None,
                 right: None,
@@ -484,214 +523,238 @@ mod node {
         let right = dummy_node("x");
         let expected_node = right.clone();
 
-        assert!(Node::remove_fuse(&mut node, None, Some(Arc::new(right))));
+        assert!(Node::remove_fuse(&mut node, None, Some(SharedPointer::new(right))));
         assert_eq!(node, expected_node);
 
         let left = dummy_node("x");
         let expected_node = left.clone();
 
-        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), None));
+        assert!(Node::remove_fuse(&mut node, Some(SharedPointer::new(left)), None));
         assert_eq!(node, expected_node);
 
         let left = Node {
-            entry: Arc::new(dummy_entry("a")),
+            entry: SharedPointer::new(dummy_entry("a")),
             color: Color::Black,
             left: None,
             right: None,
         };
         let right = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Red,
             left: None,
-            right: Some(Arc::new(dummy_node("c"))),
+            right: Some(SharedPointer::new(dummy_node("c"))),
         };
         let expected_node = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Red,
-            left: Some(Arc::new(left.clone())),
-            right: Some(Arc::new(dummy_node("c"))),
+            left: Some(SharedPointer::new(left.clone())),
+            right: Some(SharedPointer::new(dummy_node("c"))),
         };
 
-        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), Some(Arc::new(right))));
+        assert!(Node::remove_fuse(
+            &mut node,
+            Some(SharedPointer::new(left)),
+            Some(SharedPointer::new(right))
+        ));
         assert_eq!(node, expected_node);
 
         let left = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Red,
-            left: Some(Arc::new(dummy_node("a"))),
+            left: Some(SharedPointer::new(dummy_node("a"))),
             right: None,
         };
         let right = Node {
-            entry: Arc::new(dummy_entry("c")),
+            entry: SharedPointer::new(dummy_entry("c")),
             color: Color::Black,
             left: None,
             right: None,
         };
         let expected_node = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Red,
-            left: Some(Arc::new(dummy_node("a"))),
-            right: Some(Arc::new(right.clone())),
+            left: Some(SharedPointer::new(dummy_node("a"))),
+            right: Some(SharedPointer::new(right.clone())),
         };
 
-        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), Some(Arc::new(right))));
+        assert!(Node::remove_fuse(
+            &mut node,
+            Some(SharedPointer::new(left)),
+            Some(SharedPointer::new(right))
+        ));
         assert_eq!(node, expected_node);
 
         let left = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Red,
-            left: Some(Arc::new(dummy_node("a"))),
+            left: Some(SharedPointer::new(dummy_node("a"))),
             right: None,
         };
         let right = Node {
-            entry: Arc::new(dummy_entry("y")),
+            entry: SharedPointer::new(dummy_entry("y")),
             color: Color::Red,
-            left: Some(Arc::new(dummy_node("c").make_red())),
-            right: Some(Arc::new(dummy_node("d"))),
+            left: Some(SharedPointer::new(dummy_node("c").make_red())),
+            right: Some(SharedPointer::new(dummy_node("d"))),
         };
         let expected_node = Node {
-            entry: Arc::new(dummy_entry("c")),
+            entry: SharedPointer::new(dummy_entry("c")),
             color: Color::Red,
-            left: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("x")),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("x")),
                 color: Color::Red,
-                left: Some(Arc::new(dummy_node("a"))),
+                left: Some(SharedPointer::new(dummy_node("a"))),
                 right: None,
             })),
-            right: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("y")),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("y")),
                 color: Color::Red,
                 left: None,
-                right: Some(Arc::new(dummy_node("d"))),
+                right: Some(SharedPointer::new(dummy_node("d"))),
             })),
         };
 
-        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), Some(Arc::new(right))));
+        assert!(Node::remove_fuse(
+            &mut node,
+            Some(SharedPointer::new(left)),
+            Some(SharedPointer::new(right))
+        ));
         assert_eq!(node, expected_node);
 
         let left = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Red,
-            left: Some(Arc::new(dummy_node("a"))),
+            left: Some(SharedPointer::new(dummy_node("a"))),
             right: None,
         };
         let right = Node {
-            entry: Arc::new(dummy_entry("y")),
+            entry: SharedPointer::new(dummy_entry("y")),
             color: Color::Red,
-            left: Some(Arc::new(dummy_node("c").make_black())),
-            right: Some(Arc::new(dummy_node("d"))),
+            left: Some(SharedPointer::new(dummy_node("c").make_black())),
+            right: Some(SharedPointer::new(dummy_node("d"))),
         };
         let expected_node = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Red,
-            left: Some(Arc::new(dummy_node("a"))),
-            right: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("y")),
+            left: Some(SharedPointer::new(dummy_node("a"))),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("y")),
                 color: Color::Red,
-                left: Some(Arc::new(dummy_node("c").make_black())),
-                right: Some(Arc::new(dummy_node("d"))),
+                left: Some(SharedPointer::new(dummy_node("c").make_black())),
+                right: Some(SharedPointer::new(dummy_node("d"))),
             })),
         };
 
-        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), Some(Arc::new(right))));
+        assert!(Node::remove_fuse(
+            &mut node,
+            Some(SharedPointer::new(left)),
+            Some(SharedPointer::new(right))
+        ));
         assert_eq!(node, expected_node);
 
         let left = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Black,
-            left: Some(Arc::new(dummy_node("a"))),
+            left: Some(SharedPointer::new(dummy_node("a"))),
             right: None,
         };
         let right = Node {
-            entry: Arc::new(dummy_entry("y")),
+            entry: SharedPointer::new(dummy_entry("y")),
             color: Color::Black,
-            left: Some(Arc::new(dummy_node("c").make_red())),
-            right: Some(Arc::new(dummy_node("d"))),
+            left: Some(SharedPointer::new(dummy_node("c").make_red())),
+            right: Some(SharedPointer::new(dummy_node("d"))),
         };
         let expected_node = Node {
-            entry: Arc::new(dummy_entry("c")),
+            entry: SharedPointer::new(dummy_entry("c")),
             color: Color::Red,
-            left: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("x")),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("x")),
                 color: Color::Black,
-                left: Some(Arc::new(dummy_node("a"))),
+                left: Some(SharedPointer::new(dummy_node("a"))),
                 right: None,
             })),
-            right: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("y")),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("y")),
                 color: Color::Black,
                 left: None,
-                right: Some(Arc::new(dummy_node("d"))),
+                right: Some(SharedPointer::new(dummy_node("d"))),
             })),
         };
 
-        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), Some(Arc::new(right))));
+        assert!(Node::remove_fuse(
+            &mut node,
+            Some(SharedPointer::new(left)),
+            Some(SharedPointer::new(right))
+        ));
         assert_eq!(node, expected_node);
 
         let left = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Black,
-            left: Some(Arc::new(dummy_node("a"))),
+            left: Some(SharedPointer::new(dummy_node("a"))),
             right: None,
         };
         let right = Node {
-            entry: Arc::new(dummy_entry("y")),
+            entry: SharedPointer::new(dummy_entry("y")),
             color: Color::Black,
-            left: Some(Arc::new(dummy_node("c").make_black())),
-            right: Some(Arc::new(dummy_node("d"))),
+            left: Some(SharedPointer::new(dummy_node("c").make_black())),
+            right: Some(SharedPointer::new(dummy_node("d"))),
         };
         let expected_node = {
             let mut n = Node {
-                entry: Arc::new(dummy_entry("x")),
+                entry: SharedPointer::new(dummy_entry("x")),
                 color: Color::Red,
-                left: Some(Arc::new(dummy_node("a"))),
-                right: Some(Arc::new(Node {
-                    entry: Arc::new(dummy_entry("y")),
+                left: Some(SharedPointer::new(dummy_node("a"))),
+                right: Some(SharedPointer::new(Node {
+                    entry: SharedPointer::new(dummy_entry("y")),
                     color: Color::Black,
-                    left: Some(Arc::new(dummy_node("c").make_black())),
-                    right: Some(Arc::new(dummy_node("d"))),
+                    left: Some(SharedPointer::new(dummy_node("c").make_black())),
+                    right: Some(SharedPointer::new(dummy_node("d"))),
                 })),
             };
             n.remove_balance_left();
             n
         };
 
-        assert!(Node::remove_fuse(&mut node, Some(Arc::new(left)), Some(Arc::new(right))));
+        assert!(Node::remove_fuse(
+            &mut node,
+            Some(SharedPointer::new(left)),
+            Some(SharedPointer::new(right))
+        ));
         assert_eq!(node, expected_node);
     }
 
     #[test]
     fn test_remove_balance() {
         let mut node = Node {
-            entry: Arc::new(dummy_entry("y")),
+            entry: SharedPointer::new(dummy_entry("y")),
             color: Color::Black, // Irrelevant
-            left: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("x")),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("x")),
                 color: Color::Red,
-                left: Some(Arc::new(dummy_node("a"))),
-                right: Some(Arc::new(dummy_node("b"))),
+                left: Some(SharedPointer::new(dummy_node("a"))),
+                right: Some(SharedPointer::new(dummy_node("b"))),
             })),
-            right: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("z")),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("z")),
                 color: Color::Red,
-                left: Some(Arc::new(dummy_node("c"))),
-                right: Some(Arc::new(dummy_node("d"))),
+                left: Some(SharedPointer::new(dummy_node("c"))),
+                right: Some(SharedPointer::new(dummy_node("d"))),
             })),
         };
         let expected_node = Node {
-            entry: Arc::new(dummy_entry("y")),
+            entry: SharedPointer::new(dummy_entry("y")),
             color: Color::Red,
-            left: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("x")),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("x")),
                 color: Color::Black,
-                left: Some(Arc::new(dummy_node("a"))),
-                right: Some(Arc::new(dummy_node("b"))),
+                left: Some(SharedPointer::new(dummy_node("a"))),
+                right: Some(SharedPointer::new(dummy_node("b"))),
             })),
-            right: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("z")),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("z")),
                 color: Color::Black,
-                left: Some(Arc::new(dummy_node("c"))),
-                right: Some(Arc::new(dummy_node("d"))),
+                left: Some(SharedPointer::new(dummy_node("c"))),
+                right: Some(SharedPointer::new(dummy_node("d"))),
             })),
         };
 
@@ -702,59 +765,59 @@ mod node {
     #[test]
     fn test_remove_balance_left() {
         let bl = Node {
-            entry: Arc::new(dummy_entry("bl")),
+            entry: SharedPointer::new(dummy_entry("bl")),
             color: Color::Black,
             left: None,
             right: None,
         };
 
         let mut node = Node {
-            entry: Arc::new(dummy_entry("y")),
+            entry: SharedPointer::new(dummy_entry("y")),
             color: Color::Black, // Irrelevant
-            left: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("x")),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("x")),
                 color: Color::Red,
-                left: Some(Arc::new(dummy_node("a"))),
-                right: Some(Arc::new(dummy_node("b"))),
+                left: Some(SharedPointer::new(dummy_node("a"))),
+                right: Some(SharedPointer::new(dummy_node("b"))),
             })),
-            right: Some(Arc::new(dummy_node("c"))),
+            right: Some(SharedPointer::new(dummy_node("c"))),
         };
         let expected_node = Node {
-            entry: Arc::new(dummy_entry("y")),
+            entry: SharedPointer::new(dummy_entry("y")),
             color: Color::Red,
-            left: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("x")),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("x")),
                 color: Color::Black,
-                left: Some(Arc::new(dummy_node("a"))),
-                right: Some(Arc::new(dummy_node("b"))),
+                left: Some(SharedPointer::new(dummy_node("a"))),
+                right: Some(SharedPointer::new(dummy_node("b"))),
             })),
-            right: Some(Arc::new(dummy_node("c"))),
+            right: Some(SharedPointer::new(dummy_node("c"))),
         };
 
         node.remove_balance_left();
         assert_eq!(node, expected_node);
 
         let mut node = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Black, // Irrelevant
-            left: Some(Arc::new(bl.clone())),
-            right: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("y")),
+            left: Some(SharedPointer::new(bl.clone())),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("y")),
                 color: Color::Black,
-                left: Some(Arc::new(dummy_node("a"))),
-                right: Some(Arc::new(dummy_node("b"))),
+                left: Some(SharedPointer::new(dummy_node("a"))),
+                right: Some(SharedPointer::new(dummy_node("b"))),
             })),
         };
         let expected_node = {
             let mut n = Node {
-                entry: Arc::new(dummy_entry("x")),
+                entry: SharedPointer::new(dummy_entry("x")),
                 color: Color::Black,
-                left: Some(Arc::new(bl.clone())),
-                right: Some(Arc::new(Node {
-                    entry: Arc::new(dummy_entry("y")),
+                left: Some(SharedPointer::new(bl.clone())),
+                right: Some(SharedPointer::new(Node {
+                    entry: SharedPointer::new(dummy_entry("y")),
                     color: Color::Red,
-                    left: Some(Arc::new(dummy_node("a"))),
-                    right: Some(Arc::new(dummy_node("b"))),
+                    left: Some(SharedPointer::new(dummy_node("a"))),
+                    right: Some(SharedPointer::new(dummy_node("b"))),
                 })),
             };
             n.remove_balance();
@@ -765,36 +828,36 @@ mod node {
         assert_eq!(node, expected_node);
 
         let mut node = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Black, // Irrelevant
-            left: Some(Arc::new(bl.clone())),
-            right: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("z")),
+            left: Some(SharedPointer::new(bl.clone())),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("z")),
                 color: Color::Red,
-                left: Some(Arc::new(Node {
-                    entry: Arc::new(dummy_entry("y")),
+                left: Some(SharedPointer::new(Node {
+                    entry: SharedPointer::new(dummy_entry("y")),
                     color: Color::Black,
-                    left: Some(Arc::new(dummy_node("a"))),
-                    right: Some(Arc::new(dummy_node("b"))),
+                    left: Some(SharedPointer::new(dummy_node("a"))),
+                    right: Some(SharedPointer::new(dummy_node("b"))),
                 })),
-                right: Some(Arc::new(dummy_node("c").make_black())),
+                right: Some(SharedPointer::new(dummy_node("c").make_black())),
             })),
         };
         let expected_node = Node {
-            entry: Arc::new(dummy_entry("y")),
+            entry: SharedPointer::new(dummy_entry("y")),
             color: Color::Red,
-            left: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("x")),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("x")),
                 color: Color::Black,
-                left: Some(Arc::new(bl.clone())),
-                right: Some(Arc::new(dummy_node("a"))),
+                left: Some(SharedPointer::new(bl.clone())),
+                right: Some(SharedPointer::new(dummy_node("a"))),
             })),
-            right: Some(Arc::new({
+            right: Some(SharedPointer::new({
                 let mut n = Node {
-                    entry: Arc::new(dummy_entry("z")),
+                    entry: SharedPointer::new(dummy_entry("z")),
                     color: Color::Black,
-                    left: Some(Arc::new(dummy_node("b"))),
-                    right: Some(Arc::new(dummy_node("c").make_red())),
+                    left: Some(SharedPointer::new(dummy_node("b"))),
+                    right: Some(SharedPointer::new(dummy_node("c").make_red())),
                 };
                 n.remove_balance();
                 n
@@ -808,32 +871,32 @@ mod node {
     #[test]
     fn test_remove_balance_right() {
         let bl = Node {
-            entry: Arc::new(dummy_entry("bl")),
+            entry: SharedPointer::new(dummy_entry("bl")),
             color: Color::Black,
             left: None,
             right: None,
         };
 
         let mut node = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Black, // Irrelevant
-            left: Some(Arc::new(dummy_node("a"))),
-            right: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("y")),
+            left: Some(SharedPointer::new(dummy_node("a"))),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("y")),
                 color: Color::Red,
-                left: Some(Arc::new(dummy_node("b"))),
-                right: Some(Arc::new(dummy_node("c"))),
+                left: Some(SharedPointer::new(dummy_node("b"))),
+                right: Some(SharedPointer::new(dummy_node("c"))),
             })),
         };
         let expected_node = Node {
-            entry: Arc::new(dummy_entry("x")),
+            entry: SharedPointer::new(dummy_entry("x")),
             color: Color::Red,
-            left: Some(Arc::new(dummy_node("a"))),
-            right: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("y")),
+            left: Some(SharedPointer::new(dummy_node("a"))),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("y")),
                 color: Color::Black,
-                left: Some(Arc::new(dummy_node("b"))),
-                right: Some(Arc::new(dummy_node("c"))),
+                left: Some(SharedPointer::new(dummy_node("b"))),
+                right: Some(SharedPointer::new(dummy_node("c"))),
             })),
         };
 
@@ -841,27 +904,27 @@ mod node {
         assert_eq!(node, expected_node);
 
         let mut node = Node {
-            entry: Arc::new(dummy_entry("y")),
+            entry: SharedPointer::new(dummy_entry("y")),
             color: Color::Black, // Irrelevant
-            left: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("x")),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("x")),
                 color: Color::Black,
-                left: Some(Arc::new(dummy_node("a"))),
-                right: Some(Arc::new(dummy_node("b"))),
+                left: Some(SharedPointer::new(dummy_node("a"))),
+                right: Some(SharedPointer::new(dummy_node("b"))),
             })),
-            right: Some(Arc::new(bl.clone())),
+            right: Some(SharedPointer::new(bl.clone())),
         };
         let expected_node = {
             let mut n = Node {
-                entry: Arc::new(dummy_entry("y")),
+                entry: SharedPointer::new(dummy_entry("y")),
                 color: Color::Black,
-                left: Some(Arc::new(Node {
-                    entry: Arc::new(dummy_entry("x")),
+                left: Some(SharedPointer::new(Node {
+                    entry: SharedPointer::new(dummy_entry("x")),
                     color: Color::Red,
-                    left: Some(Arc::new(dummy_node("a"))),
-                    right: Some(Arc::new(dummy_node("b"))),
+                    left: Some(SharedPointer::new(dummy_node("a"))),
+                    right: Some(SharedPointer::new(dummy_node("b"))),
                 })),
-                right: Some(Arc::new(bl.clone())),
+                right: Some(SharedPointer::new(bl.clone())),
             };
             n.remove_balance();
             n
@@ -871,39 +934,39 @@ mod node {
         assert_eq!(node, expected_node);
 
         let mut node = Node {
-            entry: Arc::new(dummy_entry("z")),
+            entry: SharedPointer::new(dummy_entry("z")),
             color: Color::Black, // Irrelevant
-            left: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("x")),
+            left: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("x")),
                 color: Color::Red,
-                left: Some(Arc::new(dummy_node("a").make_black())),
-                right: Some(Arc::new(Node {
-                    entry: Arc::new(dummy_entry("y")),
+                left: Some(SharedPointer::new(dummy_node("a").make_black())),
+                right: Some(SharedPointer::new(Node {
+                    entry: SharedPointer::new(dummy_entry("y")),
                     color: Color::Black,
-                    left: Some(Arc::new(dummy_node("b"))),
-                    right: Some(Arc::new(dummy_node("c"))),
+                    left: Some(SharedPointer::new(dummy_node("b"))),
+                    right: Some(SharedPointer::new(dummy_node("c"))),
                 })),
             })),
-            right: Some(Arc::new(bl.clone())),
+            right: Some(SharedPointer::new(bl.clone())),
         };
         let expected_node = Node {
-            entry: Arc::new(dummy_entry("y")),
+            entry: SharedPointer::new(dummy_entry("y")),
             color: Color::Red,
-            left: Some(Arc::new({
+            left: Some(SharedPointer::new({
                 let mut n = Node {
-                    entry: Arc::new(dummy_entry("x")),
+                    entry: SharedPointer::new(dummy_entry("x")),
                     color: Color::Black,
-                    left: Some(Arc::new(dummy_node("a").make_red())),
-                    right: Some(Arc::new(dummy_node("b"))),
+                    left: Some(SharedPointer::new(dummy_node("a").make_red())),
+                    right: Some(SharedPointer::new(dummy_node("b"))),
                 };
                 n.remove_balance();
                 n
             })),
-            right: Some(Arc::new(Node {
-                entry: Arc::new(dummy_entry("z")),
+            right: Some(SharedPointer::new(Node {
+                entry: SharedPointer::new(dummy_entry("z")),
                 color: Color::Black,
-                left: Some(Arc::new(dummy_node("c"))),
-                right: Some(Arc::new(bl.clone())),
+                left: Some(SharedPointer::new(dummy_node("c"))),
+                right: Some(SharedPointer::new(bl.clone())),
             })),
         };
 
@@ -1284,20 +1347,6 @@ mod iter {
     }
 }
 
-mod compile_time {
-    use super::*;
-
-    #[test]
-    fn test_is_send() {
-        let _: Box<dyn Send> = Box::new(RedBlackTreeMap::<i32, i32>::new());
-    }
-
-    #[test]
-    fn test_is_sync() {
-        let _: Box<dyn Sync> = Box::new(RedBlackTreeMap::<i32, i32>::new());
-    }
-}
-
 #[test]
 fn test_macro_rbt_map() {
     let set_1 = RedBlackTreeMap::new().insert(1, 2);
@@ -1648,6 +1697,18 @@ fn test_eq() {
 }
 
 #[test]
+fn test_eq_pointer_kind_consistent() {
+    let map_a = rbt_map!["a" => 0];
+    let map_a_sync = rbt_map_sync!["a" => 0];
+    let map_b = rbt_map!["b" => 1];
+    let map_b_sync = rbt_map_sync!["b" => 1];
+
+    assert!(map_a == map_a_sync);
+    assert!(map_a != map_b_sync);
+    assert!(map_b == map_b_sync);
+}
+
+#[test]
 fn test_partial_ord() {
     let map_1 = rbt_map!["a" => 0xa];
     let map_1_prime = rbt_map!["a" => 0xa];
@@ -1672,7 +1733,26 @@ fn test_ord() {
     assert_eq!(map_2.cmp(&map_1), Ordering::Greater);
 }
 
-fn hash<K: Ord + Hash, V: Hash>(map: &RedBlackTreeMap<K, V>) -> u64 {
+#[test]
+fn test_ord_pointer_kind_consistent() {
+    let map_a = rbt_map!["a" => 0];
+    let map_a_sync = rbt_map_sync!["a" => 0];
+    let map_b = rbt_map!["b" => 1];
+    let map_b_sync = rbt_map_sync!["b" => 1];
+
+    assert!(map_a <= map_a_sync);
+    assert!(map_a < map_b_sync);
+    assert!(map_b >= map_b_sync);
+
+    assert!(map_a_sync >= map_a);
+    assert!(map_b_sync > map_a);
+    assert!(map_b_sync <= map_b);
+}
+
+fn hash<K: Ord + Hash, V: Hash, P>(map: &RedBlackTreeMap<K, V, P>) -> u64
+where
+    P: SharedPointerKind,
+{
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
 
     map.hash(&mut hasher);
@@ -1689,6 +1769,14 @@ fn test_hash() {
     assert_eq!(hash(&map_1), hash(&map_1));
     assert_eq!(hash(&map_1), hash(&map_1_prime));
     assert_ne!(hash(&map_1), hash(&map_2));
+}
+
+#[test]
+fn test_hash_pointer_kind_consistent() {
+    let map = rbt_map!["a" => 0];
+    let map_sync = rbt_map_sync!["a" => 0];
+
+    assert_eq!(hash(&map), hash(&map_sync));
 }
 
 #[test]

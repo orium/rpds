@@ -107,3 +107,7 @@ harness = false
 [[bench]]
 name = "rpds_red_black_tree_map"
 harness = false
+
+[[bench]]
+name = "rpds_red_black_tree_map_sync"
+harness = false

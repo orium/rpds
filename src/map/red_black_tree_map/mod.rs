@@ -4,6 +4,7 @@
  */
 
 use super::entry::Entry;
+use archery::{SharedPointer, SharedPointerKind, SharedPointerKindArc, SharedPointerKindRc};
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::Display;
@@ -11,15 +12,16 @@ use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::ops::{Index, RangeBounds, RangeFull};
-use std::sync::Arc;
 
 // TODO Use impl trait instead of this when available.
-pub type Iter<'a, K, V> =
-    std::iter::Map<IterArc<'a, K, V>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
-pub type IterKeys<'a, K, V> = std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
-pub type IterValues<'a, K, V> = std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
-pub type RangeIter<'a, K, V, RB, Q> =
-    std::iter::Map<RangeIterArc<'a, K, V, RB, Q>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
+pub type Iter<'a, K, V, P> =
+    std::iter::Map<IterPtr<'a, K, V, P>, fn(&'a SharedPointer<Entry<K, V>, P>) -> (&'a K, &'a V)>;
+pub type IterKeys<'a, K, V, P> = std::iter::Map<Iter<'a, K, V, P>, fn((&'a K, &V)) -> &'a K>;
+pub type IterValues<'a, K, V, P> = std::iter::Map<Iter<'a, K, V, P>, fn((&K, &'a V)) -> &'a V>;
+pub type RangeIter<'a, K, V, RB, Q, P> = std::iter::Map<
+    RangeIterPtr<'a, K, V, RB, Q, P>,
+    fn(&'a SharedPointer<Entry<K, V>, P>) -> (&'a K, &'a V),
+>;
 
 /// Creates a [`RedBlackTreeMap`](map/red_black_tree_map/struct.RedBlackTreeMap.html) containing the
 /// given arguments:
@@ -40,6 +42,33 @@ macro_rules! rbt_map {
         {
             #[allow(unused_mut)]
             let mut m = $crate::RedBlackTreeMap::new();
+            $(
+                m.insert_mut($k, $v);
+            )*
+            m
+        }
+    };
+}
+
+/// Creates a [`RedBlackTreeMap`](map/red_black_tree_map/struct.RedBlackTreeMap.html) that
+/// implements `Sync`, containing the given arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let m = RedBlackTreeMap::new_sync()
+///     .insert(1, "one")
+///     .insert(2, "two")
+///     .insert(3, "three");
+///
+/// assert_eq!(rbt_map_sync![1 => "one", 2 => "two", 3 => "three"], m);
+/// ```
+#[macro_export]
+macro_rules! rbt_map_sync {
+    ($($k:expr => $v:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut m = $crate::RedBlackTreeMap::new_sync();
             $(
                 m.insert_mut($k, $v);
             )*
@@ -77,10 +106,15 @@ macro_rules! rbt_map {
 /// implemented according to the paper "Red-Black Trees with Types" by Stefan Kahrs
 /// ([reference implementation](https://www.cs.kent.ac.uk/people/staff/smk/redblack/Untyped.hs))
 #[derive(Debug)]
-pub struct RedBlackTreeMap<K, V> {
-    root: Option<Arc<Node<K, V>>>,
+pub struct RedBlackTreeMap<K, V, P = SharedPointerKindRc>
+where
+    P: SharedPointerKind,
+{
+    root: Option<SharedPointer<Node<K, V, P>, P>>,
     size: usize,
 }
+
+pub type RedBlackTreeMapSync<K, V> = RedBlackTreeMap<K, V, SharedPointerKindArc>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Color {
@@ -88,18 +122,24 @@ enum Color {
     Black,
 }
 
-#[derive(Debug, PartialEq, Eq)]
-struct Node<K, V> {
-    entry: Arc<Entry<K, V>>,
+#[derive(Debug)]
+struct Node<K, V, P>
+where
+    P: SharedPointerKind,
+{
+    entry: SharedPointer<Entry<K, V>, P>,
     color: Color,
-    left: Option<Arc<Node<K, V>>>,
-    right: Option<Arc<Node<K, V>>>,
+    left: Option<SharedPointer<Node<K, V, P>, P>>,
+    right: Option<SharedPointer<Node<K, V, P>, P>>,
 }
 
-impl<K, V> Clone for Node<K, V> {
-    fn clone(&self) -> Node<K, V> {
+impl<K, V, P> Clone for Node<K, V, P>
+where
+    P: SharedPointerKind,
+{
+    fn clone(&self) -> Node<K, V, P> {
         Node {
-            entry: Arc::clone(&self.entry),
+            entry: SharedPointer::clone(&self.entry),
             color: self.color,
             left: self.left.clone(),
             right: self.right.clone(),
@@ -107,19 +147,20 @@ impl<K, V> Clone for Node<K, V> {
     }
 }
 
-impl<K, V> Node<K, V>
+impl<K, V, P> Node<K, V, P>
 where
     K: Ord,
+    P: SharedPointerKind,
 {
-    fn new_red(entry: Entry<K, V>) -> Node<K, V> {
-        Node { entry: Arc::new(entry), color: Color::Red, left: None, right: None }
+    fn new_red(entry: Entry<K, V>) -> Node<K, V, P> {
+        Node { entry: SharedPointer::new(entry), color: Color::Red, left: None, right: None }
     }
 
-    fn new_black(entry: Entry<K, V>) -> Node<K, V> {
-        Node { entry: Arc::new(entry), color: Color::Black, left: None, right: None }
+    fn new_black(entry: Entry<K, V>) -> Node<K, V, P> {
+        Node { entry: SharedPointer::new(entry), color: Color::Black, left: None, right: None }
     }
 
-    fn borrow(node: &Option<Arc<Node<K, V>>>) -> Option<&Node<K, V>> {
+    fn borrow(node: &Option<SharedPointer<Node<K, V, P>, P>>) -> Option<&Node<K, V, P>> {
         node.as_ref().map(|n| n.borrow())
     }
 
@@ -246,10 +287,11 @@ where
                 match (color_l, color_l_l, color_l_r, color_r, color_r_l, color_r_r) {
                     // Case 1
                     (Some(R), Some(R), ..) => {
-                        let mut node_l_arc = self.left.take().unwrap();
-                        let node_l: &mut Node<K, V> = Arc::make_mut(&mut node_l_arc);
-                        let mut node_l_l_arc = node_l.left.take().unwrap();
-                        let node_l_l: &mut Node<K, V> = Arc::make_mut(&mut node_l_l_arc);
+                        let mut node_l_ptr = self.left.take().unwrap();
+                        let node_l: &mut Node<K, V, P> = SharedPointer::make_mut(&mut node_l_ptr);
+                        let mut node_l_l_ptr = node_l.left.take().unwrap();
+                        let node_l_l: &mut Node<K, V, P> =
+                            SharedPointer::make_mut(&mut node_l_l_ptr);
 
                         self.color = Color::Red;
                         node_l.color = Color::Black;
@@ -259,16 +301,17 @@ where
                         swap(&mut node_l.left, &mut node_l.right);
                         swap(&mut self.right, &mut node_l.right);
 
-                        self.left = Some(node_l_l_arc);
-                        self.right = Some(node_l_arc);
+                        self.left = Some(node_l_l_ptr);
+                        self.right = Some(node_l_ptr);
                     }
 
                     // Case 2
                     (Some(R), _, Some(R), ..) => {
-                        let mut node_l_arc = self.left.take().unwrap();
-                        let node_l: &mut Node<K, V> = Arc::make_mut(&mut node_l_arc);
-                        let mut node_l_r_arc = node_l.right.take().unwrap();
-                        let node_l_r: &mut Node<K, V> = Arc::make_mut(&mut node_l_r_arc);
+                        let mut node_l_ptr = self.left.take().unwrap();
+                        let node_l: &mut Node<K, V, P> = SharedPointer::make_mut(&mut node_l_ptr);
+                        let mut node_l_r_ptr = node_l.right.take().unwrap();
+                        let node_l_r: &mut Node<K, V, P> =
+                            SharedPointer::make_mut(&mut node_l_r_ptr);
 
                         self.color = Color::Red;
                         node_l.color = Color::Black;
@@ -279,16 +322,17 @@ where
                         swap(&mut node_l.right, &mut node_l_r.right);
                         swap(&mut self.right, &mut node_l_r.right);
 
-                        self.right = Some(node_l_r_arc);
-                        self.left = Some(node_l_arc);
+                        self.right = Some(node_l_r_ptr);
+                        self.left = Some(node_l_ptr);
                     }
 
                     // Case 3
                     (.., Some(R), Some(R), _) => {
-                        let mut node_r_arc = self.right.take().unwrap();
-                        let node_r: &mut Node<K, V> = Arc::make_mut(&mut node_r_arc);
-                        let mut node_r_l_arc = node_r.left.take().unwrap();
-                        let node_r_l: &mut Node<K, V> = Arc::make_mut(&mut node_r_l_arc);
+                        let mut node_r_ptr = self.right.take().unwrap();
+                        let node_r: &mut Node<K, V, P> = SharedPointer::make_mut(&mut node_r_ptr);
+                        let mut node_r_l_ptr = node_r.left.take().unwrap();
+                        let node_r_l: &mut Node<K, V, P> =
+                            SharedPointer::make_mut(&mut node_r_l_ptr);
 
                         self.color = Color::Red;
                         node_r.color = Color::Black;
@@ -299,16 +343,17 @@ where
                         swap(&mut node_r_l.left, &mut node_r_l.right);
                         swap(&mut self.left, &mut node_r_l.left);
 
-                        self.left = Some(node_r_l_arc);
-                        self.right = Some(node_r_arc);
+                        self.left = Some(node_r_l_ptr);
+                        self.right = Some(node_r_ptr);
                     }
 
                     // Case 4
                     (.., Some(R), _, Some(R)) => {
-                        let mut node_r_arc = self.right.take().unwrap();
-                        let node_r: &mut Node<K, V> = Arc::make_mut(&mut node_r_arc);
-                        let mut node_r_r_arc = node_r.right.take().unwrap();
-                        let node_r_r: &mut Node<K, V> = Arc::make_mut(&mut node_r_r_arc);
+                        let mut node_r_ptr = self.right.take().unwrap();
+                        let node_r: &mut Node<K, V, P> = SharedPointer::make_mut(&mut node_r_ptr);
+                        let mut node_r_r_ptr = node_r.right.take().unwrap();
+                        let node_r_r: &mut Node<K, V, P> =
+                            SharedPointer::make_mut(&mut node_r_r_ptr);
 
                         self.color = Color::Red;
                         node_r.color = Color::Black;
@@ -318,8 +363,8 @@ where
                         swap(&mut node_r.left, &mut node_r.right);
                         swap(&mut self.left, &mut node_r.left);
 
-                        self.right = Some(node_r_r_arc);
-                        self.left = Some(node_r_arc);
+                        self.right = Some(node_r_r_ptr);
+                        self.left = Some(node_r_ptr);
                     }
 
                     _ => (),
@@ -330,11 +375,16 @@ where
     }
 
     /// Inserts the entry and returns whether the key is new.
-    fn insert(root: &mut Option<Arc<Node<K, V>>>, key: K, value: V) -> bool {
-        fn ins<K: Ord, V>(node: &mut Option<Arc<Node<K, V>>>, k: K, v: V, is_root: bool) -> bool {
+    fn insert(root: &mut Option<SharedPointer<Node<K, V, P>, P>>, key: K, value: V) -> bool {
+        fn ins<K: Ord, V, P: SharedPointerKind>(
+            node: &mut Option<SharedPointer<Node<K, V, P>, P>>,
+            k: K,
+            v: V,
+            is_root: bool,
+        ) -> bool {
             match node {
                 Some(n) => {
-                    let node = Arc::make_mut(n);
+                    let node = SharedPointer::make_mut(n);
 
                     let ret = match k.cmp(&node.entry.key) {
                         Ordering::Less => {
@@ -348,7 +398,7 @@ where
                             is_new_key
                         }
                         Ordering::Equal => {
-                            node.entry = Arc::new(Entry::new(k, v));
+                            node.entry = SharedPointer::new(Entry::new(k, v));
 
                             false
                         }
@@ -372,9 +422,9 @@ where
                 }
                 None => {
                     *node = if is_root {
-                        Some(Arc::new(Node::new_black(Entry::new(k, v))))
+                        Some(SharedPointer::new(Node::new_black(Entry::new(k, v))))
                     } else {
-                        Some(Arc::new(Node::new_red(Entry::new(k, v))))
+                        Some(SharedPointer::new(Node::new_red(Entry::new(k, v))))
                     };
 
                     true
@@ -387,9 +437,9 @@ where
 
     /// Returns `false` if node has no children to merge.
     fn remove_fuse(
-        node: &mut Node<K, V>,
-        left: Option<Arc<Node<K, V>>>,
-        right: Option<Arc<Node<K, V>>>,
+        node: &mut Node<K, V, P>,
+        left: Option<SharedPointer<Node<K, V, P>, P>>,
+        right: Option<SharedPointer<Node<K, V, P>, P>>,
     ) -> bool {
         use Color::Black as B;
         use Color::Red as R;
@@ -398,42 +448,42 @@ where
 
         match (left, right) {
             (None, None) => false,
-            (None, Some(r_arc)) => {
-                crate::utils::replace(node, r_arc);
+            (None, Some(r_ptr)) => {
+                crate::utils::replace(node, r_ptr);
                 true
             }
-            (Some(l_arc), None) => {
-                crate::utils::replace(node, l_arc);
+            (Some(l_ptr), None) => {
+                crate::utils::replace(node, l_ptr);
                 true
             }
-            (Some(mut l_arc), Some(mut r_arc)) => {
-                match (l_arc.color, r_arc.color) {
+            (Some(mut l_ptr), Some(mut r_ptr)) => {
+                match (l_ptr.color, r_ptr.color) {
                     (B, R) => {
-                        let r = Arc::make_mut(&mut r_arc);
+                        let r = SharedPointer::make_mut(&mut r_ptr);
                         let rl = r.left.take();
 
                         // This will always return `true`.
-                        Node::remove_fuse(node, Some(l_arc), rl);
+                        Node::remove_fuse(node, Some(l_ptr), rl);
 
                         swap(node, r);
 
-                        node.left = Some(r_arc);
+                        node.left = Some(r_ptr);
                     }
                     (R, B) => {
-                        let l = Arc::make_mut(&mut l_arc);
+                        let l = SharedPointer::make_mut(&mut l_ptr);
                         let lr = l.right.take();
 
                         // This will always return `true`.
-                        Node::remove_fuse(node, lr, Some(r_arc));
+                        Node::remove_fuse(node, lr, Some(r_ptr));
 
                         swap(node, l);
 
-                        node.right = Some(l_arc);
+                        node.right = Some(l_ptr);
                     }
                     (R, R) => {
-                        let r = Arc::make_mut(&mut r_arc);
+                        let r = SharedPointer::make_mut(&mut r_ptr);
                         let rl = r.left.take();
-                        let l = Arc::make_mut(&mut l_arc);
+                        let l = SharedPointer::make_mut(&mut l_ptr);
                         let lr = l.right.take();
 
                         let fused = Node::remove_fuse(node, lr, rl);
@@ -446,24 +496,24 @@ where
                                 l.right = fl;
                                 r.left = fr;
 
-                                node.left = Some(l_arc);
-                                node.right = Some(r_arc);
+                                node.left = Some(l_ptr);
+                                node.right = Some(r_ptr);
                             }
                             _ => {
                                 swap(l, node);
 
                                 if fused {
-                                    r.left = Some(l_arc);
+                                    r.left = Some(l_ptr);
                                 }
 
-                                node.right = Some(r_arc);
+                                node.right = Some(r_ptr);
                             }
                         }
                     }
                     (B, B) => {
-                        let r = Arc::make_mut(&mut r_arc);
+                        let r = SharedPointer::make_mut(&mut r_ptr);
                         let rl = r.left.take();
-                        let l = Arc::make_mut(&mut l_arc);
+                        let l = SharedPointer::make_mut(&mut l_ptr);
                         let lr = l.right.take();
 
                         let fused = Node::remove_fuse(node, lr, rl);
@@ -476,18 +526,18 @@ where
                                 l.right = fl;
                                 r.left = fr;
 
-                                node.left = Some(l_arc);
-                                node.right = Some(r_arc);
+                                node.left = Some(l_ptr);
+                                node.right = Some(r_ptr);
                             }
                             _ => {
                                 swap(l, node);
 
                                 if fused {
-                                    r.left = Some(l_arc);
+                                    r.left = Some(l_ptr);
                                 }
 
                                 node.color = Color::Red;
-                                node.right = Some(r_arc);
+                                node.right = Some(r_ptr);
 
                                 node.remove_balance_left();
                             }
@@ -503,8 +553,8 @@ where
     fn remove_balance(&mut self) {
         match (self.left_color(), self.right_color()) {
             (Some(Color::Red), Some(Color::Red)) => {
-                Arc::make_mut(self.left.as_mut().unwrap()).color = Color::Black;
-                Arc::make_mut(self.right.as_mut().unwrap()).color = Color::Black;
+                SharedPointer::make_mut(self.left.as_mut().unwrap()).color = Color::Black;
+                SharedPointer::make_mut(self.right.as_mut().unwrap()).color = Color::Black;
 
                 self.color = Color::Red;
             }
@@ -529,13 +579,13 @@ where
 
         match (color_l, color_r, color_r_l) {
             (Some(R), ..) => {
-                let self_l = Arc::make_mut(self.left.as_mut().unwrap());
+                let self_l = SharedPointer::make_mut(self.left.as_mut().unwrap());
 
                 self.color = Color::Red;
                 self_l.color = Color::Black;
             }
             (_, Some(B), _) => {
-                let self_r = Arc::make_mut(self.right.as_mut().unwrap());
+                let self_r = SharedPointer::make_mut(self.right.as_mut().unwrap());
 
                 self.color = Color::Black;
                 self_r.color = Color::Red;
@@ -543,15 +593,15 @@ where
                 self.remove_balance();
             }
             (_, Some(R), Some(B)) => {
-                let self_r = Arc::make_mut(self.right.as_mut().unwrap());
+                let self_r = SharedPointer::make_mut(self.right.as_mut().unwrap());
 
-                let mut self_r_l_arc = self_r.left.take().unwrap();
-                let self_r_l = Arc::make_mut(&mut self_r_l_arc);
+                let mut self_r_l_ptr = self_r.left.take().unwrap();
+                let self_r_l = SharedPointer::make_mut(&mut self_r_l_ptr);
                 let new_r_l = self_r_l.right.take();
 
                 self_r.color = Color::Black;
                 self_r.left = new_r_l;
-                Arc::make_mut(self_r.right.as_mut().unwrap()).color = Color::Red;
+                SharedPointer::make_mut(self_r.right.as_mut().unwrap()).color = Color::Red;
 
                 self_r.remove_balance();
 
@@ -562,7 +612,7 @@ where
 
                 swap(&mut self.entry, &mut self_r_l.entry);
 
-                self.left = Some(self_r_l_arc);
+                self.left = Some(self_r_l_ptr);
             }
             _ => unreachable!(),
         }
@@ -580,13 +630,13 @@ where
 
         match (color_l, color_l_r, color_r) {
             (.., Some(R)) => {
-                let self_r = Arc::make_mut(self.right.as_mut().unwrap());
+                let self_r = SharedPointer::make_mut(self.right.as_mut().unwrap());
 
                 self.color = Color::Red;
                 self_r.color = Color::Black;
             }
             (Some(B), ..) => {
-                let self_l = Arc::make_mut(self.left.as_mut().unwrap());
+                let self_l = SharedPointer::make_mut(self.left.as_mut().unwrap());
 
                 self.color = Color::Black;
                 self_l.color = Color::Red;
@@ -594,15 +644,15 @@ where
                 self.remove_balance();
             }
             (Some(R), Some(B), _) => {
-                let self_l = Arc::make_mut(self.left.as_mut().unwrap());
+                let self_l = SharedPointer::make_mut(self.left.as_mut().unwrap());
 
-                let mut self_l_r_arc = self_l.right.take().unwrap();
-                let self_l_r = Arc::make_mut(&mut self_l_r_arc);
+                let mut self_l_r_ptr = self_l.right.take().unwrap();
+                let self_l_r = SharedPointer::make_mut(&mut self_l_r_ptr);
                 let new_l_r = self_l_r.left.take();
 
                 self_l.color = Color::Black;
                 self_l.right = new_l_r;
-                Arc::make_mut(self_l.left.as_mut().unwrap()).color = Color::Red;
+                SharedPointer::make_mut(self_l.left.as_mut().unwrap()).color = Color::Red;
 
                 self_l.remove_balance();
 
@@ -613,7 +663,7 @@ where
 
                 swap(&mut self.entry, &mut self_l_r.entry);
 
-                self.right = Some(self_l_r_arc);
+                self.right = Some(self_l_r_ptr);
             }
             _ => unreachable!(),
         }
@@ -622,15 +672,16 @@ where
     /// Returns `true` if the key was present.
     ///
     /// If the node becomes empty `*root` will be set to `None`.
-    fn remove<Q: ?Sized>(root: &mut Option<Arc<Node<K, V>>>, key: &Q) -> bool
+    fn remove<Q: ?Sized>(root: &mut Option<SharedPointer<Node<K, V, P>, P>>, key: &Q) -> bool
     where
         K: Borrow<Q>,
         Q: Ord,
     {
-        fn del_left<K, V, Q: ?Sized>(node: &mut Node<K, V>, k: &Q) -> bool
+        fn del_left<K, V, Q: ?Sized, P>(node: &mut Node<K, V, P>, k: &Q) -> bool
         where
             K: Borrow<Q> + Ord,
             Q: Ord,
+            P: SharedPointerKind,
         {
             let original_left_color = node.left_color();
             let removed = del(&mut node.left, k, false);
@@ -644,10 +695,11 @@ where
             removed
         }
 
-        fn del_right<K, V, Q: ?Sized>(node: &mut Node<K, V>, k: &Q) -> bool
+        fn del_right<K, V, Q: ?Sized, P>(node: &mut Node<K, V, P>, k: &Q) -> bool
         where
             K: Borrow<Q> + Ord,
             Q: Ord,
+            P: SharedPointerKind,
         {
             let original_right_color = node.right_color();
 
@@ -662,14 +714,19 @@ where
             removed
         }
 
-        fn del<K, V, Q: ?Sized>(node: &mut Option<Arc<Node<K, V>>>, k: &Q, is_root: bool) -> bool
+        fn del<K, V, Q: ?Sized, P>(
+            node: &mut Option<SharedPointer<Node<K, V, P>, P>>,
+            k: &Q,
+            is_root: bool,
+        ) -> bool
         where
             K: Borrow<Q> + Ord,
             Q: Ord,
+            P: SharedPointerKind,
         {
             let (removed, make_node_none) = match *node {
-                Some(ref mut node_arc) => {
-                    let node = Arc::make_mut(node_arc);
+                Some(ref mut node_ptr) => {
+                    let node = SharedPointer::make_mut(node_ptr);
 
                     let ret = match k.cmp(node.entry.key.borrow()) {
                         Ordering::Less => (del_left(node, k), false),
@@ -704,12 +761,33 @@ where
     }
 }
 
+impl<K, V> RedBlackTreeMapSync<K, V>
+where
+    K: Ord,
+{
+    #[must_use]
+    pub fn new_sync() -> RedBlackTreeMapSync<K, V> {
+        RedBlackTreeMap::new_with_ptr_kind()
+    }
+}
+
 impl<K, V> RedBlackTreeMap<K, V>
 where
     K: Ord,
 {
     #[must_use]
-    pub fn new() -> RedBlackTreeMap<K, V> {
+    pub fn new() -> RedBlackTreeMap<K, V, SharedPointerKindRc> {
+        RedBlackTreeMap::new_with_ptr_kind()
+    }
+}
+
+impl<K, V, P> RedBlackTreeMap<K, V, P>
+where
+    K: Ord,
+    P: SharedPointerKind,
+{
+    #[must_use]
+    pub fn new_with_ptr_kind() -> RedBlackTreeMap<K, V, P> {
         RedBlackTreeMap { root: None, size: 0 }
     }
 
@@ -733,7 +811,7 @@ where
     }
 
     #[must_use]
-    pub fn insert(&self, key: K, value: V) -> RedBlackTreeMap<K, V> {
+    pub fn insert(&self, key: K, value: V) -> RedBlackTreeMap<K, V, P> {
         let mut new_map = self.clone();
 
         new_map.insert_mut(key, value);
@@ -750,7 +828,7 @@ where
     }
 
     #[must_use]
-    pub fn remove<Q: ?Sized>(&self, key: &Q) -> RedBlackTreeMap<K, V>
+    pub fn remove<Q: ?Sized>(&self, key: &Q) -> RedBlackTreeMap<K, V, P>
     where
         K: Borrow<Q>,
         Q: Ord,
@@ -804,26 +882,27 @@ where
     }
 
     #[must_use]
-    pub fn iter(&self) -> Iter<'_, K, V> {
-        self.iter_arc().map(|e| (&e.key, &e.value))
-    }
-
-    fn iter_arc(&self) -> IterArc<'_, K, V> {
-        IterArc::new(self)
+    pub fn iter(&self) -> Iter<'_, K, V, P> {
+        self.iter_ptr().map(|e| (&e.key, &e.value))
     }
 
     #[must_use]
-    pub fn keys(&self) -> IterKeys<'_, K, V> {
+    fn iter_ptr(&self) -> IterPtr<'_, K, V, P> {
+        IterPtr::new(self)
+    }
+
+    #[must_use]
+    pub fn keys(&self) -> IterKeys<'_, K, V, P> {
         self.iter().map(|(k, _)| k)
     }
 
     #[must_use]
-    pub fn values(&self) -> IterValues<'_, K, V> {
+    pub fn values(&self) -> IterValues<'_, K, V, P> {
         self.iter().map(|(_, v)| v)
     }
 
     #[must_use]
-    pub fn range<Q, RB>(&self, range: RB) -> RangeIter<'_, K, V, RB, Q>
+    pub fn range<Q, RB>(&self, range: RB) -> RangeIter<'_, K, V, RB, Q, P>
     where
         K: Borrow<Q>,
         Q: Ord + ?Sized,
@@ -843,15 +922,16 @@ where
             {
                 panic!("range start is greater than range end")
             }
-            (_, _) => RangeIterArc::new(self, range).map(|e| (&e.key, &e.value)),
+            (_, _) => RangeIterPtr::new(self, range).map(|e| (&e.key, &e.value)),
         }
     }
 }
 
-impl<'a, K, Q: ?Sized, V> Index<&'a Q> for RedBlackTreeMap<K, V>
+impl<'a, K, Q: ?Sized, V, P> Index<&'a Q> for RedBlackTreeMap<K, V, P>
 where
     K: Ord + Borrow<Q>,
     Q: Ord,
+    P: SharedPointerKind,
 {
     type Output = V;
 
@@ -860,49 +940,66 @@ where
     }
 }
 
-impl<K, V> Clone for RedBlackTreeMap<K, V>
+impl<K, V, P> Clone for RedBlackTreeMap<K, V, P>
 where
     K: Ord,
+    P: SharedPointerKind,
 {
-    fn clone(&self) -> RedBlackTreeMap<K, V> {
+    fn clone(&self) -> RedBlackTreeMap<K, V, P> {
         RedBlackTreeMap { root: self.root.clone(), size: self.size }
     }
 }
 
-impl<K, V> Default for RedBlackTreeMap<K, V>
+impl<K, V, P> Default for RedBlackTreeMap<K, V, P>
 where
     K: Ord,
+    P: SharedPointerKind,
 {
-    fn default() -> RedBlackTreeMap<K, V> {
-        RedBlackTreeMap::new()
+    fn default() -> RedBlackTreeMap<K, V, P> {
+        RedBlackTreeMap::new_with_ptr_kind()
     }
 }
 
-impl<K, V: PartialEq> PartialEq for RedBlackTreeMap<K, V>
+impl<K, V: PartialEq, P, PO> PartialEq<RedBlackTreeMap<K, V, PO>> for RedBlackTreeMap<K, V, P>
 where
     K: Ord,
+    P: SharedPointerKind,
+    PO: SharedPointerKind,
 {
-    fn eq(&self, other: &RedBlackTreeMap<K, V>) -> bool {
+    fn eq(&self, other: &RedBlackTreeMap<K, V, PO>) -> bool {
         self.size() == other.size()
             && self.iter().all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
     }
 }
 
-impl<K, V: Eq> Eq for RedBlackTreeMap<K, V> where K: Ord {}
+impl<K, V: Eq, P> Eq for RedBlackTreeMap<K, V, P>
+where
+    K: Ord,
+    P: SharedPointerKind,
+{
+}
 
-impl<K: Ord, V: PartialOrd> PartialOrd for RedBlackTreeMap<K, V> {
-    fn partial_cmp(&self, other: &RedBlackTreeMap<K, V>) -> Option<Ordering> {
+impl<K: Ord, V: PartialOrd, P, PO> PartialOrd<RedBlackTreeMap<K, V, PO>>
+    for RedBlackTreeMap<K, V, P>
+where
+    P: SharedPointerKind,
+    PO: SharedPointerKind,
+{
+    fn partial_cmp(&self, other: &RedBlackTreeMap<K, V, PO>) -> Option<Ordering> {
         self.iter().partial_cmp(other.iter())
     }
 }
 
-impl<K: Ord, V: Ord> Ord for RedBlackTreeMap<K, V> {
-    fn cmp(&self, other: &RedBlackTreeMap<K, V>) -> Ordering {
+impl<K: Ord, V: Ord, P> Ord for RedBlackTreeMap<K, V, P>
+where
+    P: SharedPointerKind,
+{
+    fn cmp(&self, other: &RedBlackTreeMap<K, V, P>) -> Ordering {
         self.iter().cmp(other.iter())
     }
 }
 
-impl<K: Hash, V: Hash> Hash for RedBlackTreeMap<K, V>
+impl<K: Hash, V: Hash, P: SharedPointerKind> Hash for RedBlackTreeMap<K, V, P>
 where
     K: Ord,
 {
@@ -918,10 +1015,11 @@ where
     }
 }
 
-impl<K, V> Display for RedBlackTreeMap<K, V>
+impl<K, V, P> Display for RedBlackTreeMap<K, V, P>
 where
     K: Ord + Display,
     V: Display,
+    P: SharedPointerKind,
 {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
@@ -942,25 +1040,27 @@ where
     }
 }
 
-impl<'a, K, V> IntoIterator for &'a RedBlackTreeMap<K, V>
+impl<'a, K, V, P> IntoIterator for &'a RedBlackTreeMap<K, V, P>
 where
     K: Ord,
+    P: SharedPointerKind,
 {
     type Item = (&'a K, &'a V);
-    type IntoIter = Iter<'a, K, V>;
+    type IntoIter = Iter<'a, K, V, P>;
 
-    fn into_iter(self) -> Iter<'a, K, V> {
+    fn into_iter(self) -> Iter<'a, K, V, P> {
         self.iter()
     }
 }
 
 // TODO This can be improved to create a perfectly balanced tree.
-impl<K, V> FromIterator<(K, V)> for RedBlackTreeMap<K, V>
+impl<K, V, P> FromIterator<(K, V)> for RedBlackTreeMap<K, V, P>
 where
     K: Ord,
+    P: SharedPointerKind,
 {
-    fn from_iter<I: IntoIterator<Item = (K, V)>>(into_iter: I) -> RedBlackTreeMap<K, V> {
-        let mut map = RedBlackTreeMap::new();
+    fn from_iter<I: IntoIterator<Item = (K, V)>>(into_iter: I) -> RedBlackTreeMap<K, V, P> {
+        let mut map = RedBlackTreeMap::new_with_ptr_kind();
 
         for (k, v) in into_iter {
             map.insert_mut(k, v);
@@ -972,35 +1072,39 @@ where
 
 mod iter_utils {
     use super::{Entry, Node, RedBlackTreeMap};
+    use archery::{SharedPointer, SharedPointerKind};
     use std::borrow::Borrow;
     use std::mem::size_of;
     use std::ops::Bound;
-    use std::sync::Arc;
 
     // This is a stack for navigating through the tree. It can be used to go either forwards or
     // backwards: you choose the direction at construction time, and then every call to `advance`
     // goes in that direction.
     #[derive(Debug)]
-    pub struct IterStack<'a, K, V> {
+    pub struct IterStack<'a, K, V, P>
+    where
+        P: SharedPointerKind,
+    {
         // The invariant maintained by `stack` depends on whether we are moving forwards or backwards.
         // In either case, the current node is at the top of the stack. If we are moving forwards, the
         // rest of the stack consists of those ancestors of the current node that contain the current
         // node in their left subtree. In other words, the keys in the stack increase as we go from the
         // top of the stack to the bottom.
-        stack: Vec<&'a Node<K, V>>,
+        stack: Vec<&'a Node<K, V, P>>,
         backwards: bool,
     }
 
-    impl<'a, K, V> IterStack<'a, K, V>
+    impl<'a, K, V, P> IterStack<'a, K, V, P>
     where
         K: Ord,
+        P: SharedPointerKind,
     {
         pub fn new<Q>(
-            map: &'a RedBlackTreeMap<K, V>,
+            map: &'a RedBlackTreeMap<K, V, P>,
             start_bound: Bound<&Q>,
             end_bound: Bound<&Q>,
             backwards: bool,
-        ) -> IterStack<'a, K, V>
+        ) -> IterStack<'a, K, V, P>
         where
             K: Borrow<Q>,
             Q: Ord + ?Sized,
@@ -1047,7 +1151,7 @@ mod iter_utils {
         }
 
         #[inline]
-        pub fn current(&self) -> Option<&'a Arc<Entry<K, V>>> {
+        pub fn current(&self) -> Option<&'a SharedPointer<Entry<K, V>, P>> {
             self.stack.last().map(|node| &node.entry)
         }
 
@@ -1069,7 +1173,7 @@ mod iter_utils {
 
         fn dig_towards<Q>(
             &mut self,
-            node: &'a Node<K, V>,
+            node: &'a Node<K, V, P>,
             start_bound: Bound<&Q>,
             end_bound: Bound<&Q>,
         ) where
@@ -1144,29 +1248,34 @@ mod iter_utils {
 }
 
 #[derive(Debug)]
-pub struct IterArc<'a, K, V> {
-    range_iter: RangeIterArc<'a, K, V, RangeFull, K>,
+pub struct IterPtr<'a, K, V, P>
+where
+    P: SharedPointerKind,
+{
+    range_iter: RangeIterPtr<'a, K, V, RangeFull, K, P>,
 
     // Number of elements left in the iterator.
     size: usize,
 }
 
-impl<'a, K, V> IterArc<'a, K, V>
+impl<'a, K, V, P> IterPtr<'a, K, V, P>
 where
     K: Ord,
+    P: SharedPointerKind,
 {
-    fn new(map: &RedBlackTreeMap<K, V>) -> IterArc<'_, K, V> {
-        IterArc { range_iter: RangeIterArc::new(map, ..), size: map.size }
+    fn new(map: &RedBlackTreeMap<K, V, P>) -> IterPtr<'_, K, V, P> {
+        IterPtr { range_iter: RangeIterPtr::new(map, ..), size: map.size }
     }
 }
 
-impl<'a, K, V> Iterator for IterArc<'a, K, V>
+impl<'a, K, V, P> Iterator for IterPtr<'a, K, V, P>
 where
     K: Ord,
+    P: SharedPointerKind,
 {
-    type Item = &'a Arc<Entry<K, V>>;
+    type Item = &'a SharedPointer<Entry<K, V>, P>;
 
-    fn next(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
+    fn next(&mut self) -> Option<&'a SharedPointer<Entry<K, V>, P>> {
         if self.size > 0 {
             self.size -= 1;
             self.range_iter.next()
@@ -1180,11 +1289,12 @@ where
     }
 }
 
-impl<'a, K, V> DoubleEndedIterator for IterArc<'a, K, V>
+impl<'a, K, V, P> DoubleEndedIterator for IterPtr<'a, K, V, P>
 where
     K: Ord,
+    P: SharedPointerKind,
 {
-    fn next_back(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
+    fn next_back(&mut self) -> Option<&'a SharedPointer<Entry<K, V>, P>> {
         if self.size > 0 {
             self.size -= 1;
             self.range_iter.next_back()
@@ -1194,27 +1304,31 @@ where
     }
 }
 
-impl<'a, K: Ord, V> ExactSizeIterator for IterArc<'a, K, V> {}
+impl<'a, K: Ord, V, P> ExactSizeIterator for IterPtr<'a, K, V, P> where P: SharedPointerKind {}
 
 #[derive(Debug)]
-pub struct RangeIterArc<'a, K, V, RB, Q: ?Sized> {
-    map: &'a RedBlackTreeMap<K, V>,
+pub struct RangeIterPtr<'a, K, V, RB, Q: ?Sized, P>
+where
+    P: SharedPointerKind,
+{
+    map: &'a RedBlackTreeMap<K, V, P>,
 
-    stack_forward: Option<iter_utils::IterStack<'a, K, V>>,
-    stack_backward: Option<iter_utils::IterStack<'a, K, V>>,
+    stack_forward: Option<iter_utils::IterStack<'a, K, V, P>>,
+    stack_backward: Option<iter_utils::IterStack<'a, K, V, P>>,
 
     range: RB,
     _q: PhantomData<Q>,
 }
 
-impl<'a, K, V, Q, RB> RangeIterArc<'a, K, V, RB, Q>
+impl<'a, K, V, Q, RB, P> RangeIterPtr<'a, K, V, RB, Q, P>
 where
     K: Ord + Borrow<Q>,
     Q: Ord + ?Sized,
     RB: RangeBounds<Q>,
+    P: SharedPointerKind,
 {
-    fn new(map: &'a RedBlackTreeMap<K, V>, range: RB) -> RangeIterArc<'_, K, V, RB, Q> {
-        RangeIterArc { map, stack_forward: None, stack_backward: None, range, _q: PhantomData }
+    fn new(map: &'a RedBlackTreeMap<K, V, P>, range: RB) -> RangeIterPtr<'_, K, V, RB, Q, P> {
+        RangeIterPtr { map, stack_forward: None, stack_backward: None, range, _q: PhantomData }
     }
 
     fn init_if_needed(&mut self, backwards: bool) {
@@ -1245,7 +1359,7 @@ where
         }
     }
 
-    fn current_forward(&self) -> Option<&'a Arc<Entry<K, V>>> {
+    fn current_forward(&self) -> Option<&'a SharedPointer<Entry<K, V>, P>> {
         match self.is_remaining_range_empty() {
             true => None,
             false => self.stack_forward.as_ref().unwrap().current(),
@@ -1259,7 +1373,7 @@ where
             .advance(self.range.start_bound(), self.range.end_bound());
     }
 
-    fn current_backward(&self) -> Option<&'a Arc<Entry<K, V>>> {
+    fn current_backward(&self) -> Option<&'a SharedPointer<Entry<K, V>, P>> {
         match self.is_remaining_range_empty() {
             true => None,
             false => self.stack_backward.as_ref().unwrap().current(),
@@ -1274,13 +1388,14 @@ where
     }
 }
 
-impl<'a, K, V, RB, Q> Iterator for RangeIterArc<'a, K, V, RB, Q>
+impl<'a, K, V, RB, Q, P> Iterator for RangeIterPtr<'a, K, V, RB, Q, P>
 where
     K: Ord + Borrow<Q>,
     Q: Ord + ?Sized,
     RB: RangeBounds<Q>,
+    P: SharedPointerKind,
 {
-    type Item = &'a Arc<Entry<K, V>>;
+    type Item = &'a SharedPointer<Entry<K, V>, P>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.init_if_needed(false);
@@ -1293,13 +1408,14 @@ where
     }
 }
 
-impl<'a, K, V, RB, Q> DoubleEndedIterator for RangeIterArc<'a, K, V, RB, Q>
+impl<'a, K, V, RB, Q, P> DoubleEndedIterator for RangeIterPtr<'a, K, V, RB, Q, P>
 where
     K: Ord + Borrow<Q>,
     Q: Ord + ?Sized,
     RB: RangeBounds<Q>,
+    P: SharedPointerKind,
 {
-    fn next_back(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
+    fn next_back(&mut self) -> Option<&'a SharedPointer<Entry<K, V>, P>> {
         self.init_if_needed(true);
 
         let current = self.current_backward();
@@ -1318,48 +1434,58 @@ pub mod serde {
     use std::fmt;
     use std::marker::PhantomData;
 
-    impl<K, V> Serialize for RedBlackTreeMap<K, V>
+    impl<K, V, P> Serialize for RedBlackTreeMap<K, V, P>
     where
         K: Ord + Serialize,
         V: Serialize,
+        P: SharedPointerKind,
     {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             serializer.collect_map(self)
         }
     }
 
-    impl<'de, K, V> Deserialize<'de> for RedBlackTreeMap<K, V>
+    impl<'de, K, V, P> Deserialize<'de> for RedBlackTreeMap<K, V, P>
     where
         K: Ord + Deserialize<'de>,
         V: Deserialize<'de>,
+        P: SharedPointerKind,
     {
         fn deserialize<D: Deserializer<'de>>(
             deserializer: D,
-        ) -> Result<RedBlackTreeMap<K, V>, D::Error> {
-            deserializer.deserialize_map(RedBlackTreeMapVisitor { phantom: PhantomData })
+        ) -> Result<RedBlackTreeMap<K, V, P>, D::Error> {
+            deserializer.deserialize_map(RedBlackTreeMapVisitor {
+                _phantom_entry: PhantomData,
+                _phantom_p: PhantomData,
+            })
         }
     }
 
-    struct RedBlackTreeMapVisitor<K, V> {
-        phantom: PhantomData<(K, V)>,
+    struct RedBlackTreeMapVisitor<K, V, P>
+    where
+        P: SharedPointerKind,
+    {
+        _phantom_entry: PhantomData<(K, V)>,
+        _phantom_p: PhantomData<P>,
     }
 
-    impl<'de, K, V> Visitor<'de> for RedBlackTreeMapVisitor<K, V>
+    impl<'de, K, V, P> Visitor<'de> for RedBlackTreeMapVisitor<K, V, P>
     where
         K: Ord + Deserialize<'de>,
         V: Deserialize<'de>,
+        P: SharedPointerKind,
     {
-        type Value = RedBlackTreeMap<K, V>;
+        type Value = RedBlackTreeMap<K, V, P>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
             formatter.write_str("a map")
         }
 
-        fn visit_map<A>(self, mut map: A) -> Result<RedBlackTreeMap<K, V>, A::Error>
+        fn visit_map<A>(self, mut map: A) -> Result<RedBlackTreeMap<K, V, P>, A::Error>
         where
             A: MapAccess<'de>,
         {
-            let mut rb_tree_map = RedBlackTreeMap::new();
+            let mut rb_tree_map = RedBlackTreeMap::new_with_ptr_kind();
 
             while let Some((k, v)) = map.next_entry()? {
                 rb_tree_map.insert_mut(k, v);

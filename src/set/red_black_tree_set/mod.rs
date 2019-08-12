@@ -5,6 +5,7 @@
 
 use crate::map::red_black_tree_map;
 use crate::RedBlackTreeMap;
+use archery::SharedPointerKindArc;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::Display;
@@ -12,9 +13,11 @@ use std::iter::FromIterator;
 use std::ops::RangeBounds;
 
 // TODO Use impl trait instead of this when available.
-pub type Iter<'a, T> = red_black_tree_map::IterKeys<'a, T, ()>;
-pub type RangeIter<'a, T, RB, Q> =
-    std::iter::Map<red_black_tree_map::RangeIter<'a, T, (), RB, Q>, fn((&'a T, &())) -> &'a T>;
+pub type Iter<'a, T> = red_black_tree_map::IterKeys<'a, T, (), SharedPointerKindArc>; // WIP!
+pub type RangeIter<'a, T, RB, Q> = std::iter::Map<
+    red_black_tree_map::RangeIter<'a, T, (), RB, Q, SharedPointerKindArc>,
+    fn((&'a T, &())) -> &'a T,
+>; // WIP!
 
 /// Creates a [`RedBlackTreeSet`](set/red_black_tree_set/struct.RedBlackTreeSet.html) containing the
 /// given arguments:
@@ -73,7 +76,7 @@ pub struct RedBlackTreeSet<T>
 where
     T: Ord,
 {
-    map: RedBlackTreeMap<T, ()>,
+    map: RedBlackTreeMap<T, (), SharedPointerKindArc>, // WIP!
 }
 
 impl<T> RedBlackTreeSet<T>
@@ -82,7 +85,7 @@ where
 {
     #[must_use]
     pub fn new() -> RedBlackTreeSet<T> {
-        RedBlackTreeSet { map: RedBlackTreeMap::new() }
+        RedBlackTreeSet { map: RedBlackTreeMap::new_with_ptr_kind() } // WIP!
     }
 
     #[must_use]

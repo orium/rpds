@@ -3,13 +3,25 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+use archery::{SharedPointer, SharedPointerKind};
 use std::sync::Arc;
 
 /// Assigns the content of `src` to `dest`.
-pub fn replace<T: Clone>(dest: &mut T, mut src: Arc<T>) {
+pub fn replace_arc<T: Clone>(dest: &mut T, mut src: Arc<T>) {
+    // WIP!
     // To avoid unnecessary cloning we do this trick.  If we have exclusive ownership of the
     // data pointed to by `src` then no clone is done.
     std::mem::swap(dest, Arc::make_mut(&mut src));
+}
+
+/// Assigns the content of `src` to `dest`.
+pub fn replace<T: Clone, P>(dest: &mut T, mut src: SharedPointer<T, P>)
+where
+    P: SharedPointerKind,
+{
+    // To avoid unnecessary cloning we do this trick.  If we have exclusive ownership of the
+    // data pointed to by `src` then no clone is done.
+    std::mem::swap(dest, SharedPointer::make_mut(&mut src));
 }
 
 #[cfg(test)]

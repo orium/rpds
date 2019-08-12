@@ -924,8 +924,3 @@ pub mod serde {
 
 #[cfg(test)]
 mod test;
-
-/*
-* duplicate benchmarks for sync version.
- * use `DataStructureSync`
-*/

@@ -5,9 +5,9 @@
 
 use super::*;
 use pretty_assertions::assert_eq;
-use static_assertions::assert_impl;
+use static_assertions::assert_impl_all;
 
-assert_impl!(
+assert_impl_all!(
     queue_sync_is_send_and_sync;
     QueueSync<i32>,
     Send, Sync
