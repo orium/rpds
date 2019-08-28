@@ -284,7 +284,7 @@ impl<T> VectorSync<T> {
 
 impl<T> Vector<T> {
     #[must_use]
-    pub fn new() -> Vector<T, SharedPointerKindRc> {
+    pub fn new() -> Vector<T> {
         Vector::new_with_ptr_kind()
     }
 }

@@ -776,7 +776,7 @@ where
     K: Ord,
 {
     #[must_use]
-    pub fn new() -> RedBlackTreeMap<K, V, SharedPointerKindRc> {
+    pub fn new() -> RedBlackTreeMap<K, V> {
         RedBlackTreeMap::new_with_ptr_kind()
     }
 }

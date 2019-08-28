@@ -5,7 +5,7 @@
 
 use crate::map::red_black_tree_map;
 use crate::RedBlackTreeMap;
-use archery::SharedPointerKindArc;
+use archery::{SharedPointerKind, SharedPointerKindArc, SharedPointerKindRc};
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::Display;
@@ -13,11 +13,9 @@ use std::iter::FromIterator;
 use std::ops::RangeBounds;
 
 // TODO Use impl trait instead of this when available.
-pub type Iter<'a, T> = red_black_tree_map::IterKeys<'a, T, (), SharedPointerKindArc>; // WIP!
-pub type RangeIter<'a, T, RB, Q> = std::iter::Map<
-    red_black_tree_map::RangeIter<'a, T, (), RB, Q, SharedPointerKindArc>,
-    fn((&'a T, &())) -> &'a T,
->; // WIP!
+pub type Iter<'a, T, P> = red_black_tree_map::IterKeys<'a, T, (), P>;
+pub type RangeIter<'a, T, RB, Q, P> =
+    std::iter::Map<red_black_tree_map::RangeIter<'a, T, (), RB, Q, P>, fn((&'a T, &())) -> &'a T>;
 
 /// Creates a [`RedBlackTreeSet`](set/red_black_tree_set/struct.RedBlackTreeSet.html) containing the
 /// given arguments:
@@ -38,6 +36,33 @@ macro_rules! rbt_set {
         {
             #[allow(unused_mut)]
             let mut s = $crate::RedBlackTreeSet::new();
+            $(
+                s.insert_mut($e);
+            )*
+            s
+        }
+    };
+}
+
+/// Creates a [`RedBlackTreeSet`](set/red_black_tree_set/struct.RedBlackTreeSet.html) containing the
+/// given arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let s = RedBlackTreeSet::new_sync()
+///     .insert(1)
+///     .insert(2)
+///     .insert(3);
+///
+/// assert_eq!(rbt_set_sync![1, 2, 3], s);
+/// ```
+#[macro_export]
+macro_rules! rbt_set_sync {
+    ($($e:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut s = $crate::RedBlackTreeSet::new_sync();
             $(
                 s.insert_mut($e);
             )*
@@ -72,11 +97,24 @@ macro_rules! rbt_set {
 ///
 /// This is a thin wrapper around a [`RedBlackTreeMap`](../../map/red_black_tree_map/struct.RedBlackTreeMap.html).
 #[derive(Debug)]
-pub struct RedBlackTreeSet<T>
+pub struct RedBlackTreeSet<T, P = SharedPointerKindRc>
+where
+    T: Ord,
+    P: SharedPointerKind,
+{
+    map: RedBlackTreeMap<T, (), P>,
+}
+
+pub type RedBlackTreeSetSync<T> = RedBlackTreeSet<T, SharedPointerKindArc>;
+
+impl<T> RedBlackTreeSetSync<T>
 where
     T: Ord,
 {
-    map: RedBlackTreeMap<T, (), SharedPointerKindArc>, // WIP!
+    #[must_use]
+    pub fn new_sync() -> RedBlackTreeSetSync<T> {
+        RedBlackTreeSet::new_with_ptr_kind()
+    }
 }
 
 impl<T> RedBlackTreeSet<T>
@@ -85,11 +123,22 @@ where
 {
     #[must_use]
     pub fn new() -> RedBlackTreeSet<T> {
-        RedBlackTreeSet { map: RedBlackTreeMap::new_with_ptr_kind() } // WIP!
+        RedBlackTreeSet { map: RedBlackTreeMap::new_with_ptr_kind() }
+    }
+}
+
+impl<T, P> RedBlackTreeSet<T, P>
+where
+    T: Ord,
+    P: SharedPointerKind,
+{
+    #[must_use]
+    pub fn new_with_ptr_kind() -> RedBlackTreeSet<T, P> {
+        RedBlackTreeSet { map: RedBlackTreeMap::new_with_ptr_kind() }
     }
 
     #[must_use]
-    pub fn insert(&self, v: T) -> RedBlackTreeSet<T> {
+    pub fn insert(&self, v: T) -> RedBlackTreeSet<T, P> {
         RedBlackTreeSet { map: self.map.insert(v, ()) }
     }
 
@@ -98,7 +147,7 @@ where
     }
 
     #[must_use]
-    pub fn remove<V: ?Sized>(&self, v: &V) -> RedBlackTreeSet<T>
+    pub fn remove<V: ?Sized>(&self, v: &V) -> RedBlackTreeSet<T, P>
     where
         T: Borrow<V>,
         V: Ord,
@@ -134,7 +183,10 @@ where
     }
 
     #[must_use]
-    pub fn is_disjoint(&self, other: &RedBlackTreeSet<T>) -> bool {
+    pub fn is_disjoint<PO>(&self, other: &RedBlackTreeSet<T, PO>) -> bool
+    where
+        PO: SharedPointerKind,
+    {
         let mut self_it = self.iter();
         let mut other_it = other.iter();
 
@@ -153,7 +205,10 @@ where
     }
 
     #[must_use]
-    pub fn is_subset(&self, other: &RedBlackTreeSet<T>) -> bool {
+    pub fn is_subset<PO>(&self, other: &RedBlackTreeSet<T, PO>) -> bool
+    where
+        PO: SharedPointerKind,
+    {
         let mut other_it = other.iter();
 
         for v in self.iter() {
@@ -173,7 +228,10 @@ where
     }
 
     #[must_use]
-    pub fn is_superset(&self, other: &RedBlackTreeSet<T>) -> bool {
+    pub fn is_superset<PO>(&self, other: &RedBlackTreeSet<T, PO>) -> bool
+    where
+        PO: SharedPointerKind,
+    {
         other.is_subset(self)
     }
 
@@ -190,12 +248,12 @@ where
     }
 
     #[must_use]
-    pub fn iter(&self) -> Iter<'_, T> {
+    pub fn iter(&self) -> Iter<'_, T, P> {
         self.map.keys()
     }
 
     #[must_use]
-    pub fn range<Q, RB>(&self, range: RB) -> RangeIter<'_, T, RB, Q>
+    pub fn range<Q, RB>(&self, range: RB) -> RangeIter<'_, T, RB, Q, P>
     where
         T: Borrow<Q>,
         Q: Ord + ?Sized,
@@ -205,38 +263,67 @@ where
     }
 }
 
-impl<T> Clone for RedBlackTreeSet<T>
+impl<T, P> Clone for RedBlackTreeSet<T, P>
 where
     T: Ord,
+    P: SharedPointerKind,
 {
-    fn clone(&self) -> RedBlackTreeSet<T> {
+    fn clone(&self) -> RedBlackTreeSet<T, P> {
         RedBlackTreeSet { map: self.map.clone() }
     }
 }
 
-impl<T> Default for RedBlackTreeSet<T>
+impl<T, P> Default for RedBlackTreeSet<T, P>
 where
     T: Ord,
+    P: SharedPointerKind,
 {
-    fn default() -> RedBlackTreeSet<T> {
-        RedBlackTreeSet::new()
+    fn default() -> RedBlackTreeSet<T, P> {
+        RedBlackTreeSet::new_with_ptr_kind()
     }
 }
 
-impl<T> PartialEq for RedBlackTreeSet<T>
+impl<T, P, PO> PartialEq<RedBlackTreeSet<T, PO>> for RedBlackTreeSet<T, P>
 where
     T: Ord,
+    P: SharedPointerKind,
+    PO: SharedPointerKind,
 {
-    fn eq(&self, other: &RedBlackTreeSet<T>) -> bool {
+    fn eq(&self, other: &RedBlackTreeSet<T, PO>) -> bool {
         self.map.eq(&other.map)
     }
 }
 
-impl<T> Eq for RedBlackTreeSet<T> where T: Ord {}
+impl<T, P> Eq for RedBlackTreeSet<T, P>
+where
+    T: Ord,
+    P: SharedPointerKind,
+{
+}
 
-impl<T> Display for RedBlackTreeSet<T>
+impl<T: Ord, P, PO> PartialOrd<RedBlackTreeSet<T, PO>> for RedBlackTreeSet<T, P>
+where
+    P: SharedPointerKind,
+    PO: SharedPointerKind,
+{
+    fn partial_cmp(&self, other: &RedBlackTreeSet<T, PO>) -> Option<Ordering> {
+        self.iter().partial_cmp(other.iter())
+    }
+}
+
+impl<T: Ord, P> Ord for RedBlackTreeSet<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn cmp(&self, other: &RedBlackTreeSet<T, P>) -> Ordering {
+        self.iter().cmp(other.iter())
+    }
+}
+
+impl<T, P> Display for RedBlackTreeSet<T, P>
 where
     T: Ord + Display,
+    P: SharedPointerKind,
 {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
@@ -255,25 +342,27 @@ where
     }
 }
 
-impl<'a, T> IntoIterator for &'a RedBlackTreeSet<T>
+impl<'a, T, P> IntoIterator for &'a RedBlackTreeSet<T, P>
 where
     T: Ord,
+    P: SharedPointerKind,
 {
     type Item = &'a T;
-    type IntoIter = Iter<'a, T>;
+    type IntoIter = Iter<'a, T, P>;
 
-    fn into_iter(self) -> Iter<'a, T> {
+    fn into_iter(self) -> Iter<'a, T, P> {
         self.iter()
     }
 }
 
 // TODO This can be improved to create a perfectly balanced tree.
-impl<T> FromIterator<T> for RedBlackTreeSet<T>
+impl<T, P> FromIterator<T> for RedBlackTreeSet<T, P>
 where
     T: Ord,
+    P: SharedPointerKind,
 {
-    fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> RedBlackTreeSet<T> {
-        let mut set = RedBlackTreeSet::new();
+    fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> RedBlackTreeSet<T, P> {
+        let mut set = RedBlackTreeSet::new_with_ptr_kind();
 
         for v in into_iter {
             set.insert_mut(v);
@@ -291,45 +380,52 @@ pub mod serde {
     use std::fmt;
     use std::marker::PhantomData;
 
-    impl<T> Serialize for RedBlackTreeSet<T>
+    impl<T, P> Serialize for RedBlackTreeSet<T, P>
     where
         T: Ord + Serialize,
+        P: SharedPointerKind,
     {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             serializer.collect_seq(self)
         }
     }
 
-    impl<'de, T> Deserialize<'de> for RedBlackTreeSet<T>
+    impl<'de, T, P> Deserialize<'de> for RedBlackTreeSet<T, P>
     where
         T: Ord + Deserialize<'de>,
+        P: SharedPointerKind,
     {
         fn deserialize<D: Deserializer<'de>>(
             deserializer: D,
-        ) -> Result<RedBlackTreeSet<T>, D::Error> {
-            deserializer.deserialize_seq(RedBlackTreeSetVisitor { phantom: PhantomData })
+        ) -> Result<RedBlackTreeSet<T, P>, D::Error> {
+            deserializer.deserialize_seq(RedBlackTreeSetVisitor {
+                _phantom_t: PhantomData,
+                _phantom_p: PhantomData,
+            })
         }
     }
 
-    struct RedBlackTreeSetVisitor<T> {
-        phantom: PhantomData<T>,
+    struct RedBlackTreeSetVisitor<T, P> {
+        _phantom_t: PhantomData<T>,
+        _phantom_p: PhantomData<P>,
     }
 
-    impl<'de, T> Visitor<'de> for RedBlackTreeSetVisitor<T>
+    impl<'de, T, P> Visitor<'de> for RedBlackTreeSetVisitor<T, P>
     where
         T: Ord + Deserialize<'de>,
+        P: SharedPointerKind,
     {
-        type Value = RedBlackTreeSet<T>;
+        type Value = RedBlackTreeSet<T, P>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
             formatter.write_str("a sequence")
         }
 
-        fn visit_seq<A>(self, mut seq: A) -> Result<RedBlackTreeSet<T>, A::Error>
+        fn visit_seq<A>(self, mut seq: A) -> Result<RedBlackTreeSet<T, P>, A::Error>
         where
             A: SeqAccess<'de>,
         {
-            let mut set = RedBlackTreeSet::new();
+            let mut set = RedBlackTreeSet::new_with_ptr_kind();
 
             while let Some(value) = seq.next_element()? {
                 set.insert_mut(value);

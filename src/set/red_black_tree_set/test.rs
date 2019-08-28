@@ -5,6 +5,18 @@
 
 use super::*;
 use pretty_assertions::assert_eq;
+use static_assertions::assert_impl_all;
+
+assert_impl_all!(
+    red_black_tree_set_sync_is_send_and_sync;
+    RedBlackTreeSetSync<i32>,
+    Send, Sync
+);
+
+#[allow(dead_code)]
+fn compile_time_macro_red_black_tree_set_sync_is_send_and_sync() -> impl Send + Sync {
+    rbt_set_sync!(0)
+}
 
 mod iter {
     use super::*;
@@ -98,20 +110,6 @@ mod iter {
         assert_eq!(iterator.next(), Some(&5));
         assert_eq!(iterator.next_back(), None);
         assert_eq!(iterator.next(), None);
-    }
-}
-
-mod compile_time {
-    use super::*;
-
-    #[test]
-    fn test_is_send() {
-        let _: Box<dyn Send> = Box::new(RedBlackTreeSet::<i32>::new());
-    }
-
-    #[test]
-    fn test_is_sync() {
-        let _: Box<dyn Sync> = Box::new(RedBlackTreeSet::<i32>::new());
     }
 }
 
@@ -339,6 +337,56 @@ fn test_eq() {
 
     // We also check this since `assert_ne!()` does not call `ne`.
     assert!(set_1.ne(&set_2));
+}
+
+#[test]
+fn test_eq_pointer_kind_consistent() {
+    let set_a = rbt_set!["a"];
+    let set_a_sync = rbt_set_sync!["a"];
+    let set_b = rbt_set!["b"];
+    let set_b_sync = rbt_set_sync!["b"];
+
+    assert!(set_a == set_a_sync);
+    assert!(set_a != set_b_sync);
+    assert!(set_b == set_b_sync);
+}
+
+#[test]
+fn test_partial_ord() {
+    let set_1 = rbt_set!["a"];
+    let set_1_prime = rbt_set!["a"];
+    let set_2 = rbt_set!["b"];
+
+    assert_eq!(set_1.partial_cmp(&set_1_prime), Some(Ordering::Equal));
+    assert_eq!(set_1.partial_cmp(&set_2), Some(Ordering::Less));
+    assert_eq!(set_2.partial_cmp(&set_1), Some(Ordering::Greater));
+}
+
+#[test]
+fn test_ord() {
+    let set_1 = rbt_set!["a"];
+    let set_1_prime = rbt_set!["a"];
+    let set_2 = rbt_set!["b"];
+
+    assert_eq!(set_1.cmp(&set_1_prime), Ordering::Equal);
+    assert_eq!(set_1.cmp(&set_2), Ordering::Less);
+    assert_eq!(set_2.cmp(&set_1), Ordering::Greater);
+}
+
+#[test]
+fn test_ord_pointer_kind_consistent() {
+    let set_a = rbt_set!["a"];
+    let set_a_sync = rbt_set_sync!["a"];
+    let set_b = rbt_set!["b"];
+    let set_b_sync = rbt_set_sync!["b"];
+
+    assert!(set_a <= set_a_sync);
+    assert!(set_a < set_b_sync);
+    assert!(set_b >= set_b_sync);
+
+    assert!(set_a_sync >= set_a);
+    assert!(set_b_sync > set_a);
+    assert!(set_b_sync <= set_b);
 }
 
 #[test]
