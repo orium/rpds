@@ -149,7 +149,7 @@ mod node {
         Entry { key: v.clone(), value: v }
     }
 
-    fn dummy_node<T: Clone>(v: T) -> Node<T, T, SharedPointerKindRc> {
+    fn dummy_node<T: Clone>(v: T) -> Node<T, T, RcK> {
         Node {
             entry: SharedPointer::new(dummy_entry(v)),
             color: Color::Red,
@@ -160,9 +160,9 @@ mod node {
 
     fn dummy_node_with_children<T: Clone>(
         v: T,
-        left: Option<Node<T, T, SharedPointerKindRc>>,
-        right: Option<Node<T, T, SharedPointerKindRc>>,
-    ) -> Node<T, T, SharedPointerKindRc> {
+        left: Option<Node<T, T, RcK>>,
+        right: Option<Node<T, T, RcK>>,
+    ) -> Node<T, T, RcK> {
         Node {
             entry: SharedPointer::new(dummy_entry(v)),
             color: Color::Red,
@@ -188,7 +188,7 @@ mod node {
     ///                     │ 3 │
     ///                     ╰───╯
     /// ```
-    fn dummy_tree_0_1_2_3() -> Node<i32, i32, SharedPointerKindRc> {
+    fn dummy_tree_0_1_2_3() -> Node<i32, i32, RcK> {
         let node_0 = dummy_node(0);
         let node_3 = dummy_node(3);
         let node_2 = dummy_node_with_children(2, None, Some(node_3));
@@ -299,7 +299,7 @@ mod node {
         let tree_c = SharedPointer::new(Node::new_black(Entry::new('c', ())));
         let tree_d = SharedPointer::new(Node::new_black(Entry::new('d', ())));
 
-        let mut tree_case_1: Node<_, _, SharedPointerKindRc> = Node {
+        let mut tree_case_1: Node<_, _, RcK> = Node {
             entry: SharedPointer::clone(&entry_z),
             color: Color::Black,
             left: Some(SharedPointer::new(Node {
@@ -316,7 +316,7 @@ mod node {
             right: Some(SharedPointer::clone(&tree_d)),
         };
 
-        let mut tree_case_2: Node<_, _, SharedPointerKindRc> = Node {
+        let mut tree_case_2: Node<_, _, RcK> = Node {
             entry: SharedPointer::clone(&entry_z),
             color: Color::Black,
             left: Some(SharedPointer::new(Node {
@@ -333,7 +333,7 @@ mod node {
             right: Some(SharedPointer::clone(&tree_d)),
         };
 
-        let mut tree_case_3: Node<_, _, SharedPointerKindRc> = Node {
+        let mut tree_case_3: Node<_, _, RcK> = Node {
             entry: SharedPointer::clone(&entry_x),
             color: Color::Black,
             left: Some(SharedPointer::clone(&tree_a)),
@@ -350,7 +350,7 @@ mod node {
             })),
         };
 
-        let mut tree_case_4: Node<_, _, SharedPointerKindRc> = Node {
+        let mut tree_case_4: Node<_, _, RcK> = Node {
             entry: SharedPointer::clone(&entry_x),
             color: Color::Black,
             left: Some(SharedPointer::clone(&tree_a)),
@@ -367,7 +367,7 @@ mod node {
             })),
         };
 
-        let mut tree_none_of_the_above: Node<_, _, SharedPointerKindRc> = Node {
+        let mut tree_none_of_the_above: Node<_, _, RcK> = Node {
             entry: SharedPointer::clone(&entry_z),
             color: Color::Black,
             left: Some(SharedPointer::new(Node {
@@ -384,7 +384,7 @@ mod node {
             right: Some(SharedPointer::clone(&tree_d)),
         };
 
-        let mut tree_balanced: Node<_, _, SharedPointerKindRc> = Node {
+        let mut tree_balanced: Node<_, _, RcK> = Node {
             entry: SharedPointer::clone(&entry_y),
             color: Color::Red,
             left: Some(SharedPointer::new(Node {
@@ -426,19 +426,19 @@ mod node {
     fn test_insert() {
         let mut node = None;
         let is_new_key = Node::insert(&mut node, 0, 1);
-        let expected_node: Node<_, _, SharedPointerKindRc> = Node::new_black(Entry::new(0, 1));
+        let expected_node: Node<_, _, RcK> = Node::new_black(Entry::new(0, 1));
 
         assert!(is_new_key);
         assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
 
         let is_new_key = Node::insert(&mut node, 0, 2);
-        let expected_node: Node<_, _, SharedPointerKindRc> = Node::new_black(Entry::new(0, 2));
+        let expected_node: Node<_, _, RcK> = Node::new_black(Entry::new(0, 2));
 
         assert!(!is_new_key);
         assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
 
         let is_new_key = Node::insert(&mut node, 10, 3);
-        let expected_node: Node<_, _, SharedPointerKindRc> = Node {
+        let expected_node: Node<_, _, RcK> = Node {
             entry: SharedPointer::new(Entry::new(0, 2)),
             color: Color::Black,
             left: None,
@@ -454,7 +454,7 @@ mod node {
         assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
 
         let is_new_key = Node::insert(&mut node, 10, 4);
-        let expected_node: Node<_, _, SharedPointerKindRc> = Node {
+        let expected_node: Node<_, _, RcK> = Node {
             entry: SharedPointer::new(Entry::new(0, 2)),
             color: Color::Black,
             left: None,
@@ -471,7 +471,7 @@ mod node {
 
         let is_new_key = Node::insert(&mut node, 5, 5);
         // It is going to get rebalanced (by case 3).
-        let expected_node: Node<_, _, SharedPointerKindRc> = Node {
+        let expected_node: Node<_, _, RcK> = Node {
             entry: SharedPointer::new(Entry::new(5, 5)),
             color: Color::Black,
             left: Some(SharedPointer::new(Node {
@@ -493,7 +493,7 @@ mod node {
 
         let is_new_key = Node::insert(&mut node, 0, 1);
         // It is going to get rebalanced (by case 3).
-        let expected_node: Node<_, _, SharedPointerKindRc> = Node {
+        let expected_node: Node<_, _, RcK> = Node {
             entry: SharedPointer::new(Entry::new(5, 5)),
             color: Color::Black,
             left: Some(SharedPointer::new(Node {

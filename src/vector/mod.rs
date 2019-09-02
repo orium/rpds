@@ -99,7 +99,7 @@ macro_rules! vector_sync {
 /// [Understanding Persistent Vector Part 1](http://hypirion.com/musings/understanding-persistent-vector-pt-1)
 /// and [Understanding Persistent Vector Part 2](http://hypirion.com/musings/understanding-persistent-vector-pt-2).
 #[derive(Debug)]
-pub struct Vector<T, P = SharedPointerKindRc>
+pub struct Vector<T, P = RcK>
 where
     P: SharedPointerKind,
 {
@@ -108,10 +108,10 @@ where
     length: usize,
 }
 
-pub type VectorSync<T> = Vector<T, SharedPointerKindArc>;
+pub type VectorSync<T> = Vector<T, ArcK>;
 
 #[derive(Debug)]
-enum Node<T, P = SharedPointerKindRc>
+enum Node<T, P = RcK>
 where
     P: SharedPointerKind,
 {

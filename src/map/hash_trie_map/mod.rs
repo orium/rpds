@@ -9,7 +9,7 @@ use super::entry::Entry;
 use crate::list;
 use crate::List;
 use crate::ListSync;
-use archery::SharedPointerKindArc;
+use archery::ArcK;
 use sparse_array_usize::SparseArrayUsize;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
@@ -861,7 +861,7 @@ pub struct IterArc<'a, K, V> {
 enum IterStackElement<'a, K, V> {
     Branch(Peekable<slice::Iter<'a, Arc<Node<K, V>>>>),
     LeafSingle(&'a EntryWithHash<K, V>),
-    LeafCollision(Peekable<list::Iter<'a, EntryWithHash<K, V>, SharedPointerKindArc>>),
+    LeafCollision(Peekable<list::Iter<'a, EntryWithHash<K, V>, ArcK>>),
 }
 
 impl<'a, K, V> IterStackElement<'a, K, V>

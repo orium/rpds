@@ -55,7 +55,7 @@ macro_rules! list_reverse {
 #[macro_export]
 macro_rules! list {
     ($($e:expr),*) => {
-        $crate::list_reverse!(::archery::SharedPointerKindRc ; $($e),* ; )
+        $crate::list_reverse!(::archery::RcK ; $($e),* ; )
     };
 }
 
@@ -79,7 +79,7 @@ macro_rules! list {
 #[macro_export]
 macro_rules! list_sync {
     ($($e:expr),*) => {
-        $crate::list_reverse!(::archery::SharedPointerKindArc ; $($e),* ; )
+        $crate::list_reverse!(::archery::ArcK ; $($e),* ; )
     };
 }
 
@@ -110,7 +110,7 @@ macro_rules! list_sync {
 /// This is your classic functional list with "cons" and "nil" nodes, with a little extra sauce to
 /// make some operations more efficient.
 #[derive(Debug)]
-pub struct List<T, P = SharedPointerKindRc>
+pub struct List<T, P = RcK>
 where
     P: SharedPointerKind,
 {
@@ -137,7 +137,7 @@ where
     }
 }
 
-pub type ListSync<T> = List<T, SharedPointerKindArc>;
+pub type ListSync<T> = List<T, ArcK>;
 
 impl<T> ListSync<T> {
     #[must_use]

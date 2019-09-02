@@ -351,7 +351,7 @@ mod internal {
         let compressed_branch: Node<u32> =
             Vector::new_with_bits(1).push_back(0).push_back(1).push_back(3).root.as_ref().clone();
         let (uncompressed_branch, uncompressed_branch_leaf) = {
-            let leaf: Node<_, SharedPointerKindRc> =
+            let leaf: Node<_, RcK> =
                 Vector::new_with_bits(1).push_back(0).push_back(1).root.as_ref().clone();
 
             let a_branch = {

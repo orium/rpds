@@ -99,7 +99,7 @@ macro_rules! queue_sync {
 /// This queue is implemented as described in
 /// [Immutability in C# Part Four: An Immutable Queue](https://goo.gl/hWyMuS).
 #[derive(Debug)]
-pub struct Queue<T, P = SharedPointerKindRc>
+pub struct Queue<T, P = RcK>
 where
     P: SharedPointerKind,
 {
@@ -107,7 +107,7 @@ where
     out_list: List<T, P>,
 }
 
-pub type QueueSync<T> = Queue<T, SharedPointerKindArc>;
+pub type QueueSync<T> = Queue<T, ArcK>;
 
 impl<T> QueueSync<T> {
     #[must_use]

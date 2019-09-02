@@ -94,14 +94,14 @@ macro_rules! stack_sync {
 ///
 /// This is a thin wrapper around a [`List`](../list/struct.List.html).
 #[derive(Debug)]
-pub struct Stack<T, P = SharedPointerKindRc>
+pub struct Stack<T, P = RcK>
 where
     P: SharedPointerKind,
 {
     list: List<T, P>,
 }
 
-pub type StackSync<T> = Stack<T, SharedPointerKindArc>;
+pub type StackSync<T> = Stack<T, ArcK>;
 
 impl<T> StackSync<T> {
     #[must_use]

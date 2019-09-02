@@ -4,7 +4,7 @@
  */
 
 use super::entry::Entry;
-use archery::{SharedPointer, SharedPointerKind, SharedPointerKindArc, SharedPointerKindRc};
+use archery::{ArcK, RcK, SharedPointer, SharedPointerKind};
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::Display;
@@ -106,7 +106,7 @@ macro_rules! rbt_map_sync {
 /// implemented according to the paper "Red-Black Trees with Types" by Stefan Kahrs
 /// ([reference implementation](https://www.cs.kent.ac.uk/people/staff/smk/redblack/Untyped.hs))
 #[derive(Debug)]
-pub struct RedBlackTreeMap<K, V, P = SharedPointerKindRc>
+pub struct RedBlackTreeMap<K, V, P = RcK>
 where
     P: SharedPointerKind,
 {
@@ -114,7 +114,7 @@ where
     size: usize,
 }
 
-pub type RedBlackTreeMapSync<K, V> = RedBlackTreeMap<K, V, SharedPointerKindArc>;
+pub type RedBlackTreeMapSync<K, V> = RedBlackTreeMap<K, V, ArcK>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Color {

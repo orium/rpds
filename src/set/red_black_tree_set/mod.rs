@@ -5,7 +5,7 @@
 
 use crate::map::red_black_tree_map;
 use crate::RedBlackTreeMap;
-use archery::{SharedPointerKind, SharedPointerKindArc, SharedPointerKindRc};
+use archery::{ArcK, RcK, SharedPointerKind};
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::Display;
@@ -97,7 +97,7 @@ macro_rules! rbt_set_sync {
 ///
 /// This is a thin wrapper around a [`RedBlackTreeMap`](../../map/red_black_tree_map/struct.RedBlackTreeMap.html).
 #[derive(Debug)]
-pub struct RedBlackTreeSet<T, P = SharedPointerKindRc>
+pub struct RedBlackTreeSet<T, P = RcK>
 where
     T: Ord,
     P: SharedPointerKind,
@@ -105,7 +105,7 @@ where
     map: RedBlackTreeMap<T, (), P>,
 }
 
-pub type RedBlackTreeSetSync<T> = RedBlackTreeSet<T, SharedPointerKindArc>;
+pub type RedBlackTreeSetSync<T> = RedBlackTreeSet<T, ArcK>;
 
 impl<T> RedBlackTreeSetSync<T>
 where

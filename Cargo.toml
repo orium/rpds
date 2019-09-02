@@ -38,12 +38,12 @@ travis-ci = { repository = "orium/rpds", branch = "master" }
 codecov = { repository = "orium/rpds", branch = "master", service = "github" }
 
 [dependencies]
-archery = "0.2"
+archery = "0.3"
 serde = { version = "1", optional = true }
 
 [dev-dependencies]
 # TODO This will probably be part of rust in the future (see https://github.com/rust-lang/rust/issues/29553)
-criterion = "0.2"
+criterion = "0.3"
 rand = "0.7"
 # needed to test serde
 bincode = "1"
