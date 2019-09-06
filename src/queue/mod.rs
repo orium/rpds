@@ -197,6 +197,7 @@ where
         self.iter_ptr().map(|v| v.borrow())
     }
 
+    #[must_use]
     fn iter_ptr(&self) -> IterPtr<'_, T, P> {
         self.out_list.iter_ptr().chain(LazilyReversedListIter::new(&self.in_list))
     }

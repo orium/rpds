@@ -495,6 +495,7 @@ where
         self.iter_ptr().map(|v| v.borrow())
     }
 
+    #[must_use]
     fn iter_ptr(&self) -> IterPtr<'_, T, P> {
         IterPtr::new(self)
     }

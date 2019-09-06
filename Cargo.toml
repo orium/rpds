@@ -101,6 +101,10 @@ name = "rpds_hash_trie_map"
 harness = false
 
 [[bench]]
+name = "rpds_hash_trie_map_sync"
+harness = false
+
+[[bench]]
 name = "std_btree_map"
 harness = false
 

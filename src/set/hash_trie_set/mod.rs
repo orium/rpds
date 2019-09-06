@@ -5,6 +5,7 @@
 
 use crate::map::hash_trie_map;
 use crate::HashTrieMap;
+use archery::ArcK;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
 use std::fmt::Display;
@@ -13,7 +14,7 @@ use std::hash::Hash;
 use std::iter::FromIterator;
 
 // TODO Use impl trait instead of this when available.
-pub type Iter<'a, T> = hash_trie_map::IterKeys<'a, T, ()>;
+pub type Iter<'a, T> = hash_trie_map::IterKeys<'a, T, (), ArcK>; // WIP!
 
 /// Creates a [`HashTrieSet`](set/hash_trie_set/struct.HashTrieSet.html) containing the given
 /// arguments:
@@ -72,7 +73,7 @@ where
     T: Eq + Hash,
     H: Clone,
 {
-    map: HashTrieMap<T, (), H>,
+    map: HashTrieMap<T, (), ArcK, H>,
 }
 
 impl<T> HashTrieSet<T, RandomState>
@@ -81,7 +82,7 @@ where
 {
     #[must_use]
     pub fn new() -> HashTrieSet<T> {
-        HashTrieSet { map: HashTrieMap::new() }
+        HashTrieSet { map: HashTrieMap::new_with_hasher_and_ptr_kind(RandomState::new()) }
     }
 
     pub fn new_with_degree(degree: u8) -> HashTrieSet<T> {
@@ -95,11 +96,13 @@ where
     H: Clone,
 {
     pub fn new_with_hasher(hasher_builder: H) -> HashTrieSet<T, H> {
-        HashTrieSet { map: HashTrieMap::new_with_hasher(hasher_builder) }
+        HashTrieSet { map: HashTrieMap::new_with_hasher_and_ptr_kind(hasher_builder) }
     }
 
     pub fn new_with_hasher_and_degree(hasher_builder: H, degree: u8) -> HashTrieSet<T, H> {
-        HashTrieSet { map: HashTrieMap::new_with_hasher_and_degree(hasher_builder, degree) }
+        HashTrieSet {
+            map: HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(hasher_builder, degree),
+        }
     }
 
     #[must_use]

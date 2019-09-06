@@ -9,7 +9,7 @@ use super::entry::Entry;
 use crate::list;
 use crate::List;
 use crate::ListSync;
-use archery::ArcK;
+use archery::{ArcK, RcK, SharedPointer, SharedPointerKind};
 use sparse_array_usize::SparseArrayUsize;
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
@@ -21,16 +21,15 @@ use std::iter::Peekable;
 use std::mem::size_of;
 use std::ops::Index;
 use std::slice;
-use std::sync::Arc;
 use std::vec::Vec;
 
 type HashValue = u64;
 
 // TODO Use impl trait instead of this when available.
-pub type Iter<'a, K, V> =
-    std::iter::Map<IterArc<'a, K, V>, fn(&'a Arc<Entry<K, V>>) -> (&'a K, &'a V)>;
-pub type IterKeys<'a, K, V> = std::iter::Map<Iter<'a, K, V>, fn((&'a K, &V)) -> &'a K>;
-pub type IterValues<'a, K, V> = std::iter::Map<Iter<'a, K, V>, fn((&K, &'a V)) -> &'a V>;
+pub type Iter<'a, K, V, P> =
+    std::iter::Map<IterPtr<'a, K, V, P>, fn(&'a SharedPointer<Entry<K, V>, P>) -> (&'a K, &'a V)>;
+pub type IterKeys<'a, K, V, P> = std::iter::Map<Iter<'a, K, V, P>, fn((&'a K, &V)) -> &'a K>;
+pub type IterValues<'a, K, V, P> = std::iter::Map<Iter<'a, K, V, P>, fn((&K, &'a V)) -> &'a V>;
 
 const DEFAULT_DEGREE: u8 = 8 * size_of::<usize>() as u8;
 
@@ -53,6 +52,33 @@ macro_rules! ht_map {
         {
             #[allow(unused_mut)]
             let mut m = $crate::HashTrieMap::new();
+            $(
+                m.insert_mut($k, $v);
+            )*
+            m
+        }
+    };
+}
+
+/// Creates a [`HashTrieMap`](map/hash_trie_map/struct.HashTrieMap.html) that
+/// implements `Sync`, containing the given arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let m = HashTrieMap::new_sync()
+///     .insert(1, "one")
+///     .insert(2, "two")
+///     .insert(3, "three");
+///
+/// assert_eq!(ht_map_sync![1 => "one", 2 => "two", 3 => "three"], m);
+/// ```
+#[macro_export]
+macro_rules! ht_map_sync {
+    ($($k:expr => $v:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut m = $crate::HashTrieMap::new_sync();
             $(
                 m.insert_mut($k, $v);
             )*
@@ -92,12 +118,17 @@ macro_rules! ht_map {
 ///
 /// See the `Node` documentation for details.
 #[derive(Debug)]
-pub struct HashTrieMap<K, V, H: BuildHasher = RandomState> {
-    root: Arc<Node<K, V>>,
+pub struct HashTrieMap<K, V, P = RcK, H: BuildHasher = RandomState>
+where
+    P: SharedPointerKind,
+{
+    root: SharedPointer<Node<K, V, P>, P>,
     size: usize,
     degree: u8,
     hasher_builder: H,
 }
+
+pub type HashTrieMapSync<K, V, H = RandomState> = HashTrieMap<K, V, ArcK, H>;
 
 /// This map works like a trie that breaks the hash of the key in segments, and the segments are
 /// used as the index in the trie branches.
@@ -153,21 +184,30 @@ pub struct HashTrieMap<K, V, H: BuildHasher = RandomState> {
 ///   2. A node with a collision can only exist at the maximum depth of the tree.
 ///   3. A non-root branch always have two or more entries under it (because it could be
 ///      compressed).
-#[derive(Debug, PartialEq, Eq)]
-enum Node<K, V> {
-    Branch(SparseArrayUsize<Arc<Node<K, V>>>),
-    Leaf(Bucket<K, V>),
+#[derive(Debug)]
+enum Node<K, V, P = RcK>
+where
+    P: SharedPointerKind,
+{
+    Branch(SparseArrayUsize<SharedPointer<Node<K, V, P>, P>>),
+    Leaf(Bucket<K, V, P>),
 }
 
-#[derive(Debug, PartialEq, Eq)]
-enum Bucket<K, V> {
-    Single(EntryWithHash<K, V>),
-    Collision(ListSync<EntryWithHash<K, V>>),
+#[derive(Debug)]
+enum Bucket<K, V, P = RcK>
+where
+    P: SharedPointerKind,
+{
+    Single(EntryWithHash<K, V, P>),
+    Collision(ListSync<EntryWithHash<K, V, P>>),
 }
 
-#[derive(Debug, PartialEq, Eq)]
-struct EntryWithHash<K, V> {
-    entry: Arc<Entry<K, V>>,
+#[derive(Debug)]
+struct EntryWithHash<K, V, P = RcK>
+where
+    P: SharedPointerKind,
+{
+    entry: SharedPointer<Entry<K, V>, P>,
     key_hash: HashValue,
 }
 
@@ -204,11 +244,12 @@ mod node_utils {
     }
 }
 
-impl<K, V> Node<K, V>
+impl<K, V, P> Node<K, V, P>
 where
     K: Eq + Hash,
+    P: SharedPointerKind,
 {
-    fn new_empty_branch() -> Node<K, V> {
+    fn new_empty_branch() -> Node<K, V, P> {
         Node::Branch(SparseArrayUsize::new())
     }
 
@@ -218,7 +259,7 @@ where
         key_hash: HashValue,
         depth: usize,
         degree: u8,
-    ) -> Option<&EntryWithHash<K, V>>
+    ) -> Option<&EntryWithHash<K, V, P>>
     where
         K: Borrow<Q>,
         Q: Hash + Eq,
@@ -237,18 +278,20 @@ where
     }
 
     /// Returns a pair with the node with the new entry and whether the key is new.
-    fn insert(&mut self, entry: EntryWithHash<K, V>, depth: usize, degree: u8) -> bool {
+    fn insert(&mut self, entry: EntryWithHash<K, V, P>, depth: usize, degree: u8) -> bool {
         match self {
             Node::Branch(subtrees) => {
                 let index: usize = node_utils::index_from_hash(entry.key_hash, depth, degree)
                     .expect("hash cannot be exhausted if we are on a branch");
 
                 match subtrees.get_mut(index) {
-                    Some(subtree) => Arc::make_mut(subtree).insert(entry, depth + 1, degree),
+                    Some(subtree) => {
+                        SharedPointer::make_mut(subtree).insert(entry, depth + 1, degree)
+                    }
 
                     None => {
                         let new_subtree = Node::Leaf(Bucket::Single(entry));
-                        subtrees.set(index, Arc::new(new_subtree));
+                        subtrees.set(index, SharedPointer::new(new_subtree));
                         true
                     }
                 }
@@ -271,7 +314,7 @@ where
                     // as the new element.
                     false => {
                         // TODO This clone should not be needed.
-                        let old_entry: EntryWithHash<K, V> = match bucket {
+                        let old_entry: EntryWithHash<K, V, P> = match bucket {
                             Bucket::Single(e) => e.clone(),
                             Bucket::Collision(_) => unreachable!(
                                 "hash is not exhausted, so there cannot be a collision here"
@@ -322,7 +365,7 @@ where
         };
 
         if let Some(node) = new_node {
-            crate::utils::replace_arc(self, node);
+            crate::utils::replace(self, node);
         }
     }
 
@@ -339,7 +382,7 @@ where
 
                 match subtrees.get_mut(index) {
                     Some(subtree) => {
-                        let subtree = Arc::make_mut(subtree);
+                        let subtree = SharedPointer::make_mut(subtree);
                         let removed = subtree.remove(key, key_hash, depth + 1, degree);
 
                         match (subtree.is_empty(), removed) {
@@ -395,11 +438,12 @@ where
     }
 }
 
-impl<K, V> Clone for Node<K, V>
+impl<K, V, P> Clone for Node<K, V, P>
 where
     K: Eq + Hash,
+    P: SharedPointerKind,
 {
-    fn clone(&self) -> Node<K, V> {
+    fn clone(&self) -> Node<K, V, P> {
         match self {
             Node::Branch(subtrees) => Node::Branch(subtrees.clone()),
             Node::Leaf(bucket) => Node::Leaf(bucket.clone()),
@@ -442,11 +486,12 @@ mod bucket_utils {
     }
 }
 
-impl<K, V> Bucket<K, V>
+impl<K, V, P> Bucket<K, V, P>
 where
     K: Eq + Hash,
+    P: SharedPointerKind,
 {
-    fn get<Q: ?Sized>(&self, key: &Q, key_hash: HashValue) -> Option<&EntryWithHash<K, V>>
+    fn get<Q: ?Sized>(&self, key: &Q, key_hash: HashValue) -> Option<&EntryWithHash<K, V, P>>
     where
         K: Borrow<Q>,
         Q: Hash + Eq,
@@ -475,7 +520,7 @@ where
     /// improve performance with high temporal locality (since `get()` will try to match according
     /// to the list order).  The order of the rest of the list must be preserved for the same
     /// reason.
-    fn insert(&mut self, entry: EntryWithHash<K, V>) -> bool {
+    fn insert(&mut self, entry: EntryWithHash<K, V, P>) -> bool {
         match self {
             Bucket::Single(existing_entry)
                 if existing_entry.matches(entry.key(), entry.key_hash) =>
@@ -507,7 +552,7 @@ where
     ///
     /// If the bucket becomes empty `bucket` it be set to `None`.
     fn remove<Q: ?Sized>(
-        bucket: &mut Option<&mut Bucket<K, V>>,
+        bucket: &mut Option<&mut Bucket<K, V, P>>,
         key: &Q,
         key_hash: HashValue,
     ) -> bool
@@ -555,11 +600,12 @@ where
     }
 }
 
-impl<K, V> Clone for Bucket<K, V>
+impl<K, V, P> Clone for Bucket<K, V, P>
 where
     K: Eq + Hash,
+    P: SharedPointerKind,
 {
-    fn clone(&self) -> Bucket<K, V> {
+    fn clone(&self) -> Bucket<K, V, P> {
         match self {
             Bucket::Single(entry) => Bucket::Single(EntryWithHash::clone(entry)),
             Bucket::Collision(entries) => Bucket::Collision(List::clone(entries)),
@@ -567,14 +613,15 @@ where
     }
 }
 
-impl<K, V> EntryWithHash<K, V>
+impl<K, V, P> EntryWithHash<K, V, P>
 where
     K: Eq + Hash,
+    P: SharedPointerKind,
 {
-    fn new<H: BuildHasher>(key: K, value: V, hash_builder: &H) -> EntryWithHash<K, V> {
+    fn new<H: BuildHasher>(key: K, value: V, hash_builder: &H) -> EntryWithHash<K, V, P> {
         let key_hash = node_utils::hash(&key, hash_builder);
 
-        EntryWithHash { entry: Arc::new(Entry::new(key, value)), key_hash }
+        EntryWithHash { entry: SharedPointer::new(Entry::new(key, value)), key_hash }
     }
 
     fn key(&self) -> &K {
@@ -595,16 +642,17 @@ where
     }
 }
 
-impl<K, V> Clone for EntryWithHash<K, V>
+impl<K, V, P> Clone for EntryWithHash<K, V, P>
 where
     K: Eq + Hash,
+    P: SharedPointerKind,
 {
-    fn clone(&self) -> EntryWithHash<K, V> {
-        EntryWithHash { entry: Arc::clone(&self.entry), key_hash: self.key_hash }
+    fn clone(&self) -> EntryWithHash<K, V, P> {
+        EntryWithHash { entry: SharedPointer::clone(&self.entry), key_hash: self.key_hash }
     }
 }
 
-impl<K, V> HashTrieMap<K, V, RandomState>
+impl<K, V> HashTrieMap<K, V>
 where
     K: Eq + Hash,
 {
@@ -615,26 +663,50 @@ where
 
     #[must_use]
     pub fn new_with_degree(degree: u8) -> HashTrieMap<K, V> {
-        HashTrieMap::new_with_hasher_and_degree(RandomState::new(), degree)
+        HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(RandomState::new(), degree)
     }
 }
 
-impl<K, V, H: BuildHasher> HashTrieMap<K, V, H>
+impl<K, V> HashTrieMapSync<K, V>
 where
     K: Eq + Hash,
-    H: Clone,
 {
     #[must_use]
-    pub fn new_with_hasher(hasher_builder: H) -> HashTrieMap<K, V, H> {
-        HashTrieMap::new_with_hasher_and_degree(hasher_builder, DEFAULT_DEGREE)
+    pub fn new_sync() -> HashTrieMapSync<K, V> {
+        HashTrieMap::new_sync_with_degree(DEFAULT_DEGREE)
     }
 
     #[must_use]
-    pub fn new_with_hasher_and_degree(hasher_builder: H, degree: u8) -> HashTrieMap<K, V, H> {
+    pub fn new_sync_with_degree(degree: u8) -> HashTrieMapSync<K, V> {
+        HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(RandomState::new(), degree)
+    }
+}
+
+impl<K, V, P, H: BuildHasher> HashTrieMap<K, V, P, H>
+where
+    K: Eq + Hash,
+    H: Clone,
+    P: SharedPointerKind,
+{
+    #[must_use]
+    pub fn new_with_hasher_and_ptr_kind(hasher_builder: H) -> HashTrieMap<K, V, P, H> {
+        HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(hasher_builder, DEFAULT_DEGREE)
+    }
+
+    #[must_use]
+    pub fn new_with_hasher_and_degree_and_ptr_kind(
+        hasher_builder: H,
+        degree: u8,
+    ) -> HashTrieMap<K, V, P, H> {
         assert!(degree.is_power_of_two(), "degree must be a power of two");
         assert!(degree <= DEFAULT_DEGREE, format!("degree must not exceed {}", DEFAULT_DEGREE));
 
-        HashTrieMap { root: Arc::new(Node::new_empty_branch()), size: 0, degree, hasher_builder }
+        HashTrieMap {
+            root: SharedPointer::new(Node::new_empty_branch()),
+            size: 0,
+            degree,
+            hasher_builder,
+        }
     }
 
     #[must_use]
@@ -649,7 +721,7 @@ where
     }
 
     #[must_use]
-    pub fn insert(&self, key: K, value: V) -> HashTrieMap<K, V, H> {
+    pub fn insert(&self, key: K, value: V) -> HashTrieMap<K, V, P, H> {
         let mut new_map = self.clone();
 
         new_map.insert_mut(key, value);
@@ -659,7 +731,7 @@ where
 
     pub fn insert_mut(&mut self, key: K, value: V) {
         let entry = EntryWithHash::new(key, value, &self.hasher_builder);
-        let is_new_key = Arc::make_mut(&mut self.root).insert(entry, 0, self.degree);
+        let is_new_key = SharedPointer::make_mut(&mut self.root).insert(entry, 0, self.degree);
 
         if is_new_key {
             self.size += 1;
@@ -667,7 +739,7 @@ where
     }
 
     #[must_use]
-    pub fn remove<Q: ?Sized>(&self, key: &Q) -> HashTrieMap<K, V, H>
+    pub fn remove<Q: ?Sized>(&self, key: &Q) -> HashTrieMap<K, V, P, H>
     where
         K: Borrow<Q>,
         Q: Hash + Eq,
@@ -688,7 +760,7 @@ where
         Q: Hash + Eq,
     {
         let key_hash = node_utils::hash(key, &self.hasher_builder);
-        let removed = Arc::make_mut(&mut self.root).remove(key, key_hash, 0, self.degree);
+        let removed = SharedPointer::make_mut(&mut self.root).remove(key, key_hash, 0, self.degree);
 
         // Note that unfortunately, even if nothing was removed, we still might have cloned some
         // part of the tree unnecessarily.
@@ -722,30 +794,32 @@ where
     }
 
     #[must_use]
-    pub fn iter(&self) -> Iter<'_, K, V> {
-        self.iter_arc().map(|e| (&e.key, &e.value))
-    }
-
-    fn iter_arc(&self) -> IterArc<'_, K, V> {
-        IterArc::new(self)
+    pub fn iter(&self) -> Iter<'_, K, V, P> {
+        self.iter_ptr().map(|e| (&e.key, &e.value))
     }
 
     #[must_use]
-    pub fn keys(&self) -> IterKeys<'_, K, V> {
+    fn iter_ptr(&self) -> IterPtr<'_, K, V, P> {
+        IterPtr::new(self)
+    }
+
+    #[must_use]
+    pub fn keys(&self) -> IterKeys<'_, K, V, P> {
         self.iter().map(|(k, _)| k)
     }
 
     #[must_use]
-    pub fn values(&self) -> IterValues<'_, K, V> {
+    pub fn values(&self) -> IterValues<'_, K, V, P> {
         self.iter().map(|(_, v)| v)
     }
 }
 
-impl<'a, K, Q: ?Sized, V, H: BuildHasher> Index<&'a Q> for HashTrieMap<K, V, H>
+impl<'a, K, Q: ?Sized, V, P, H: BuildHasher> Index<&'a Q> for HashTrieMap<K, V, P, H>
 where
     K: Eq + Hash + Borrow<Q>,
     Q: Hash + Eq,
     H: Clone,
+    P: SharedPointerKind,
 {
     type Output = V;
 
@@ -754,14 +828,15 @@ where
     }
 }
 
-impl<K, V, H: BuildHasher> Clone for HashTrieMap<K, V, H>
+impl<K, V, P, H: BuildHasher> Clone for HashTrieMap<K, V, P, H>
 where
     K: Eq + Hash,
     H: Clone,
+    P: SharedPointerKind,
 {
-    fn clone(&self) -> HashTrieMap<K, V, H> {
+    fn clone(&self) -> HashTrieMap<K, V, P, H> {
         HashTrieMap {
-            root: Arc::clone(&self.root),
+            root: SharedPointer::clone(&self.root),
             size: self.size,
             degree: self.degree,
             hasher_builder: self.hasher_builder.clone(),
@@ -769,39 +844,45 @@ where
     }
 }
 
-impl<K, V, H: BuildHasher> Default for HashTrieMap<K, V, H>
+impl<K, V, P, H: BuildHasher> Default for HashTrieMap<K, V, P, H>
 where
     K: Eq + Hash,
     H: Default + Clone,
+    P: SharedPointerKind,
 {
-    fn default() -> HashTrieMap<K, V, H> {
-        HashTrieMap::new_with_hasher(H::default())
+    fn default() -> HashTrieMap<K, V, P, H> {
+        HashTrieMap::new_with_hasher_and_ptr_kind(H::default())
     }
 }
 
-impl<K: Eq, V: PartialEq, H: BuildHasher> PartialEq for HashTrieMap<K, V, H>
+impl<K: Eq, V: PartialEq, P, PO, H: BuildHasher> PartialEq<HashTrieMap<K, V, PO, H>>
+    for HashTrieMap<K, V, P, H>
 where
     K: Hash,
     H: Clone,
+    P: SharedPointerKind,
+    PO: SharedPointerKind,
 {
-    fn eq(&self, other: &HashTrieMap<K, V, H>) -> bool {
+    fn eq(&self, other: &HashTrieMap<K, V, PO, H>) -> bool {
         self.size() == other.size()
             && self.iter().all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
     }
 }
 
-impl<K: Eq, V: Eq, H: BuildHasher> Eq for HashTrieMap<K, V, H>
+impl<K: Eq, V: Eq, P, H: BuildHasher> Eq for HashTrieMap<K, V, P, H>
 where
     K: Hash,
     H: Clone,
+    P: SharedPointerKind,
 {
 }
 
-impl<K, V, H: BuildHasher> Display for HashTrieMap<K, V, H>
+impl<K, V, P, H: BuildHasher> Display for HashTrieMap<K, V, P, H>
 where
     K: Eq + Hash + Display,
     V: Display,
     H: Clone,
+    P: SharedPointerKind,
 {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
@@ -822,26 +903,28 @@ where
     }
 }
 
-impl<'a, K, V, H: BuildHasher> IntoIterator for &'a HashTrieMap<K, V, H>
+impl<'a, K, V, P, H: BuildHasher> IntoIterator for &'a HashTrieMap<K, V, P, H>
 where
     K: Eq + Hash,
     H: Default + Clone,
+    P: SharedPointerKind,
 {
     type Item = (&'a K, &'a V);
-    type IntoIter = Iter<'a, K, V>;
+    type IntoIter = Iter<'a, K, V, P>;
 
-    fn into_iter(self) -> Iter<'a, K, V> {
+    fn into_iter(self) -> Iter<'a, K, V, P> {
         self.iter()
     }
 }
 
-impl<K, V, H> FromIterator<(K, V)> for HashTrieMap<K, V, H>
+impl<K, V, P, H> FromIterator<(K, V)> for HashTrieMap<K, V, P, H>
 where
     K: Eq + Hash,
     H: BuildHasher + Clone + Default,
+    P: SharedPointerKind,
 {
-    fn from_iter<I: IntoIterator<Item = (K, V)>>(into_iter: I) -> HashTrieMap<K, V, H> {
-        let mut map = HashTrieMap::new_with_hasher(Default::default());
+    fn from_iter<I: IntoIterator<Item = (K, V)>>(into_iter: I) -> HashTrieMap<K, V, P, H> {
+        let mut map = HashTrieMap::new_with_hasher_and_ptr_kind(Default::default());
 
         for (k, v) in into_iter {
             map.insert_mut(k, v);
@@ -852,23 +935,30 @@ where
 }
 
 #[derive(Debug)]
-pub struct IterArc<'a, K, V> {
-    stack: Vec<IterStackElement<'a, K, V>>,
+pub struct IterPtr<'a, K, V, P>
+where
+    P: SharedPointerKind,
+{
+    stack: Vec<IterStackElement<'a, K, V, P>>,
     size: usize,
 }
 
 #[derive(Debug)]
-enum IterStackElement<'a, K, V> {
-    Branch(Peekable<slice::Iter<'a, Arc<Node<K, V>>>>),
-    LeafSingle(&'a EntryWithHash<K, V>),
-    LeafCollision(Peekable<list::Iter<'a, EntryWithHash<K, V>, ArcK>>),
+enum IterStackElement<'a, K, V, P>
+where
+    P: SharedPointerKind,
+{
+    Branch(Peekable<slice::Iter<'a, SharedPointer<Node<K, V, P>, P>>>),
+    LeafSingle(&'a EntryWithHash<K, V, P>),
+    LeafCollision(Peekable<list::Iter<'a, EntryWithHash<K, V, P>, ArcK>>),
 }
 
-impl<'a, K, V> IterStackElement<'a, K, V>
+impl<'a, K, V, P> IterStackElement<'a, K, V, P>
 where
     K: Eq + Hash,
+    P: SharedPointerKind,
 {
-    fn new(node: &Node<K, V>) -> IterStackElement<'_, K, V> {
+    fn new(node: &Node<K, V, P>) -> IterStackElement<'_, K, V, P> {
         match node {
             Node::Branch(children) => IterStackElement::Branch(children.iter().peekable()),
             Node::Leaf(Bucket::Single(entry)) => IterStackElement::LeafSingle(entry),
@@ -878,7 +968,7 @@ where
         }
     }
 
-    fn current_elem(&mut self) -> &'a Arc<Entry<K, V>> {
+    fn current_elem(&mut self) -> &'a SharedPointer<Entry<K, V>, P> {
         match self {
             IterStackElement::Branch(_) => panic!("called current element of a branch"),
             IterStackElement::LeafSingle(entry) => &entry.entry,
@@ -915,19 +1005,20 @@ mod iter_utils {
     }
 }
 
-impl<'a, K, V> IterArc<'a, K, V>
+impl<'a, K, V, P> IterPtr<'a, K, V, P>
 where
     K: Eq + Hash,
+    P: SharedPointerKind,
 {
-    fn new<H: BuildHasher + Clone>(map: &HashTrieMap<K, V, H>) -> IterArc<'_, K, V> {
-        let mut stack: Vec<IterStackElement<'_, K, V>> =
+    fn new<H: BuildHasher + Clone>(map: &HashTrieMap<K, V, P, H>) -> IterPtr<'_, K, V, P> {
+        let mut stack: Vec<IterStackElement<'_, K, V, P>> =
             Vec::with_capacity(iter_utils::trie_max_height(map.degree) + 1);
 
         if map.size() > 0 {
             stack.push(IterStackElement::new(map.root.borrow()));
         }
 
-        let mut iter = IterArc { stack, size: map.size() };
+        let mut iter = IterPtr { stack, size: map.size() };
 
         iter.dig();
 
@@ -935,7 +1026,7 @@ where
     }
 
     fn dig(&mut self) {
-        let next_stack_elem: Option<IterStackElement<'_, K, V>> =
+        let next_stack_elem: Option<IterStackElement<'_, K, V, P>> =
             self.stack.last_mut().and_then(|stack_top| match stack_top {
                 IterStackElement::Branch(iter) => {
                     iter.peek().map(|node| IterStackElement::new(node))
@@ -963,18 +1054,19 @@ where
         }
     }
 
-    fn current(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
+    fn current(&mut self) -> Option<&'a SharedPointer<Entry<K, V>, P>> {
         self.stack.last_mut().map(|e| e.current_elem())
     }
 }
 
-impl<'a, K, V> Iterator for IterArc<'a, K, V>
+impl<'a, K, V, P> Iterator for IterPtr<'a, K, V, P>
 where
     K: Eq + Hash,
+    P: SharedPointerKind,
 {
-    type Item = &'a Arc<Entry<K, V>>;
+    type Item = &'a SharedPointer<Entry<K, V>, P>;
 
-    fn next(&mut self) -> Option<&'a Arc<Entry<K, V>>> {
+    fn next(&mut self) -> Option<&'a SharedPointer<Entry<K, V>, P>> {
         let current = self.current();
 
         self.advance();
@@ -991,7 +1083,7 @@ where
     }
 }
 
-impl<'a, K: Eq + Hash, V> ExactSizeIterator for IterArc<'a, K, V> {}
+impl<'a, K: Eq + Hash, V, P> ExactSizeIterator for IterPtr<'a, K, V, P> where P: SharedPointerKind {}
 
 #[cfg(feature = "serde")]
 pub mod serde {
@@ -1001,51 +1093,63 @@ pub mod serde {
     use std::fmt;
     use std::marker::PhantomData;
 
-    impl<K, V, H> Serialize for HashTrieMap<K, V, H>
+    impl<K, V, P, H> Serialize for HashTrieMap<K, V, P, H>
     where
         K: Eq + Hash + Serialize,
         V: Serialize,
         H: BuildHasher + Clone + Default,
+        P: SharedPointerKind,
     {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             serializer.collect_map(self)
         }
     }
 
-    impl<'de, K, V, H> Deserialize<'de> for HashTrieMap<K, V, H>
+    impl<'de, K, V, P, H> Deserialize<'de> for HashTrieMap<K, V, P, H>
     where
         K: Eq + Hash + Deserialize<'de>,
         V: Deserialize<'de>,
         H: BuildHasher + Clone + Default,
+        P: SharedPointerKind,
     {
         fn deserialize<D: Deserializer<'de>>(
             deserializer: D,
-        ) -> Result<HashTrieMap<K, V, H>, D::Error> {
-            deserializer.deserialize_map(HashTrieMapVisitor { phantom: PhantomData })
+        ) -> Result<HashTrieMap<K, V, P, H>, D::Error> {
+            deserializer.deserialize_map(HashTrieMapVisitor {
+                _phantom_entry: PhantomData,
+                _phantom_h: PhantomData,
+                _phantom_p: PhantomData,
+            })
         }
     }
 
-    struct HashTrieMapVisitor<K, V, H> {
-        phantom: PhantomData<(K, V, H)>,
+    struct HashTrieMapVisitor<K, V, P, H>
+    where
+        P: SharedPointerKind,
+    {
+        _phantom_entry: PhantomData<(K, V)>,
+        _phantom_h: PhantomData<H>,
+        _phantom_p: PhantomData<P>,
     }
 
-    impl<'de, K, V, H> Visitor<'de> for HashTrieMapVisitor<K, V, H>
+    impl<'de, K, V, P, H> Visitor<'de> for HashTrieMapVisitor<K, V, P, H>
     where
         K: Eq + Hash + Deserialize<'de>,
         V: Deserialize<'de>,
         H: BuildHasher + Clone + Default,
+        P: SharedPointerKind,
     {
-        type Value = HashTrieMap<K, V, H>;
+        type Value = HashTrieMap<K, V, P, H>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
             formatter.write_str("a map")
         }
 
-        fn visit_map<A>(self, mut map: A) -> Result<HashTrieMap<K, V, H>, A::Error>
+        fn visit_map<A>(self, mut map: A) -> Result<HashTrieMap<K, V, P, H>, A::Error>
         where
             A: MapAccess<'de>,
         {
-            let mut hash_trie_map = HashTrieMap::new_with_hasher(Default::default());
+            let mut hash_trie_map = HashTrieMap::new_with_hasher_and_ptr_kind(Default::default());
 
             while let Some((k, v)) = map.next_entry()? {
                 hash_trie_map.insert_mut(k, v);

@@ -16,13 +16,3 @@ fn test_replace() {
 
     assert_eq!(dest, 3);
 }
-
-#[test]
-fn test_replace_arc() {
-    let src = Arc::new(3);
-    let mut dest = 0;
-
-    replace_arc(&mut dest, src);
-
-    assert_eq!(dest, 3);
-}
