@@ -5,6 +5,18 @@
 
 use super::*;
 use pretty_assertions::assert_eq;
+use static_assertions::assert_impl_all;
+
+assert_impl_all!(
+    hash_trie_set_sync_is_send_and_sync;
+    HashTrieSetSync<i32>,
+    Send, Sync
+);
+
+#[allow(dead_code)]
+fn compile_time_macro_hash_trie_set_sync_is_send_and_sync() -> impl Send + Sync {
+    ht_set_sync!(0)
+}
 
 mod iter {
     use super::*;
@@ -69,20 +81,6 @@ mod iter {
         }
 
         assert_eq!(left, 0);
-    }
-}
-
-mod compile_time {
-    use super::*;
-
-    #[test]
-    fn test_is_send() {
-        let _: Box<dyn Send> = Box::new(HashTrieSet::<i32>::new());
-    }
-
-    #[test]
-    fn test_is_sync() {
-        let _: Box<dyn Sync> = Box::new(HashTrieSet::<i32>::new());
     }
 }
 
@@ -296,6 +294,18 @@ fn test_eq() {
 
     // We also check this since `assert_ne!()` does not call `ne`.
     assert!(set_1.ne(&set_2));
+}
+
+#[test]
+fn test_eq_pointer_kind_consistent() {
+    let set_a = ht_set!["a"];
+    let set_a_sync = ht_set_sync!["a"];
+    let set_b = ht_set!["b"];
+    let set_b_sync = ht_set_sync!["b"];
+
+    assert!(set_a == set_a_sync);
+    assert!(set_a != set_b_sync);
+    assert!(set_b == set_b_sync);
 }
 
 #[test]

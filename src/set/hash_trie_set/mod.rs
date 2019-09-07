@@ -5,7 +5,7 @@
 
 use crate::map::hash_trie_map;
 use crate::HashTrieMap;
-use archery::ArcK;
+use archery::{ArcK, RcK, SharedPointerKind};
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
 use std::fmt::Display;
@@ -14,7 +14,7 @@ use std::hash::Hash;
 use std::iter::FromIterator;
 
 // TODO Use impl trait instead of this when available.
-pub type Iter<'a, T> = hash_trie_map::IterKeys<'a, T, (), ArcK>; // WIP!
+pub type Iter<'a, T, P> = hash_trie_map::IterKeys<'a, T, (), P>;
 
 /// Creates a [`HashTrieSet`](set/hash_trie_set/struct.HashTrieSet.html) containing the given
 /// arguments:
@@ -35,6 +35,33 @@ macro_rules! ht_set {
         {
             #[allow(unused_mut)]
             let mut s = $crate::HashTrieSet::new();
+            $(
+                s.insert_mut($e);
+            )*
+            s
+        }
+    };
+}
+
+/// Creates a [`HashTrieSet`](set/hash_trie_set/struct.HashTrieSet.html) that
+/// implements `Sync`, containing the given arguments:
+///
+/// ```
+/// # use rpds::*;
+/// #
+/// let s = HashTrieSet::new_sync()
+///     .insert(1)
+///     .insert(2)
+///     .insert(3);
+///
+/// assert_eq!(ht_set_sync![1, 2, 3], s);
+/// ```
+#[macro_export]
+macro_rules! ht_set_sync {
+    ($($e:expr),*) => {
+        {
+            #[allow(unused_mut)]
+            let mut s = $crate::HashTrieSet::new_sync();
             $(
                 s.insert_mut($e);
             )*
@@ -68,15 +95,18 @@ macro_rules! ht_set {
 ///
 /// This is a thin wrapper around a [`HashTrieMap`](../../map/hash_trie_map/struct.HashTrieMap.html).
 #[derive(Debug)]
-pub struct HashTrieSet<T, H: BuildHasher = RandomState>
+pub struct HashTrieSet<T, P = RcK, H: BuildHasher = RandomState>
 where
     T: Eq + Hash,
     H: Clone,
+    P: SharedPointerKind,
 {
-    map: HashTrieMap<T, (), ArcK, H>,
+    map: HashTrieMap<T, (), P, H>,
 }
 
-impl<T> HashTrieSet<T, RandomState>
+pub type HashTrieSetSync<T, H = RandomState> = HashTrieSet<T, ArcK, H>;
+
+impl<T> HashTrieSet<T, RcK, RandomState>
 where
     T: Eq + Hash,
 {
@@ -85,28 +115,50 @@ where
         HashTrieSet { map: HashTrieMap::new_with_hasher_and_ptr_kind(RandomState::new()) }
     }
 
+    #[must_use]
     pub fn new_with_degree(degree: u8) -> HashTrieSet<T> {
-        HashTrieSet::new_with_hasher_and_degree(RandomState::new(), degree)
+        HashTrieSet::new_with_hasher_and_degree_and_ptr_kind(RandomState::new(), degree)
     }
 }
 
-impl<T, H: BuildHasher> HashTrieSet<T, H>
+impl<T> HashTrieSetSync<T>
+where
+    T: Eq + Hash,
+{
+    #[must_use]
+    pub fn new_sync() -> HashTrieSetSync<T> {
+        HashTrieSet { map: HashTrieMap::new_with_hasher_and_ptr_kind(RandomState::new()) }
+    }
+
+    #[must_use]
+    pub fn new_with_degree_sync(degree: u8) -> HashTrieSetSync<T> {
+        HashTrieSet::new_with_hasher_and_degree_and_ptr_kind(RandomState::new(), degree)
+    }
+}
+
+impl<T, P, H: BuildHasher> HashTrieSet<T, P, H>
 where
     T: Eq + Hash,
     H: Clone,
+    P: SharedPointerKind,
 {
-    pub fn new_with_hasher(hasher_builder: H) -> HashTrieSet<T, H> {
+    #[must_use]
+    pub fn new_with_hasher_with_ptr_kind(hasher_builder: H) -> HashTrieSet<T, P, H> {
         HashTrieSet { map: HashTrieMap::new_with_hasher_and_ptr_kind(hasher_builder) }
     }
 
-    pub fn new_with_hasher_and_degree(hasher_builder: H, degree: u8) -> HashTrieSet<T, H> {
+    #[must_use]
+    pub fn new_with_hasher_and_degree_and_ptr_kind(
+        hasher_builder: H,
+        degree: u8,
+    ) -> HashTrieSet<T, P, H> {
         HashTrieSet {
             map: HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(hasher_builder, degree),
         }
     }
 
     #[must_use]
-    pub fn insert(&self, v: T) -> HashTrieSet<T, H> {
+    pub fn insert(&self, v: T) -> HashTrieSet<T, P, H> {
         HashTrieSet { map: self.map.insert(v, ()) }
     }
 
@@ -115,7 +167,7 @@ where
     }
 
     #[must_use]
-    pub fn remove<V: ?Sized>(&self, v: &V) -> HashTrieSet<T, H>
+    pub fn remove<V: ?Sized>(&self, v: &V) -> HashTrieSet<T, P, H>
     where
         T: Borrow<V>,
         V: Hash + Eq,
@@ -141,17 +193,17 @@ where
     }
 
     #[must_use]
-    pub fn is_disjoint<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, I>) -> bool {
+    pub fn is_disjoint<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, P, I>) -> bool {
         self.iter().all(|v| !other.contains(v))
     }
 
     #[must_use]
-    pub fn is_subset<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, I>) -> bool {
+    pub fn is_subset<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, P, I>) -> bool {
         self.iter().all(|v| other.contains(v))
     }
 
     #[must_use]
-    pub fn is_superset<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, I>) -> bool {
+    pub fn is_superset<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, P, I>) -> bool {
         other.is_subset(self)
     }
 
@@ -168,52 +220,58 @@ where
     }
 
     #[must_use]
-    pub fn iter(&self) -> Iter<'_, T> {
+    pub fn iter(&self) -> Iter<'_, T, P> {
         self.map.keys()
     }
 }
 
-impl<T, H: BuildHasher> Clone for HashTrieSet<T, H>
+impl<T, P, H: BuildHasher> Clone for HashTrieSet<T, P, H>
 where
     T: Eq + Hash,
     H: Clone,
+    P: SharedPointerKind,
 {
-    fn clone(&self) -> HashTrieSet<T, H> {
+    fn clone(&self) -> HashTrieSet<T, P, H> {
         HashTrieSet { map: self.map.clone() }
     }
 }
 
-impl<T, H: BuildHasher> Default for HashTrieSet<T, H>
+impl<T, P, H: BuildHasher> Default for HashTrieSet<T, P, H>
 where
     T: Eq + Hash,
     H: Default + Clone,
+    P: SharedPointerKind,
 {
-    fn default() -> HashTrieSet<T, H> {
-        HashTrieSet::new_with_hasher(H::default())
+    fn default() -> HashTrieSet<T, P, H> {
+        HashTrieSet::new_with_hasher_with_ptr_kind(H::default())
     }
 }
 
-impl<T: Eq, H: BuildHasher> PartialEq for HashTrieSet<T, H>
+impl<T: Eq, P, PO, H: BuildHasher> PartialEq<HashTrieSet<T, PO, H>> for HashTrieSet<T, P, H>
 where
     T: Hash,
     H: Clone,
+    P: SharedPointerKind,
+    PO: SharedPointerKind,
 {
-    fn eq(&self, other: &HashTrieSet<T, H>) -> bool {
+    fn eq(&self, other: &HashTrieSet<T, PO, H>) -> bool {
         self.map.eq(&other.map)
     }
 }
 
-impl<T: Eq, H: BuildHasher> Eq for HashTrieSet<T, H>
+impl<T: Eq, P, H: BuildHasher> Eq for HashTrieSet<T, P, H>
 where
     T: Hash,
     H: Clone,
+    P: SharedPointerKind,
 {
 }
 
-impl<T, H: BuildHasher> Display for HashTrieSet<T, H>
+impl<T, P, H: BuildHasher> Display for HashTrieSet<T, P, H>
 where
     T: Eq + Hash + Display,
     H: Clone,
+    P: SharedPointerKind,
 {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
@@ -232,26 +290,28 @@ where
     }
 }
 
-impl<'a, T, H: BuildHasher> IntoIterator for &'a HashTrieSet<T, H>
+impl<'a, T, P, H: BuildHasher> IntoIterator for &'a HashTrieSet<T, P, H>
 where
     T: Eq + Hash,
     H: Default + Clone,
+    P: SharedPointerKind,
 {
     type Item = &'a T;
-    type IntoIter = Iter<'a, T>;
+    type IntoIter = Iter<'a, T, P>;
 
-    fn into_iter(self) -> Iter<'a, T> {
+    fn into_iter(self) -> Iter<'a, T, P> {
         self.iter()
     }
 }
 
-impl<T, H> FromIterator<T> for HashTrieSet<T, H>
+impl<T, P, H> FromIterator<T> for HashTrieSet<T, P, H>
 where
     T: Eq + Hash,
     H: BuildHasher + Clone + Default,
+    P: SharedPointerKind,
 {
-    fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> HashTrieSet<T, H> {
-        let mut set = HashTrieSet::new_with_hasher(Default::default());
+    fn from_iter<I: IntoIterator<Item = T>>(into_iter: I) -> HashTrieSet<T, P, H> {
+        let mut set = HashTrieSet::new_with_hasher_with_ptr_kind(Default::default());
 
         for v in into_iter {
             set.insert_mut(v);
@@ -269,48 +329,57 @@ pub mod serde {
     use std::fmt;
     use std::marker::PhantomData;
 
-    impl<T, H> Serialize for HashTrieSet<T, H>
+    impl<T, P, H> Serialize for HashTrieSet<T, P, H>
     where
         T: Eq + Hash + Serialize,
         H: BuildHasher + Clone + Default,
+        P: SharedPointerKind,
     {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             serializer.collect_seq(self)
         }
     }
 
-    impl<'de, T, H> Deserialize<'de> for HashTrieSet<T, H>
+    impl<'de, T, P, H> Deserialize<'de> for HashTrieSet<T, P, H>
     where
         T: Eq + Hash + Deserialize<'de>,
         H: BuildHasher + Clone + Default,
+        P: SharedPointerKind,
     {
         fn deserialize<D: Deserializer<'de>>(
             deserializer: D,
-        ) -> Result<HashTrieSet<T, H>, D::Error> {
-            deserializer.deserialize_seq(HashTrieSetVisitor { phantom: PhantomData })
+        ) -> Result<HashTrieSet<T, P, H>, D::Error> {
+            deserializer.deserialize_seq(HashTrieSetVisitor {
+                _phantom_t: PhantomData,
+                _phantom_h: PhantomData,
+                _phantom_p: PhantomData,
+            })
         }
     }
 
-    struct HashTrieSetVisitor<T, H> {
-        phantom: PhantomData<(T, H)>,
+    struct HashTrieSetVisitor<T, P, H> {
+        _phantom_t: PhantomData<T>,
+        _phantom_h: PhantomData<H>,
+        _phantom_p: PhantomData<P>,
     }
 
-    impl<'de, T, H> Visitor<'de> for HashTrieSetVisitor<T, H>
+    impl<'de, T, P, H> Visitor<'de> for HashTrieSetVisitor<T, P, H>
     where
         T: Eq + Hash + Deserialize<'de>,
         H: BuildHasher + Clone + Default,
+        P: SharedPointerKind,
     {
-        type Value = HashTrieSet<T, H>;
+        type Value = HashTrieSet<T, P, H>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
             formatter.write_str("a sequence")
         }
 
-        fn visit_seq<A>(self, mut seq: A) -> Result<HashTrieSet<T, H>, A::Error>
+        fn visit_seq<A>(self, mut seq: A) -> Result<HashTrieSet<T, P, H>, A::Error>
         where
             A: SeqAccess<'de>,
         {
-            let mut set = HashTrieSet::new_with_hasher(Default::default());
+            let mut set = HashTrieSet::new_with_hasher_with_ptr_kind(Default::default());
 
             while let Some(value) = seq.next_element()? {
                 set.insert_mut(value);

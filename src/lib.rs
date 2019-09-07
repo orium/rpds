@@ -304,6 +304,7 @@ pub use crate::map::red_black_tree_map::RedBlackTreeMapSync;
 pub use crate::queue::Queue;
 pub use crate::queue::QueueSync;
 pub use crate::set::hash_trie_set::HashTrieSet;
+pub use crate::set::hash_trie_set::HashTrieSetSync;
 pub use crate::set::red_black_tree_set::RedBlackTreeSet;
 pub use crate::set::red_black_tree_set::RedBlackTreeSetSync;
 pub use crate::stack::Stack;
