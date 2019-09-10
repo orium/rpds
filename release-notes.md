@@ -1,5 +1,12 @@
 # Release notes
 
+## 0.7.0
+
+* Now the shared pointer type of all data structures use can be parameterizable.  See the
+  [Thread safety](./README.md#thread-safety) section in the README for details.
+  ([#7](https://github.com/orium/rpds/issues/7))
+* Fix bug where dropping long lists would cause a stack overflow.  ([#46](https://github.com/orium/rpds/issues/46))
+
 ## 0.6.0
 
 * Implemented `RedBlackTree{Map,Set}::range()` iterator.

@@ -27,7 +27,7 @@
 //! rpds = "<version>"
 //! ```
 //!
-//! ## Data Structures
+//! ## Data structures
 //!
 //! This crate offers the following data structures:
 //!
@@ -244,9 +244,9 @@
 //! assert_eq!(set_positive.first(), Some(&"one"));
 //! ```
 //!
-//! ## Other Features
+//! ## Other features
 //!
-//! ### Mutable Methods
+//! ### Mutable methods
 //!
 //! When you change a data structure you often do not need its previous versions.  For those cases
 //! rpds offers you mutable methods which are generally faster:
@@ -263,7 +263,7 @@
 //! let set_0_1_2 = set.insert("two");
 //! ```
 //!
-//! ### Initialization Macros
+//! ### Initialization macros
 //!
 //! There are convenient initialization macros for all data structures:
 //!
@@ -275,6 +275,63 @@
 //! ```
 //!
 //! Check the documentation for initialization macros of other data structures.
+//!
+//! ### Thread safety
+//!
+//! All data structures in this crate can be shared between threads, but that is an opt-in ability.
+//! This is because there is a performance cost to make data structures thread safe.  That cost
+//! is worth avoiding when you are not actually sharing them between threads.
+//!
+//! Of course if you try to share a rpds data structure across different threads you can count on
+//! the rust compiler to ensure that it is safe to do so.  If you are using the version of the data
+//! structure that is not thread safe you will get a compile-time error.
+//!
+//! To create a thread-safe version of any data structure use `new_sync()`:
+//!
+//! ```rust
+//! # /*DROP_LINE_IN_README*/ use rpds::Vector;
+//! # /*DROP_LINE_IN_README*/
+//! let vec = Vector::new_sync()
+//!     .push_back(42);
+//! ```
+//!
+//! Or use the `_sync` variant of the initialization macro:
+//!
+//! ```rust
+//! # /*DROP_LINE_IN_README*/ use rpds::vector_sync;
+//! # /*DROP_LINE_IN_README*/
+//! let vec = vector_sync!(42);
+//! ```
+//!
+//! #### Further details
+//!
+//! Internally the data structures in this crate maintain a lot of reference-counting pointers.
+//! These pointers are used both for links between the internal nodes of the data structure as well
+//! as for the values it stores.
+//!
+//! There are two implementations of reference-counting pointers in the standard library:
+//! [`Rc`](https://doc.rust-lang.org/std/rc/struct.Rc.html) and
+//! [`Arc`](https://doc.rust-lang.org/std/sync/struct.Arc.html).  They behave the same way, but
+//! `Arc` allows you to share the data it points to across multiple threads.  The downside is that
+//! it is significantly slower to clone and drop than `Rc`, and persistent data structures do a
+//! lot of those operations. In some microbenchmarks with rpds data structure we can see that
+//! using `Rc` instead of  `Arc` can make some operations twice as fast!  You can see this for
+//! yourself by running `cargo bench`.
+//!
+//! To implement this we parameterize the type of reference-counting pointer (`Rc` or `Arc`) as a
+//! type argument of the data structure.  We use the [archery](https://github.com/orium/archery/)
+//! crate to do this in a convenient way.
+//!
+//! The pointer type can be parameterized like this:
+//!
+//! ```rust
+//! # /*DROP_LINE_IN_README*/ use rpds::Vector;
+//! # /*DROP_LINE_IN_README*/
+//! let vec: Vector<u32, archery::ArcK> = Vector::new_with_ptr_kind();
+//! //                              ↖
+//! //                                This will use `Arc` pointers.
+//! //                                Change it to `archery::RcK` to use a `Rc` pointer.
+//! ```
 //!
 //! ### Serialization
 //!
