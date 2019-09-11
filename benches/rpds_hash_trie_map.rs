@@ -25,7 +25,7 @@ fn rpds_hash_trie_map_insert(c: &mut Criterion) {
 }
 
 fn rpds_hash_trie_map_insert_mut(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 5_000;
 
     c.bench_function("rpds hash trie map insert mut", move |b| {
         b.iter(|| {
@@ -41,7 +41,7 @@ fn rpds_hash_trie_map_insert_mut(c: &mut Criterion) {
 }
 
 fn rpds_hash_trie_map_remove(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 5_000;
 
     c.bench_function("rpds hash trie map remove", move |b| {
         b.iter_with_setup(

@@ -1012,7 +1012,7 @@ mod internal {
         use rand::seq::SliceRandom;
         use rand::SeedableRng;
 
-        let limit = 50_000;
+        let limit = 25_000;
         let seed: [u8; 32] = [
             24, 73, 23, 5, 34, 57, 253, 46, 245, 73, 23, 155, 137, 250, 46, 46, 217, 3, 55, 157,
             137, 250, 46, 46, 217, 3, 55, 157, 34, 135, 34, 123,
@@ -1068,7 +1068,7 @@ mod internal {
         use rand::seq::SliceRandom;
         use rand::SeedableRng;
 
-        let limit = 50_000;
+        let limit = 25_000;
         let seed: [u8; 32] = [
             24, 73, 23, 5, 34, 57, 253, 46, 245, 73, 23, 155, 137, 250, 46, 46, 217, 3, 55, 157,
             137, 250, 46, 46, 217, 3, 55, 157, 34, 135, 34, 123,
@@ -1392,8 +1392,8 @@ fn test_insert() {
 
     // These are relatively small limits.  We prefer to do a more hardcore test in the mutable
     // version.
-    let limit = 10_000;
-    let overwrite_limit = 2_000;
+    let limit = 5_000;
+    let overwrite_limit = 1_000;
 
     for i in 0..limit {
         map = map.insert(i, -(i as i32));
@@ -1450,8 +1450,8 @@ fn test_insert_mut_simple() {
 #[test]
 fn test_insert_mut() {
     let mut map = RedBlackTreeMap::new();
-    let limit = 50_000;
-    let overwrite_limit = 10_000;
+    let limit = 25_000;
+    let overwrite_limit = 5_000;
 
     for i in 0..limit {
         map.insert_mut(i, -(i as i32));
@@ -1536,7 +1536,7 @@ fn test_remove() {
 
     // These are relatively small limits.  We prefer to do a more hardcore test in the mutable
     // version.
-    let limit = 10_000;
+    let limit = 5_000;
 
     for i in 0..limit {
         map = map.insert(i, -(i as i32));
@@ -1605,7 +1605,7 @@ fn test_remove_mut_simple() {
 #[test]
 fn test_remove_mut() {
     let mut map = RedBlackTreeMap::new();
-    let limit = 50_000;
+    let limit = 25_000;
 
     for i in 0..limit {
         map.insert_mut(i, -(i as i32));

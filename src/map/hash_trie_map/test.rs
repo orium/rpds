@@ -795,8 +795,8 @@ fn insert_test<H: BuildHasher + Clone>(initial_map: HashTrieMap<u32, i32, RcK, H
 
     // These are relatively small limits.  We prefer to do a more hardcore test in the mutable
     // version.
-    let limit = 10_000;
-    let overwrite_limit = 2_000;
+    let limit = 5_000;
+    let overwrite_limit = 1_000;
 
     for i in 0..limit {
         map = map.insert(i, -(i as i32));
@@ -875,8 +875,8 @@ fn test_insert_simple_mut() {
 
 fn insert_test_mut<H: BuildHasher + Clone>(initial_map: HashTrieMap<u32, i32, RcK, H>) {
     let mut map = initial_map;
-    let limit = 50_000;
-    let overwrite_limit = 10_000;
+    let limit = 25_000;
+    let overwrite_limit = 5_000;
 
     for i in 0..limit {
         map.insert_mut(i, -(i as i32));
@@ -977,7 +977,7 @@ fn remove_test<H: BuildHasher + Clone>(initial_map: HashTrieMap<u32, i32, RcK, H
 
     // These are relatively small limits.  We prefer to do a more hardcore test in the mutable
     // version.
-    let limit = 10_000;
+    let limit = 5_000;
 
     for i in 0..limit {
         map = map.insert(i, -(i as i32));
@@ -1070,7 +1070,7 @@ fn test_remove_simple_mut() {
 
 fn remove_test_mut<H: BuildHasher + Clone>(initial_map: HashTrieMap<u32, i32, RcK, H>) {
     let mut map = initial_map;
-    let limit = 50_000;
+    let limit = 25_000;
 
     for i in 0..limit {
         map.insert_mut(i, -(i as i32));
