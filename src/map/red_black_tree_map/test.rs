@@ -7,11 +7,7 @@ use super::*;
 use pretty_assertions::assert_eq;
 use static_assertions::assert_impl_all;
 
-assert_impl_all!(
-    red_black_tree_map_sync_is_send_and_sync;
-    RedBlackTreeMapSync<i32, i32>,
-    Send, Sync
-);
+assert_impl_all!(RedBlackTreeMapSync<i32, i32>: Send, Sync);
 
 #[allow(dead_code)]
 fn compile_time_macro_red_black_tree_map_sync_is_send_and_sync() -> impl Send + Sync {

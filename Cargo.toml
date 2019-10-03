@@ -48,7 +48,7 @@ rand = "0.7"
 # needed to test serde
 bincode = "1"
 pretty_assertions = "0.6"
-static_assertions = "0.3"
+static_assertions = "1"
 
 [features]
 fatal-warnings = []

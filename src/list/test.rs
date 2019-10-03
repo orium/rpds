@@ -7,11 +7,7 @@ use super::*;
 use pretty_assertions::assert_eq;
 use static_assertions::assert_impl_all;
 
-assert_impl_all!(
-    list_sync_is_send_and_sync;
-    ListSync<i32>,
-    Send, Sync
-);
+assert_impl_all!(ListSync<i32>: Send, Sync);
 
 #[allow(dead_code)]
 fn compile_time_macro_list_sync_is_send_and_sync() -> impl Send + Sync {

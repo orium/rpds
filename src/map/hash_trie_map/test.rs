@@ -7,11 +7,7 @@ use super::*;
 use pretty_assertions::assert_eq;
 use static_assertions::assert_impl_all;
 
-assert_impl_all!(
-    hash_trie_map_sync_is_send_and_sync;
-    HashTrieMapSync<i32, i32>,
-    Send, Sync
-);
+assert_impl_all!(HashTrieMapSync<i32, i32>: Send, Sync);
 
 #[allow(dead_code)]
 fn compile_time_macro_hash_trie_map_sync_is_send_and_sync() -> impl Send + Sync {

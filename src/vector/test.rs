@@ -7,11 +7,7 @@ use super::*;
 use pretty_assertions::assert_eq;
 use static_assertions::assert_impl_all;
 
-assert_impl_all!(
-    vector_sync_is_send_and_sync;
-    VectorSync<i32>,
-    Send, Sync
-);
+assert_impl_all!(VectorSync<i32>: Send, Sync);
 
 #[allow(dead_code)]
 fn compile_time_macro_vector_sync_is_send_and_sync() -> impl Send + Sync {

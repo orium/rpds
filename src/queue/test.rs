@@ -7,11 +7,7 @@ use super::*;
 use pretty_assertions::assert_eq;
 use static_assertions::assert_impl_all;
 
-assert_impl_all!(
-    queue_sync_is_send_and_sync;
-    QueueSync<i32>,
-    Send, Sync
-);
+assert_impl_all!(QueueSync<i32>: Send, Sync);
 
 #[allow(dead_code)]
 fn compile_time_macro_queue_sync_is_send_and_sync() -> impl Send + Sync {
