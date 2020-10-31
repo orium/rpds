@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/orium/rpds.svg?branch=master)](https://travis-ci.org/orium/rpds)
 [![Code Coverage](https://codecov.io/gh/orium/rpds/branch/master/graph/badge.svg)](https://codecov.io/gh/orium/rpds)
+[![Dependency status](https://deps.rs/repo/github/orium/rpds/status.svg)](https://deps.rs/repo/github/orium/rpds)
 [![crates.io](https://img.shields.io/crates/v/rpds.svg)](https://crates.io/crates/rpds)
 [![Downloads](https://img.shields.io/crates/d/rpds.svg)](https://crates.io/crates/rpds)
 [![Github stars](https://img.shields.io/github/stars/orium/rpds.svg?logo=github)](https://github.com/orium/rpds/stargazers)
