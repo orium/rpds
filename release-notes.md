@@ -1,5 +1,9 @@
 # Release notes
 
+## 0.8.0
+
+* Added support for `no_std`.
+
 ## 0.7.0
 
 * Now the shared pointer type of all data structures use can be parameterizable.  See the
