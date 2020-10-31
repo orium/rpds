@@ -4,17 +4,18 @@
  */
 
 use crate::List;
+use alloc::vec::Vec;
 use archery::*;
-use std::borrow::Borrow;
-use std::cmp::Ordering;
-use std::fmt::Display;
-use std::hash::{Hash, Hasher};
-use std::iter::FromIterator;
+use core::borrow::Borrow;
+use core::cmp::Ordering;
+use core::fmt::Display;
+use core::hash::{Hash, Hasher};
+use core::iter::FromIterator;
 
 // TODO Use impl trait instead of this when available.
 type IterPtr<'a, T, P> =
-    std::iter::Chain<crate::list::IterPtr<'a, T, P>, LazilyReversedListIter<'a, T, P>>;
-pub type Iter<'a, T, P> = std::iter::Map<IterPtr<'a, T, P>, fn(&SharedPointer<T, P>) -> &T>;
+    core::iter::Chain<crate::list::IterPtr<'a, T, P>, LazilyReversedListIter<'a, T, P>>;
+pub type Iter<'a, T, P> = core::iter::Map<IterPtr<'a, T, P>, fn(&SharedPointer<T, P>) -> &T>;
 
 /// Creates a [`Queue`](queue/struct.Queue.html) containing the given arguments:
 ///
@@ -157,7 +158,7 @@ where
             self.out_list.drop_first_mut();
             true
         } else if !self.in_list.is_empty() {
-            std::mem::swap(&mut self.in_list, &mut self.out_list);
+            core::mem::swap(&mut self.in_list, &mut self.out_list);
 
             self.out_list.reverse_mut();
             self.out_list.drop_first_mut();
@@ -272,7 +273,7 @@ impl<T: Display, P> Display for Queue<T, P>
 where
     P: SharedPointerKind,
 {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut first = true;
 
         fmt.write_str("Queue(")?;

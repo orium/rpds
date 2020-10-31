@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 #![deny(clippy::correctness)]
 #![warn(clippy::pedantic)]
@@ -303,6 +304,15 @@
 //! let vec = vector_sync!(42);
 //! ```
 //!
+//! ### `no_std` support
+//!
+//! This crate supports `no_std`.  To enable that you need to disable the default feature `std`:
+//!
+//! ```toml
+//! [dependencies]
+//! rpds = { version = "<version>", default-features = false }
+//! ```
+//!
 //! #### Further details
 //!
 //! Internally the data structures in this crate maintain a lot of reference-counting pointers.
@@ -342,6 +352,12 @@
 //! [dependencies]
 //! rpds = { version = "<version>", features = ["serde"] }
 //! ```
+
+extern crate alloc;
+
+#[cfg(test)]
+#[macro_use]
+extern crate std;
 
 mod utils;
 #[macro_use]

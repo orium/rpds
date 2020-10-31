@@ -3,19 +3,19 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+use alloc::borrow::Borrow;
+use alloc::fmt::Display;
+use alloc::vec::Vec;
 use archery::*;
-use std::borrow::Borrow;
-use std::cmp::Ordering;
-use std::fmt::Display;
-use std::hash::{Hash, Hasher};
-use std::iter::FromIterator;
-use std::mem::size_of;
-use std::ops::Index;
-use std::ops::IndexMut;
-use std::vec::Vec;
+use core::cmp::Ordering;
+use core::hash::{Hash, Hasher};
+use core::iter::FromIterator;
+use core::mem::size_of;
+use core::ops::Index;
+use core::ops::IndexMut;
 
 // TODO Use impl trait instead of this when available.
-pub type Iter<'a, T, P> = std::iter::Map<IterPtr<'a, T, P>, fn(&SharedPointer<T, P>) -> &T>;
+pub type Iter<'a, T, P> = core::iter::Map<IterPtr<'a, T, P>, fn(&SharedPointer<T, P>) -> &T>;
 
 const DEFAULT_BITS: u8 = 5;
 
@@ -611,7 +611,7 @@ impl<T: Display, P> Display for Vector<T, P>
 where
     P: SharedPointerKind,
 {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut first = true;
 
         fmt.write_str("[")?;
@@ -868,8 +868,8 @@ pub mod serde {
     use super::*;
     use ::serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
     use ::serde::ser::{Serialize, Serializer};
-    use std::fmt;
-    use std::marker::PhantomData;
+    use core::fmt;
+    use core::marker::PhantomData;
 
     impl<T, P> Serialize for Vector<T, P>
     where

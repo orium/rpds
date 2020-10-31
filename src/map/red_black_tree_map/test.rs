@@ -4,6 +4,7 @@
  */
 
 use super::*;
+use alloc::vec::Vec;
 use pretty_assertions::assert_eq;
 use static_assertions::assert_impl_all;
 
@@ -973,6 +974,7 @@ mod node {
 
 mod internal {
     use super::*;
+    use alloc::vec::Vec;
     use pretty_assertions::assert_eq;
 
     fn insert_test(values: &[u32]) {
@@ -1092,6 +1094,7 @@ mod internal {
 
 mod iter {
     use super::*;
+    use alloc::vec::Vec;
     use pretty_assertions::assert_eq;
 
     #[test]
@@ -1322,7 +1325,7 @@ mod iter {
         cmp(&map, 1..=3, vec![(1, 2), (2, 4), (3, 6)]);
         cmp(&map, ..3, vec![(0, 0), (1, 2), (2, 4)]);
 
-        use std::ops::Bound::*;
+        use core::ops::Bound::*;
         cmp(&map, (Excluded(1), Included(3)), vec![(2, 4), (3, 6)]);
     }
 
@@ -1710,7 +1713,7 @@ fn test_partial_ord() {
     let map_1_prime = rbt_map!["a" => 0xa];
     let map_2 = rbt_map!["b" => 0xb];
     let map_3 = rbt_map![0 => 0.0];
-    let map_4 = rbt_map![0 => std::f32::NAN];
+    let map_4 = rbt_map![0 => core::f32::NAN];
 
     assert_eq!(map_1.partial_cmp(&map_1_prime), Some(Ordering::Equal));
     assert_eq!(map_1.partial_cmp(&map_2), Some(Ordering::Less));
@@ -1749,7 +1752,8 @@ fn hash<K: Ord + Hash, V: Hash, P>(map: &RedBlackTreeMap<K, V, P>) -> u64
 where
     P: SharedPointerKind,
 {
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    #[allow(deprecated)]
+    let mut hasher = core::hash::SipHasher::new();
 
     map.hash(&mut hasher);
 

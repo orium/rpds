@@ -293,6 +293,15 @@ Or use the `_sync` variant of the initialization macro:
 let vec = vector_sync!(42);
 ```
 
+### `no_std` support
+
+This crate supports `no_std`.  To enable that you need to disable the default feature `std`:
+
+```toml
+[dependencies]
+rpds = { version = "<version>", default-features = false }
+```
+
 #### Further details
 
 Internally the data structures in this crate maintain a lot of reference-counting pointers.

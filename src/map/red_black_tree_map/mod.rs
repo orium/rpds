@@ -5,20 +5,20 @@
 
 use super::entry::Entry;
 use archery::{ArcK, RcK, SharedPointer, SharedPointerKind};
-use std::borrow::Borrow;
-use std::cmp::Ordering;
-use std::fmt::Display;
-use std::hash::{Hash, Hasher};
-use std::iter::FromIterator;
-use std::marker::PhantomData;
-use std::ops::{Index, RangeBounds, RangeFull};
+use core::borrow::Borrow;
+use core::cmp::Ordering;
+use core::fmt::Display;
+use core::hash::{Hash, Hasher};
+use core::iter::FromIterator;
+use core::marker::PhantomData;
+use core::ops::{Index, RangeBounds, RangeFull};
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, K, V, P> =
-    std::iter::Map<IterPtr<'a, K, V, P>, fn(&'a SharedPointer<Entry<K, V>, P>) -> (&'a K, &'a V)>;
-pub type IterKeys<'a, K, V, P> = std::iter::Map<Iter<'a, K, V, P>, fn((&'a K, &V)) -> &'a K>;
-pub type IterValues<'a, K, V, P> = std::iter::Map<Iter<'a, K, V, P>, fn((&K, &'a V)) -> &'a V>;
-pub type RangeIter<'a, K, V, RB, Q, P> = std::iter::Map<
+    core::iter::Map<IterPtr<'a, K, V, P>, fn(&'a SharedPointer<Entry<K, V>, P>) -> (&'a K, &'a V)>;
+pub type IterKeys<'a, K, V, P> = core::iter::Map<Iter<'a, K, V, P>, fn((&'a K, &V)) -> &'a K>;
+pub type IterValues<'a, K, V, P> = core::iter::Map<Iter<'a, K, V, P>, fn((&K, &'a V)) -> &'a V>;
+pub type RangeIter<'a, K, V, RB, Q, P> = core::iter::Map<
     RangeIterPtr<'a, K, V, RB, Q, P>,
     fn(&'a SharedPointer<Entry<K, V>, P>) -> (&'a K, &'a V),
 >;
@@ -271,7 +271,7 @@ where
     ///                  c   d
     /// ```
     fn balance(&mut self) {
-        use std::mem::swap;
+        use core::mem::swap;
         use Color::Black as B;
         use Color::Red as R;
 
@@ -444,7 +444,7 @@ where
         use Color::Black as B;
         use Color::Red as R;
 
-        use std::mem::swap;
+        use core::mem::swap;
 
         match (left, right) {
             (None, None) => false,
@@ -571,7 +571,7 @@ where
         use Color::Black as B;
         use Color::Red as R;
 
-        use std::mem::swap;
+        use core::mem::swap;
 
         let color_l: Option<Color> = self.left_color();
         let color_r: Option<Color> = self.right_color();
@@ -622,7 +622,7 @@ where
         use Color::Black as B;
         use Color::Red as R;
 
-        use std::mem::swap;
+        use core::mem::swap;
 
         let color_r: Option<Color> = self.right_color();
         let color_l: Option<Color> = self.left_color();
@@ -908,7 +908,7 @@ where
         Q: Ord + ?Sized,
         RB: RangeBounds<Q>,
     {
-        use std::ops::Bound::*;
+        use core::ops::Bound::*;
 
         match (range.start_bound(), range.end_bound()) {
             (Excluded(s), Excluded(e)) if s == e => {
@@ -1021,7 +1021,7 @@ where
     V: Display,
     P: SharedPointerKind,
 {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut first = true;
 
         fmt.write_str("{")?;
@@ -1072,10 +1072,11 @@ where
 
 mod iter_utils {
     use super::{Entry, Node, RedBlackTreeMap};
+    use alloc::vec::Vec;
     use archery::{SharedPointer, SharedPointerKind};
-    use std::borrow::Borrow;
-    use std::mem::size_of;
-    use std::ops::Bound;
+    use core::borrow::Borrow;
+    use core::mem::size_of;
+    use core::ops::Bound;
 
     // This is a stack for navigating through the tree. It can be used to go either forwards or
     // backwards: you choose the direction at construction time, and then every call to `advance`
@@ -1127,7 +1128,7 @@ mod iter_utils {
             K: Borrow<Q>,
             Q: Ord + ?Sized,
         {
-            use std::ops::Bound::*;
+            use core::ops::Bound::*;
 
             if let Some(entry) = self.current() {
                 let in_range = if self.backwards {
@@ -1180,7 +1181,7 @@ mod iter_utils {
             K: Borrow<Q>,
             Q: Ord + ?Sized,
         {
-            use std::ops::Bound::*;
+            use core::ops::Bound::*;
 
             let in_range = if self.backwards {
                 match end_bound {
@@ -1431,8 +1432,8 @@ pub mod serde {
     use super::*;
     use ::serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
     use ::serde::ser::{Serialize, Serializer};
-    use std::fmt;
-    use std::marker::PhantomData;
+    use core::fmt;
+    use core::marker::PhantomData;
 
     impl<K, V, P> Serialize for RedBlackTreeMap<K, V, P>
     where

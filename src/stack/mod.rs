@@ -5,10 +5,10 @@
 
 use crate::List;
 use archery::*;
-use std::cmp::Ordering;
-use std::fmt::Display;
-use std::hash::{Hash, Hasher};
-use std::iter::FromIterator;
+use core::cmp::Ordering;
+use core::fmt::Display;
+use core::hash::{Hash, Hasher};
+use core::iter::FromIterator;
 
 // TODO Use impl trait for return value when available
 pub type Iter<'a, T, P> = crate::list::Iter<'a, T, P>;
@@ -239,7 +239,7 @@ impl<T: Display, P> Display for Stack<T, P>
 where
     P: SharedPointerKind,
 {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut first = true;
 
         fmt.write_str("Stack(")?;

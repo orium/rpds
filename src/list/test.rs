@@ -248,7 +248,7 @@ fn test_partial_ord() {
     let list_1_prime = list!["a"];
     let list_2 = list!["b"];
     let list_3 = list![0.0];
-    let list_4 = list![std::f32::NAN];
+    let list_4 = list![core::f32::NAN];
 
     assert_eq!(list_1.partial_cmp(&list_1_prime), Some(Ordering::Equal));
     assert_eq!(list_1.partial_cmp(&list_2), Some(Ordering::Less));
@@ -284,7 +284,8 @@ fn test_ord_pointer_kind_consistent() {
 }
 
 fn hash<T: Hash, P: SharedPointerKind>(list: &List<T, P>) -> u64 {
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    #[allow(deprecated)]
+    let mut hasher = core::hash::SipHasher::new();
 
     list.hash(&mut hasher);
 
@@ -323,7 +324,7 @@ fn test_clone() {
 #[test]
 fn test_drop_list() {
     // When it is dropped, it will set the variable it owned to false.
-    use std::cell::Cell;
+    use core::cell::Cell;
     struct DropStruct<'a>(&'a Cell<bool>);
     impl<'a> Drop for DropStruct<'a> {
         fn drop(&mut self) {

@@ -3,9 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use std::mem::size_of_val;
-use std::slice;
-use std::vec::Vec;
+use alloc::vec::Vec;
+use core::mem::size_of_val;
+use core::slice;
 
 /// Sparse array of size `8⋅size_of::<usize>()`.  The space used is proportional to the number of
 /// elements set.

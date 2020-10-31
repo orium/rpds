@@ -4,6 +4,7 @@
  */
 
 use super::*;
+use alloc::vec::Vec;
 use pretty_assertions::assert_eq;
 use static_assertions::assert_impl_all;
 
@@ -190,7 +191,7 @@ fn test_partial_ord() {
     let stack_1_prime = stack!["a"];
     let stack_2 = stack!["b"];
     let stack_3 = stack![0.0];
-    let stack_4 = stack![std::f32::NAN];
+    let stack_4 = stack![core::f32::NAN];
 
     assert_eq!(stack_1.partial_cmp(&stack_1_prime), Some(Ordering::Equal));
     assert_eq!(stack_1.partial_cmp(&stack_2), Some(Ordering::Less));
@@ -226,7 +227,8 @@ fn test_ord_pointer_kind_consistent() {
 }
 
 fn hash<T: Hash, P: SharedPointerKind>(stack: &Stack<T, P>) -> u64 {
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    #[allow(deprecated)]
+    let mut hasher = core::hash::SipHasher::new();
 
     stack.hash(&mut hasher);
 

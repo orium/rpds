@@ -26,6 +26,7 @@ assert_installed "cargo-fmt"
 trap on_failure ERR
 
 echo 'Building:'
+cargo check --no-default-features --features fatal-warnings,serde --all-targets
 cargo build --features fatal-warnings,serde --all-targets
 echo 'Testing:'
 cargo test  --features fatal-warnings,serde

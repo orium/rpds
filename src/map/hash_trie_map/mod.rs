@@ -7,29 +7,29 @@ mod sparse_array_usize;
 
 use super::entry::Entry;
 use crate::list;
+use crate::utils::DefaultBuildHasher;
 use crate::List;
 use crate::ListSync;
+use alloc::vec::Vec;
 use archery::{ArcK, RcK, SharedPointer, SharedPointerKind};
+use core::borrow::Borrow;
+use core::fmt::Display;
+use core::hash::BuildHasher;
+use core::hash::Hash;
+use core::iter::FromIterator;
+use core::iter::Peekable;
+use core::mem::size_of;
+use core::ops::Index;
+use core::slice;
 use sparse_array_usize::SparseArrayUsize;
-use std::borrow::Borrow;
-use std::collections::hash_map::RandomState;
-use std::fmt::Display;
-use std::hash::BuildHasher;
-use std::hash::Hash;
-use std::iter::FromIterator;
-use std::iter::Peekable;
-use std::mem::size_of;
-use std::ops::Index;
-use std::slice;
-use std::vec::Vec;
 
 type HashValue = u64;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, K, V, P> =
-    std::iter::Map<IterPtr<'a, K, V, P>, fn(&'a SharedPointer<Entry<K, V>, P>) -> (&'a K, &'a V)>;
-pub type IterKeys<'a, K, V, P> = std::iter::Map<Iter<'a, K, V, P>, fn((&'a K, &V)) -> &'a K>;
-pub type IterValues<'a, K, V, P> = std::iter::Map<Iter<'a, K, V, P>, fn((&K, &'a V)) -> &'a V>;
+    core::iter::Map<IterPtr<'a, K, V, P>, fn(&'a SharedPointer<Entry<K, V>, P>) -> (&'a K, &'a V)>;
+pub type IterKeys<'a, K, V, P> = core::iter::Map<Iter<'a, K, V, P>, fn((&'a K, &V)) -> &'a K>;
+pub type IterValues<'a, K, V, P> = core::iter::Map<Iter<'a, K, V, P>, fn((&K, &'a V)) -> &'a V>;
 
 const DEFAULT_DEGREE: u8 = 8 * size_of::<usize>() as u8;
 
@@ -118,7 +118,7 @@ macro_rules! ht_map_sync {
 ///
 /// See the `Node` documentation for details.
 #[derive(Debug)]
-pub struct HashTrieMap<K, V, P = RcK, H: BuildHasher = RandomState>
+pub struct HashTrieMap<K, V, P = RcK, H: BuildHasher = DefaultBuildHasher>
 where
     P: SharedPointerKind,
 {
@@ -128,7 +128,7 @@ where
     hasher_builder: H,
 }
 
-pub type HashTrieMapSync<K, V, H = RandomState> = HashTrieMap<K, V, ArcK, H>;
+pub type HashTrieMapSync<K, V, H = DefaultBuildHasher> = HashTrieMap<K, V, ArcK, H>;
 
 /// This map works like a trie that breaks the hash of the key in segments, and the segments are
 /// used as the index in the trie branches.
@@ -213,10 +213,10 @@ where
 
 mod node_utils {
     use super::HashValue;
-    use std::hash::BuildHasher;
-    use std::hash::Hash;
-    use std::hash::Hasher;
-    use std::mem::size_of_val;
+    use core::hash::BuildHasher;
+    use core::hash::Hash;
+    use core::hash::Hasher;
+    use core::mem::size_of_val;
 
     // Returns the index of the array for the given hash on depth `depth`.
     //
@@ -663,7 +663,7 @@ where
 
     #[must_use]
     pub fn new_with_degree(degree: u8) -> HashTrieMap<K, V> {
-        HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(RandomState::new(), degree)
+        HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(DefaultBuildHasher::default(), degree)
     }
 }
 
@@ -678,7 +678,7 @@ where
 
     #[must_use]
     pub fn new_sync_with_degree(degree: u8) -> HashTrieMapSync<K, V> {
-        HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(RandomState::new(), degree)
+        HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(DefaultBuildHasher::default(), degree)
     }
 }
 
@@ -699,7 +699,7 @@ where
         degree: u8,
     ) -> HashTrieMap<K, V, P, H> {
         assert!(degree.is_power_of_two(), "degree must be a power of two");
-        assert!(degree <= DEFAULT_DEGREE, format!("degree must not exceed {}", DEFAULT_DEGREE));
+        assert!(degree <= DEFAULT_DEGREE, "degree is too big");
 
         HashTrieMap {
             root: SharedPointer::new(Node::new_empty_branch()),
@@ -884,7 +884,7 @@ where
     H: Clone,
     P: SharedPointerKind,
 {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut first = true;
 
         fmt.write_str("{")?;
@@ -995,7 +995,7 @@ where
 
 mod iter_utils {
     use super::HashValue;
-    use std::mem::size_of;
+    use core::mem::size_of;
 
     pub fn trie_max_height(degree: u8) -> usize {
         let bits_per_level = (degree - 1).count_ones() as usize;
@@ -1090,8 +1090,8 @@ pub mod serde {
     use super::*;
     use ::serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
     use ::serde::ser::{Serialize, Serializer};
-    use std::fmt;
-    use std::marker::PhantomData;
+    use core::fmt;
+    use core::marker::PhantomData;
 
     impl<K, V, P, H> Serialize for HashTrieMap<K, V, P, H>
     where

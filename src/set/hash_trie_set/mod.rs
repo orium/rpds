@@ -4,14 +4,14 @@
  */
 
 use crate::map::hash_trie_map;
+use crate::utils::DefaultBuildHasher;
 use crate::HashTrieMap;
 use archery::{ArcK, RcK, SharedPointerKind};
-use std::borrow::Borrow;
-use std::collections::hash_map::RandomState;
-use std::fmt::Display;
-use std::hash::BuildHasher;
-use std::hash::Hash;
-use std::iter::FromIterator;
+use core::borrow::Borrow;
+use core::fmt::Display;
+use core::hash::BuildHasher;
+use core::hash::Hash;
+use core::iter::FromIterator;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T, P> = hash_trie_map::IterKeys<'a, T, (), P>;
@@ -95,7 +95,7 @@ macro_rules! ht_set_sync {
 ///
 /// This is a thin wrapper around a [`HashTrieMap`](../../map/hash_trie_map/struct.HashTrieMap.html).
 #[derive(Debug)]
-pub struct HashTrieSet<T, P = RcK, H: BuildHasher = RandomState>
+pub struct HashTrieSet<T, P = RcK, H: BuildHasher = DefaultBuildHasher>
 where
     T: Eq + Hash,
     H: Clone,
@@ -104,20 +104,22 @@ where
     map: HashTrieMap<T, (), P, H>,
 }
 
-pub type HashTrieSetSync<T, H = RandomState> = HashTrieSet<T, ArcK, H>;
+pub type HashTrieSetSync<T, H = DefaultBuildHasher> = HashTrieSet<T, ArcK, H>;
 
-impl<T> HashTrieSet<T, RcK, RandomState>
+impl<T> HashTrieSet<T, RcK, DefaultBuildHasher>
 where
     T: Eq + Hash,
 {
     #[must_use]
     pub fn new() -> HashTrieSet<T> {
-        HashTrieSet { map: HashTrieMap::new_with_hasher_and_ptr_kind(RandomState::new()) }
+        HashTrieSet {
+            map: HashTrieMap::new_with_hasher_and_ptr_kind(DefaultBuildHasher::default()),
+        }
     }
 
     #[must_use]
     pub fn new_with_degree(degree: u8) -> HashTrieSet<T> {
-        HashTrieSet::new_with_hasher_and_degree_and_ptr_kind(RandomState::new(), degree)
+        HashTrieSet::new_with_hasher_and_degree_and_ptr_kind(DefaultBuildHasher::default(), degree)
     }
 }
 
@@ -127,12 +129,14 @@ where
 {
     #[must_use]
     pub fn new_sync() -> HashTrieSetSync<T> {
-        HashTrieSet { map: HashTrieMap::new_with_hasher_and_ptr_kind(RandomState::new()) }
+        HashTrieSet {
+            map: HashTrieMap::new_with_hasher_and_ptr_kind(DefaultBuildHasher::default()),
+        }
     }
 
     #[must_use]
     pub fn new_with_degree_sync(degree: u8) -> HashTrieSetSync<T> {
-        HashTrieSet::new_with_hasher_and_degree_and_ptr_kind(RandomState::new(), degree)
+        HashTrieSet::new_with_hasher_and_degree_and_ptr_kind(DefaultBuildHasher::default(), degree)
     }
 }
 
@@ -273,7 +277,7 @@ where
     H: Clone,
     P: SharedPointerKind,
 {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut first = true;
 
         fmt.write_str("{")?;
@@ -326,8 +330,8 @@ pub mod serde {
     use super::*;
     use ::serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
     use ::serde::ser::{Serialize, Serializer};
-    use std::fmt;
-    use std::marker::PhantomData;
+    use core::fmt;
+    use core::marker::PhantomData;
 
     impl<T, P, H> Serialize for HashTrieSet<T, P, H>
     where

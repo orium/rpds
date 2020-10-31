@@ -3,15 +3,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+use alloc::vec::Vec;
 use archery::*;
-use std::borrow::Borrow;
-use std::cmp::Ordering;
-use std::fmt::Display;
-use std::hash::{Hash, Hasher};
-use std::iter::FromIterator;
+use core::borrow::Borrow;
+use core::cmp::Ordering;
+use core::fmt::Display;
+use core::hash::{Hash, Hasher};
+use core::iter::FromIterator;
 
 // TODO Use impl trait instead of this when available.
-pub type Iter<'a, T, P> = std::iter::Map<IterPtr<'a, T, P>, fn(&SharedPointer<T, P>) -> &T>;
+pub type Iter<'a, T, P> = core::iter::Map<IterPtr<'a, T, P>, fn(&SharedPointer<T, P>) -> &T>;
 
 #[doc(hidden)]
 #[macro_export]
@@ -347,7 +348,7 @@ impl<T: Display, P> Display for List<T, P>
 where
     P: SharedPointerKind,
 {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut first = true;
 
         fmt.write_str("[")?;
@@ -463,8 +464,8 @@ pub mod serde {
     use super::*;
     use ::serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
     use ::serde::ser::{Serialize, Serializer};
-    use std::fmt;
-    use std::marker::PhantomData;
+    use core::fmt;
+    use core::marker::PhantomData;
 
     impl<T, P> Serialize for List<T, P>
     where

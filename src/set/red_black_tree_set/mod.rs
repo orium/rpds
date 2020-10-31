@@ -6,16 +6,16 @@
 use crate::map::red_black_tree_map;
 use crate::RedBlackTreeMap;
 use archery::{ArcK, RcK, SharedPointerKind};
-use std::borrow::Borrow;
-use std::cmp::Ordering;
-use std::fmt::Display;
-use std::iter::FromIterator;
-use std::ops::RangeBounds;
+use core::borrow::Borrow;
+use core::cmp::Ordering;
+use core::fmt::Display;
+use core::iter::FromIterator;
+use core::ops::RangeBounds;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T, P> = red_black_tree_map::IterKeys<'a, T, (), P>;
 pub type RangeIter<'a, T, RB, Q, P> =
-    std::iter::Map<red_black_tree_map::RangeIter<'a, T, (), RB, Q, P>, fn((&'a T, &())) -> &'a T>;
+    core::iter::Map<red_black_tree_map::RangeIter<'a, T, (), RB, Q, P>, fn((&'a T, &())) -> &'a T>;
 
 /// Creates a [`RedBlackTreeSet`](set/red_black_tree_set/struct.RedBlackTreeSet.html) containing the
 /// given arguments:
@@ -325,7 +325,7 @@ where
     T: Ord + Display,
     P: SharedPointerKind,
 {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut first = true;
 
         fmt.write_str("{")?;
@@ -377,8 +377,8 @@ pub mod serde {
     use super::*;
     use ::serde::de::{Deserialize, Deserializer, SeqAccess, Visitor};
     use ::serde::ser::{Serialize, Serializer};
-    use std::fmt;
-    use std::marker::PhantomData;
+    use core::fmt;
+    use core::marker::PhantomData;
 
     impl<T, P> Serialize for RedBlackTreeSet<T, P>
     where

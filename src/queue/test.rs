@@ -353,7 +353,7 @@ fn test_partial_ord() {
     let queue_1_prime = queue!["a"];
     let queue_2 = queue!["b"];
     let queue_3 = queue![0.0];
-    let queue_4 = queue![std::f32::NAN];
+    let queue_4 = queue![core::f32::NAN];
 
     assert_eq!(queue_1.partial_cmp(&queue_1_prime), Some(Ordering::Equal));
     assert_eq!(queue_1.partial_cmp(&queue_2), Some(Ordering::Less));
@@ -389,7 +389,8 @@ fn test_ord_pointer_kind_consistent() {
 }
 
 fn hash<T: Hash, P: SharedPointerKind>(queue: &Queue<T, P>) -> u64 {
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    #[allow(deprecated)]
+    let mut hasher = core::hash::SipHasher::new();
 
     queue.hash(&mut hasher);
 

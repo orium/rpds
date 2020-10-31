@@ -91,7 +91,7 @@ mod bucket {
 
     #[test]
     fn test_get() {
-        let hash_builder = RandomState::new();
+        let hash_builder = crate::utils::DefaultBuildHasher::default();
 
         let entry_a: EntryWithHash<_, _> = EntryWithHash::new(0xAu8, 0, &hash_builder);
         let entry_b: EntryWithHash<_, _> = EntryWithHash::new(0xBu8, 1, &hash_builder);
@@ -110,7 +110,7 @@ mod bucket {
 
     #[test]
     fn test_insert() {
-        let hash_builder = RandomState::new();
+        let hash_builder = crate::utils::DefaultBuildHasher::default();
 
         let entry_a: EntryWithHash<_, _> = EntryWithHash::new(0xAu8, 0, &hash_builder);
         let entry_a9: EntryWithHash<_, _> = EntryWithHash::new(0xAu8, 9, &hash_builder);
@@ -157,7 +157,7 @@ mod bucket {
 
     #[test]
     fn test_remove() {
-        let hash_builder = RandomState::new();
+        let hash_builder = crate::utils::DefaultBuildHasher::default();
 
         let entry_a: EntryWithHash<u8, i32> = EntryWithHash::new(0xAu8, 0, &hash_builder);
         let entry_b: EntryWithHash<u8, i32> = EntryWithHash::new(0xBu8, 1, &hash_builder);
@@ -197,20 +197,21 @@ mod bucket {
 
 mod hasher_mocks {
     use super::*;
-    use std::collections::HashMap;
-    use std::hash::Hasher;
+    use alloc::boxed::Box;
+    use core::hash::Hasher;
+    use std::collections::BTreeMap;
 
     pub struct MockedHashBuilder {
-        byte_map: HashMap<u8, HashValue>,
+        byte_map: BTreeMap<u8, HashValue>,
     }
 
     pub struct MockedHasher {
         last_byte: Option<u8>,
-        byte_map: HashMap<u8, HashValue>,
+        byte_map: BTreeMap<u8, HashValue>,
     }
 
     impl MockedHashBuilder {
-        pub fn new(byte_map: HashMap<u8, HashValue>) -> MockedHashBuilder {
+        pub fn new(byte_map: BTreeMap<u8, HashValue>) -> MockedHashBuilder {
             MockedHashBuilder { byte_map }
         }
     }
@@ -240,18 +241,21 @@ mod hasher_mocks {
     }
 
     pub struct LimitedHashSpaceHashBuilder {
-        inner_hash_builder: RandomState,
+        inner_hash_builder: crate::utils::DefaultBuildHasher,
         hash_space_size: usize,
     }
 
     pub struct LimitedHashSpaceHasher {
-        inner_hasher: std::collections::hash_map::DefaultHasher,
+        inner_hasher: Box<dyn core::hash::Hasher>,
         hash_space_size: usize,
     }
 
     impl LimitedHashSpaceHashBuilder {
         pub fn new(hash_space_size: usize) -> LimitedHashSpaceHashBuilder {
-            LimitedHashSpaceHashBuilder { inner_hash_builder: RandomState::new(), hash_space_size }
+            LimitedHashSpaceHashBuilder {
+                inner_hash_builder: crate::utils::DefaultBuildHasher::default(),
+                hash_space_size,
+            }
         }
     }
 
@@ -269,7 +273,7 @@ mod hasher_mocks {
 
         fn build_hasher(&self) -> LimitedHashSpaceHasher {
             LimitedHashSpaceHasher {
-                inner_hasher: self.inner_hash_builder.build_hasher(),
+                inner_hasher: Box::new(self.inner_hash_builder.build_hasher()),
                 hash_space_size: self.hash_space_size,
             }
         }
@@ -290,7 +294,7 @@ mod node {
     use super::*;
     use hasher_mocks::*;
     use pretty_assertions::assert_eq;
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     #[test]
     fn test_new_empty_branch() {
@@ -318,7 +322,7 @@ mod node {
     }
 
     fn dummy_hash_builder() -> MockedHashBuilder {
-        let hash_mapping: HashMap<u8, HashValue> = [
+        let hash_mapping: BTreeMap<u8, HashValue> = [
             (0xA, 0b_0010_0110),
             (0xB, 0b_0001_0110),
             (0xC, 0b_0100_0010),
