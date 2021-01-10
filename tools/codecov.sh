@@ -51,6 +51,8 @@ find src/ -name '*.rs' \
 find src/ -name '*.rs' \
     | xargs -d '\n' -n1 sed -i 's,static_assertions::assert_eq_size!,// WORKAROUND TARPAULIN \0,'
 
+# TODO it seems the `--force-clean` is not working.
+cargo clean
 cargo tarpaulin --features serde --force-clean --ignore-tests --ignore-panics --timeout 1200 --out $output_format
 
 if [ "$output_format" == "Html" ]; then
