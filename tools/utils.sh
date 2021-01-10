@@ -11,14 +11,6 @@ function assert_installed {
     fi
 }
 
-function os {
-    if test -n "$TRAVIS_OS_NAME"; then
-        echo "$TRAVIS_OS_NAME"
-    else
-        echo linux
-    fi
-}
-
 function project_name {
     cargo pkgid | tac -s'/' | head -1 | cut -d'#' -f1
 }

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  schedule:
+    - cron: '0 19 * * 3'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Install rust stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          default: true
+          components: rustfmt
+
+      - name: Install cargo plugins
+        run: |
+          cargo install cargo-deadlinks
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Check everything
+        run: bash ./tools/check.sh
+
+      - name: Code coverage
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          cargo install cargo-tarpaulin
+          ./tools/codecov.sh --xml
+          bash <(curl -s https://codecov.io/bash)
