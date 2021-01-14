@@ -16,8 +16,7 @@ use core::iter::FromIterator;
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T, P> = hash_trie_map::IterKeys<'a, T, (), P>;
 
-/// Creates a [`HashTrieSet`](set/hash_trie_set/struct.HashTrieSet.html) containing the given
-/// arguments:
+/// Creates a [`HashTrieSet`](crate::HashTrieSet) containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -43,8 +42,8 @@ macro_rules! ht_set {
     };
 }
 
-/// Creates a [`HashTrieSet`](set/hash_trie_set/struct.HashTrieSet.html) that
-/// implements `Sync`, containing the given arguments:
+/// Creates a [`HashTrieSet`](crate::HashTrieSet) that implements `Sync`, containing the given
+/// arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -93,7 +92,7 @@ macro_rules! ht_set_sync {
 ///
 /// # Implementation details
 ///
-/// This is a thin wrapper around a [`HashTrieMap`](../../map/hash_trie_map/struct.HashTrieMap.html).
+/// This is a thin wrapper around a [`HashTrieMap`](crate::HashTrieMap).
 #[derive(Debug)]
 pub struct HashTrieSet<T, P = RcK, H: BuildHasher = DefaultBuildHasher>
 where

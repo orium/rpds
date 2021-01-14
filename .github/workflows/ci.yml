@@ -27,10 +27,11 @@ jobs:
           toolchain: stable
           override: true
           default: true
-          components: rustfmt
+          components: rustfmt, rust-src
 
       - name: Install cargo plugins
         run: |
+          cargo install cargo-rdme
           cargo install cargo-deadlinks
 
       - name: Checkout repository

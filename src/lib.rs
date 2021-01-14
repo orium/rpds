@@ -48,7 +48,7 @@
 //!   8. [`RedBlackTreeSet`](#redblacktreeset)
 //!
 //! ### `List`
-//! [![List documentation](https://img.shields.io/badge/doc-List-303070.svg)](./list/struct.List.html)
+//! [![List documentation](https://img.shields.io/badge/doc-List-303070.svg)](crate::list::List)
 //!
 //! Your classic functional list.
 //!
@@ -71,7 +71,7 @@
 //! ```
 //!
 //! ### `Vector`
-//! [![`Vector` documentation](https://img.shields.io/badge/doc-Vector-303070.svg)](./vector/struct.Vector.html)
+//! [![`Vector` documentation](https://img.shields.io/badge/doc-Vector-303070.svg)](crate::vector::Vector)
 //!
 //! A sequence that can be indexed.  The implementation is described in
 //! [Understanding Persistent Vector Part 1](http://hypirion.com/musings/understanding-persistent-vector-pt-1)
@@ -97,7 +97,7 @@
 //! ```
 //!
 //! ### `Stack`
-//! [![`Stack` documentation](https://img.shields.io/badge/doc-Stack-303070.svg)](./stack/struct.Stack.html)
+//! [![`Stack` documentation](https://img.shields.io/badge/doc-Stack-303070.svg)](crate::stack::Stack)
 //!
 //! A LIFO (last in, first out) data structure.  This is just a [`List`](#list) in disguise.
 //!
@@ -120,7 +120,7 @@
 //! ```
 //!
 //! ### `Queue`
-//! [![`Queue` documentation](https://img.shields.io/badge/doc-Queue-303070.svg)](./queue/struct.Queue.html)
+//! [![`Queue` documentation](https://img.shields.io/badge/doc-Queue-303070.svg)](crate::queue::Queue)
 //!
 //! A FIFO (first in, first out) data structure.
 //!
@@ -142,7 +142,7 @@
 //! ```
 //!
 //! ### `HashTrieMap`
-//! [![`HashTrieMap` documentation](https://img.shields.io/badge/doc-HashTrieMap-303070.svg)](./map/hash_trie_map/struct.HashTrieMap.html)
+//! [![`HashTrieMap` documentation](https://img.shields.io/badge/doc-HashTrieMap-303070.svg)](crate::map::hash_trie_map::HashTrieMap)
 //!
 //! A map implemented with a [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie).
 //! See [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf) for
@@ -171,7 +171,7 @@
 //! ```
 //!
 //! ### `HashTrieSet`
-//! [![`HashTrieSet` documentation](https://img.shields.io/badge/doc-HashTrieSet-303070.svg)](./set/hash_trie_set/struct.HashTrieSet.html)
+//! [![`HashTrieSet` documentation](https://img.shields.io/badge/doc-HashTrieSet-303070.svg)](crate::set::hash_trie_set::HashTrieSet)
 //!
 //! A set implemented with a [`HashTrieMap`](#hashtriemap).
 //!
@@ -196,7 +196,7 @@
 //! ```
 //!
 //! ### `RedBlackTreeMap`
-//! [![`RedBlackTreeMap` documentation](https://img.shields.io/badge/doc-RedBlackTreeMap-303070.svg)](./map/red_black_tree_map/struct.RedBlackTreeMap.html)
+//! [![`RedBlackTreeMap` documentation](https://img.shields.io/badge/doc-RedBlackTreeMap-303070.svg)](crate::map::red_black_tree_map::RedBlackTreeMap)
 //!
 //! A map implemented with a [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree).
 //!
@@ -225,7 +225,7 @@
 //! ```
 //!
 //! ### `RedBlackTreeSet`
-//! [![`RedBlackTreeSet` documentation](https://img.shields.io/badge/doc-RedBlackTreeSet-303070.svg)](./set/red_black_tree_set/struct.RedBlackTreeSet.html)
+//! [![`RedBlackTreeSet` documentation](https://img.shields.io/badge/doc-RedBlackTreeSet-303070.svg)](crate::set::red_black_tree_set::RedBlackTreeSet)
 //!
 //! A set implemented with a [`RedBlackTreeMap`](#redblacktreemap).
 //!
@@ -296,8 +296,8 @@
 //! To create a thread-safe version of any data structure use `new_sync()`:
 //!
 //! ```rust
-//! # /*DROP_LINE_IN_README*/ use rpds::Vector;
-//! # /*DROP_LINE_IN_README*/
+//! # use rpds::Vector;
+//! #
 //! let vec = Vector::new_sync()
 //!     .push_back(42);
 //! ```
@@ -305,8 +305,8 @@
 //! Or use the `_sync` variant of the initialization macro:
 //!
 //! ```rust
-//! # /*DROP_LINE_IN_README*/ use rpds::vector_sync;
-//! # /*DROP_LINE_IN_README*/
+//! # use rpds::vector_sync;
+//! #
 //! let vec = vector_sync!(42);
 //! ```
 //!
@@ -326,8 +326,8 @@
 //! as for the values it stores.
 //!
 //! There are two implementations of reference-counting pointers in the standard library:
-//! [`Rc`](https://doc.rust-lang.org/std/rc/struct.Rc.html) and
-//! [`Arc`](https://doc.rust-lang.org/std/sync/struct.Arc.html).  They behave the same way, but
+//! [`Rc`](::alloc::rc::Rc) and
+//! [`Arc`](::alloc::sync::Arc).  They behave the same way, but
 //! `Arc` allows you to share the data it points to across multiple threads.  The downside is that
 //! it is significantly slower to clone and drop than `Rc`, and persistent data structures do a
 //! lot of those operations. In some microbenchmarks with rpds data structure we can see that
@@ -341,8 +341,8 @@
 //! The pointer type can be parameterized like this:
 //!
 //! ```rust
-//! # /*DROP_LINE_IN_README*/ use rpds::Vector;
-//! # /*DROP_LINE_IN_README*/
+//! # use rpds::Vector;
+//! #
 //! let vec: Vector<u32, archery::ArcK> = Vector::new_with_ptr_kind();
 //! //                              ↖
 //! //                                This will use `Arc` pointers.

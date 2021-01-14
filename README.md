@@ -7,6 +7,8 @@
 [![Documentation](https://docs.rs/rpds/badge.svg)](https://docs.rs/rpds/)
 [![License](https://img.shields.io/crates/l/rpds.svg)](./LICENSE.md)
 
+<!-- cargo-rdme start -->
+
 # Rust Persistent Data Structures
 
 Rust Persistent Data Structures provides [fully persistent data structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
@@ -309,8 +311,8 @@ These pointers are used both for links between the internal nodes of the data st
 as for the values it stores.
 
 There are two implementations of reference-counting pointers in the standard library:
-[`Rc`](https://doc.rust-lang.org/std/rc/struct.Rc.html) and
-[`Arc`](https://doc.rust-lang.org/std/sync/struct.Arc.html).  They behave the same way, but
+[`Rc`](https://doc.rust-lang.org/stable/alloc/rc/struct.Rc.html) and
+[`Arc`](https://doc.rust-lang.org/stable/alloc/sync/struct.Arc.html).  They behave the same way, but
 `Arc` allows you to share the data it points to across multiple threads.  The downside is that
 it is significantly slower to clone and drop than `Rc`, and persistent data structures do a
 lot of those operations. In some microbenchmarks with rpds data structure we can see that
@@ -339,3 +341,5 @@ enable the `serde` feature.  To do so change the rpds dependency in your `Cargo.
 [dependencies]
 rpds = { version = "<version>", features = ["serde"] }
 ```
+
+<!-- cargo-rdme end -->

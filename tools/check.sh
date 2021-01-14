@@ -33,7 +33,7 @@ cargo test  --features fatal-warnings,serde
 echo 'Checking the benchmarks:'
 cargo bench --features fatal-warnings,serde -- --test
 echo 'Checking documentation:'
-cargo doc   --features fatal-warnings,serde
+cargo doc   --features fatal-warnings,serde --document-private-items
 
 echo 'Checking links:'
 cargo deadlinks
@@ -43,7 +43,7 @@ cargo package --allow-dirty
 echo 'Checking code style:'
 cargo fmt -- --check
 echo 'Checking readme:'
-./tools/update-readme.sh --check
+cargo rdme --check
 
 echo
 echo -e "${GREEN}Everything looks lovely!$NC"
