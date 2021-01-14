@@ -13,7 +13,7 @@ use core::iter::FromIterator;
 // TODO Use impl trait for return value when available
 pub type Iter<'a, T, P> = crate::list::Iter<'a, T, P>;
 
-/// Creates a [`Stack`](stack/struct.Stack.html) containing the given arguments:
+/// Creates a [`Stack`](crate::Stack) containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -39,8 +39,7 @@ macro_rules! stack {
     };
 }
 
-/// Creates a [`Stack`](stack/struct.Stack.html) that implements `Sync`, containing the given
-/// arguments:
+/// Creates a [`Stack`](crate::Stack) that implements `Sync`, containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -92,7 +91,7 @@ macro_rules! stack_sync {
 ///
 /// # Implementation details
 ///
-/// This is a thin wrapper around a [`List`](../list/struct.List.html).
+/// This is a thin wrapper around a [`List`](crate::List).
 #[derive(Debug)]
 pub struct Stack<T, P = RcK>
 where

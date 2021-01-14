@@ -33,8 +33,7 @@ pub type IterValues<'a, K, V, P> = core::iter::Map<Iter<'a, K, V, P>, fn((&K, &'
 #[allow(clippy::cast_possible_truncation)]
 const DEFAULT_DEGREE: u8 = 8 * size_of::<usize>() as u8;
 
-/// Creates a [`HashTrieMap`](map/hash_trie_map/struct.HashTrieMap.html) containing the
-/// given arguments:
+/// Creates a [`HashTrieMap`](crate::HashTrieMap) containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -60,8 +59,8 @@ macro_rules! ht_map {
     };
 }
 
-/// Creates a [`HashTrieMap`](map/hash_trie_map/struct.HashTrieMap.html) that
-/// implements `Sync`, containing the given arguments:
+/// Creates a [`HashTrieMap`](crate::HashTrieMap) that implements `Sync`, containing the given
+/// arguments:
 ///
 /// ```
 /// # use rpds::*;
