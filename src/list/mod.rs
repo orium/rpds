@@ -280,6 +280,19 @@ where
     }
 }
 
+impl<T, P> List<T, P>
+where
+    T: Clone,
+    P: SharedPointerKind,
+{
+    #[must_use]
+    pub(crate) fn first_mut(&mut self) -> Option<&mut T> {
+        self.head
+            .as_mut()
+            .map(|node| SharedPointer::make_mut(&mut SharedPointer::make_mut(node).value))
+    }
+}
+
 impl<T, P> Default for List<T, P>
 where
     P: SharedPointerKind,

@@ -198,10 +198,32 @@ mod node {
     fn test_get() {
         let tree = dummy_tree_0_1_2_3();
 
-        assert_eq!(tree.get(&0).unwrap().key, 0);
-        assert_eq!(tree.get(&1).unwrap().key, 1);
-        assert_eq!(tree.get(&2).unwrap().key, 2);
-        assert_eq!(tree.get(&3).unwrap().key, 3);
+        assert_eq!(tree.get(&0).unwrap().value, 0);
+        assert_eq!(tree.get(&1).unwrap().value, 1);
+        assert_eq!(tree.get(&2).unwrap().value, 2);
+        assert_eq!(tree.get(&3).unwrap().value, 3);
+        assert_eq!(tree.get(&4), None);
+    }
+
+    #[test]
+    fn test_get_mut() {
+        let original = dummy_tree_0_1_2_3();
+        let mut tree = original.clone();
+
+        tree.get_mut(&2).unwrap().value = -2;
+        tree.get_mut(&3).unwrap().value = -3;
+        assert!(tree.get_mut(&4).is_none());
+
+        assert_eq!(original.get(&0).unwrap().value, 0);
+        assert_eq!(original.get(&1).unwrap().value, 1);
+        assert_eq!(original.get(&2).unwrap().value, 2);
+        assert_eq!(original.get(&3).unwrap().value, 3);
+        assert_eq!(original.get(&4), None);
+
+        assert_eq!(tree.get(&0).unwrap().value, 0);
+        assert_eq!(tree.get(&1).unwrap().value, 1);
+        assert_eq!(tree.get(&2).unwrap().value, -2);
+        assert_eq!(tree.get(&3).unwrap().value, -3);
         assert_eq!(tree.get(&4), None);
     }
 

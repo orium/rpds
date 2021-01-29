@@ -114,6 +114,18 @@ fn test_first() {
 }
 
 #[test]
+fn test_first_mut() {
+    let a = list![0, 1, 2, 3];
+    let mut b = a.clone();
+    *b.first_mut().unwrap() = -1;
+
+    assert_eq!(a.first(), Some(&0));
+    assert_eq!(b.first(), Some(&-1));
+    assert!(a.iter().eq(vec![0, 1, 2, 3].iter()));
+    assert!(b.iter().eq(vec![-1, 1, 2, 3].iter()));
+}
+
+#[test]
 fn test_last() {
     let empty_list: List<i32> = List::new();
     let mut singleton_list = list!["hello"];

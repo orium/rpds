@@ -277,6 +277,30 @@ where
         }
     }
 
+    fn get_mut<Q: ?Sized>(
+        &mut self,
+        key: &Q,
+        key_hash: HashValue,
+        depth: usize,
+        degree: u8,
+    ) -> Option<&mut EntryWithHash<K, V, P>>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        match self {
+            Node::Branch(subtrees) => {
+                let index: usize = node_utils::index_from_hash(key_hash, depth, degree)
+                    .expect("hash cannot be exhausted if we are on a branch");
+
+                subtrees.get_mut(index).and_then(|subtree| {
+                    SharedPointer::make_mut(subtree).get_mut(key, key_hash, depth + 1, degree)
+                })
+            }
+            Node::Leaf(bucket) => bucket.get_mut(key, key_hash),
+        }
+    }
+
     /// Returns a pair with the node with the new entry and whether the key is new.
     fn insert(&mut self, entry: EntryWithHash<K, V, P>, depth: usize, degree: u8) -> bool {
         match self {
@@ -454,14 +478,13 @@ where
 mod bucket_utils {
     use super::*;
 
-    /// Returns `true` if an element was removed.
     pub fn list_remove_first<T: Clone, F: Fn(&T) -> bool>(
         list: &mut ListSync<T>,
         predicate: F,
-    ) -> bool {
+    ) -> Option<T> {
         let mut before_needle: Vec<T> = Vec::with_capacity(list.len());
         let remaining: &mut ListSync<T> = list;
-        let mut removed = false;
+        let mut removed = None;
 
         while !remaining.is_empty() {
             let e: T = remaining.first().unwrap().clone();
@@ -469,7 +492,7 @@ mod bucket_utils {
             remaining.drop_first_mut();
 
             if predicate(&e) {
-                removed = true;
+                removed = Some(e);
                 break;
             }
 
@@ -501,6 +524,31 @@ where
             Bucket::Single(_) => None,
             Bucket::Collision(entries) => {
                 entries.iter().find(|e| e.matches(key, key_hash)).map(|e| e.borrow())
+            }
+        }
+    }
+
+    fn get_mut<Q: ?Sized>(
+        &mut self,
+        key: &Q,
+        key_hash: HashValue,
+    ) -> Option<&mut EntryWithHash<K, V, P>>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        match self {
+            Bucket::Single(entry) if entry.matches(key, key_hash) => Some(entry),
+            Bucket::Single(_) => None,
+            Bucket::Collision(entries) => {
+                let removed =
+                    bucket_utils::list_remove_first(entries, |e| e.matches(key, key_hash));
+                if let Some(e) = removed {
+                    entries.push_front_mut(e);
+                    entries.first_mut()
+                } else {
+                    None
+                }
             }
         }
     }
@@ -539,7 +587,8 @@ where
             Bucket::Collision(entries) => {
                 let key_existed = bucket_utils::list_remove_first(entries, |e| {
                     e.matches(entry.key(), entry.key_hash)
-                });
+                })
+                .is_some();
 
                 entries.push_front_mut(entry);
 
@@ -575,7 +624,8 @@ where
 
                     Bucket::Collision(entries) => {
                         let removed =
-                            bucket_utils::list_remove_first(entries, |e| e.matches(key, key_hash));
+                            bucket_utils::list_remove_first(entries, |e| e.matches(key, key_hash))
+                                .is_some();
 
                         match entries.len() {
                             0 => unreachable!(
@@ -639,6 +689,17 @@ where
         Q: Hash + Eq,
     {
         self.key_hash == key_hash && self.key().borrow() == key
+    }
+}
+
+impl<K, V, P> EntryWithHash<K, V, P>
+where
+    K: Eq + Hash + Clone,
+    V: Clone,
+    P: SharedPointerKind,
+{
+    fn value_mut(&mut self) -> &mut V {
+        &mut SharedPointer::make_mut(&mut self.entry).value
     }
 }
 
@@ -811,6 +872,27 @@ where
     #[must_use]
     pub fn values(&self) -> IterValues<'_, K, V, P> {
         self.iter().map(|(_, v)| v)
+    }
+}
+
+impl<K, V, P, H: BuildHasher> HashTrieMap<K, V, P, H>
+where
+    K: Eq + Hash + Clone,
+    V: Clone,
+    H: Clone,
+    P: SharedPointerKind,
+{
+    pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut V>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        // Note that unfortunately, even if nothing is found, we still might have cloned some
+        // part of the tree unnecessarily.
+        let key_hash = node_utils::hash(key, &self.hasher_builder);
+        SharedPointer::make_mut(&mut self.root)
+            .get_mut(key, key_hash, 0, self.degree)
+            .map(|e| e.value_mut())
     }
 }
 

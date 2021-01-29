@@ -73,19 +73,19 @@ mod bucket {
         let list_a_b = list_sync!['a', 'b'];
 
         let mut list = list_a_b_c.clone();
-        assert!(!list_remove_first(&mut list, |_| false));
+        assert!(list_remove_first(&mut list, |_| false).is_none());
         assert_eq!(list, list_a_b_c);
 
         let mut list = list_a_b_c.clone();
-        assert!(list_remove_first(&mut list, |c| *c == 'a'));
+        assert!(list_remove_first(&mut list, |c| *c == 'a').is_some());
         assert_eq!(list, list_b_c);
 
         let mut list = list_a_b_c.clone();
-        assert!(list_remove_first(&mut list, |c| *c == 'b'));
+        assert!(list_remove_first(&mut list, |c| *c == 'b').is_some());
         assert_eq!(list, list_a_c);
 
         let mut list = list_a_b_c.clone();
-        assert!(list_remove_first(&mut list, |c| *c == 'c'));
+        assert!(list_remove_first(&mut list, |c| *c == 'c').is_some());
         assert_eq!(list, list_a_b);
     }
 
@@ -435,6 +435,35 @@ mod node {
         assert_eq!(map.get(&0xC), Some(&2));
         assert_eq!(map.get(&0xD), Some(&3));
         assert_eq!(map.get(&0xE), Some(&4));
+        assert_eq!(map.get(&0x0), None);
+        assert_eq!(map.get(&0x1), None);
+        assert_eq!(map.get(&0x2), None);
+    }
+
+    #[test]
+    fn test_get_mut() {
+        let original = dummy_hash_trie_map();
+        let mut map = original.clone();
+
+        *map.get_mut(&0xB).unwrap() = -1;
+        *map.get_mut(&0xE).unwrap() = -1;
+        assert!(map.get_mut(&0x1).is_none());
+        assert!(map.get_mut(&0x2).is_none());
+
+        assert_eq!(original.get(&0xA), Some(&0));
+        assert_eq!(original.get(&0xB), Some(&1));
+        assert_eq!(original.get(&0xC), Some(&2));
+        assert_eq!(original.get(&0xD), Some(&3));
+        assert_eq!(original.get(&0xE), Some(&4));
+        assert_eq!(original.get(&0x0), None);
+        assert_eq!(original.get(&0x1), None);
+        assert_eq!(original.get(&0x2), None);
+
+        assert_eq!(map.get(&0xA), Some(&0));
+        assert_eq!(map.get(&0xB), Some(&-1));
+        assert_eq!(map.get(&0xC), Some(&2));
+        assert_eq!(map.get(&0xD), Some(&3));
+        assert_eq!(map.get(&0xE), Some(&-1));
         assert_eq!(map.get(&0x0), None);
         assert_eq!(map.get(&0x1), None);
         assert_eq!(map.get(&0x2), None);
