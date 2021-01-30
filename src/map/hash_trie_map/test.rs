@@ -67,10 +67,10 @@ mod bucket {
     fn test_list_remove_first() {
         use bucket_utils::list_remove_first;
 
-        let list_a_b_c = list_sync!['a', 'b', 'c'];
-        let list_b_c = list_sync!['b', 'c'];
-        let list_a_c = list_sync!['a', 'c'];
-        let list_a_b = list_sync!['a', 'b'];
+        let list_a_b_c = list!['a', 'b', 'c'];
+        let list_b_c = list!['b', 'c'];
+        let list_a_c = list!['a', 'c'];
+        let list_a_b = list!['a', 'b'];
 
         let mut list = list_a_b_c.clone();
         assert!(list_remove_first(&mut list, |_| false).is_none());
@@ -98,7 +98,7 @@ mod bucket {
         let entry_c: EntryWithHash<_, _> = EntryWithHash::new(0xCu8, 2, &hash_builder);
 
         let bucket_single = Bucket::Single(entry_a.clone());
-        let bucket_collision = Bucket::Collision(list_sync![entry_b.clone(), entry_a.clone()]);
+        let bucket_collision = Bucket::Collision(list![entry_b.clone(), entry_a.clone()]);
 
         assert_eq!(bucket_single.get(entry_a.key(), entry_a.key_hash), Some(entry_a.borrow()));
         assert_eq!(bucket_single.get(entry_b.key(), entry_b.key_hash), None);
@@ -121,12 +121,12 @@ mod bucket {
 
         let bucket_single_a = Bucket::Single(entry_a.clone());
         let bucket_single_a9 = Bucket::Single(entry_a9.clone());
-        let bucket_collision_b_a = Bucket::Collision(list_sync![entry_b.clone(), entry_a.clone()]);
+        let bucket_collision_b_a = Bucket::Collision(list![entry_b.clone(), entry_a.clone()]);
         let bucket_collision_a_b_c =
-            Bucket::Collision(list_sync![entry_a.clone(), entry_b.clone(), entry_c.clone()]);
+            Bucket::Collision(list![entry_a.clone(), entry_b.clone(), entry_c.clone()]);
         let bucket_collision_b9_a_c =
-            Bucket::Collision(list_sync![entry_b9.clone(), entry_a.clone(), entry_c.clone()]);
-        let bucket_collision_d_a_b_c = Bucket::Collision(list_sync![
+            Bucket::Collision(list![entry_b9.clone(), entry_a.clone(), entry_c.clone()]);
+        let bucket_collision_d_a_b_c = Bucket::Collision(list![
             entry_d.clone(),
             entry_a.clone(),
             entry_b.clone(),
@@ -165,9 +165,9 @@ mod bucket {
         let entry_d: EntryWithHash<u8, i32> = EntryWithHash::new(0xDu8, 2, &hash_builder);
 
         let bucket_single_a = Bucket::Single(entry_a.clone());
-        let bucket_collision_b_c = Bucket::Collision(list_sync![entry_b.clone(), entry_c.clone()]);
+        let bucket_collision_b_c = Bucket::Collision(list![entry_b.clone(), entry_c.clone()]);
         let bucket_collision_a_b_c =
-            Bucket::Collision(list_sync![entry_a.clone(), entry_b.clone(), entry_c.clone()]);
+            Bucket::Collision(list![entry_a.clone(), entry_b.clone(), entry_c.clone()]);
 
         let mut bucket_ref: Option<&mut Bucket<u8, i32>> = None;
         assert!(!Bucket::remove(&mut bucket_ref, entry_a.key(), entry_a.key_hash));
@@ -375,7 +375,7 @@ mod node {
         let bucket_a = Bucket::Single(entry_a);
         let bucket_b = Bucket::Single(entry_b);
         let bucket_c = Bucket::Single(entry_c);
-        let bucket_de = Bucket::Collision(list_sync![entry_e, entry_d]);
+        let bucket_de = Bucket::Collision(list![entry_e, entry_d]);
 
         let node_depth_1_first = {
             let mut array = SparseArrayUsize::new();
@@ -524,7 +524,7 @@ mod node {
 
         let bucket_a = Bucket::Single(entry_a.clone());
         let bucket_b = Bucket::Single(entry_b.clone());
-        let bucket_a_b = Bucket::Collision(list_sync![entry_a.clone(), entry_b.clone()]);
+        let bucket_a_b = Bucket::Collision(list![entry_a.clone(), entry_b.clone()]);
 
         let empty_branch = Node::<u8, i32>::new_empty_branch();
         let branch_with_collision = {

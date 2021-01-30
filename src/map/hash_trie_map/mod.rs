@@ -9,7 +9,6 @@ use super::entry::Entry;
 use crate::list;
 use crate::utils::DefaultBuildHasher;
 use crate::List;
-use crate::ListSync;
 use alloc::vec::Vec;
 use archery::{ArcK, RcK, SharedPointer, SharedPointerKind};
 use core::borrow::Borrow;
@@ -199,7 +198,7 @@ where
     P: SharedPointerKind,
 {
     Single(EntryWithHash<K, V, P>),
-    Collision(ListSync<EntryWithHash<K, V, P>>),
+    Collision(List<EntryWithHash<K, V, P>, P>),
 }
 
 #[derive(Debug)]
@@ -478,12 +477,12 @@ where
 mod bucket_utils {
     use super::*;
 
-    pub fn list_remove_first<T: Clone, F: Fn(&T) -> bool>(
-        list: &mut ListSync<T>,
+    pub fn list_remove_first<T: Clone, P: SharedPointerKind, F: Fn(&T) -> bool>(
+        list: &mut List<T, P>,
         predicate: F,
     ) -> Option<T> {
         let mut before_needle: Vec<T> = Vec::with_capacity(list.len());
-        let remaining: &mut ListSync<T> = list;
+        let remaining: &mut List<T, P> = list;
         let mut removed = None;
 
         while !remaining.is_empty() {
@@ -577,8 +576,11 @@ where
                 false
             }
             Bucket::Single(existing_entry) => {
+                let mut entries = List::new_with_ptr_kind();
+
                 // TODO In theory we should not need to clone `existing_entry`.
-                let entries = list_sync!(entry, existing_entry.clone());
+                entries.push_front_mut(existing_entry.clone());
+                entries.push_front_mut(entry);
 
                 *self = Bucket::Collision(entries);
 
@@ -1032,7 +1034,7 @@ where
 {
     Branch(Peekable<slice::Iter<'a, SharedPointer<Node<K, V, P>, P>>>),
     LeafSingle(&'a EntryWithHash<K, V, P>),
-    LeafCollision(Peekable<list::Iter<'a, EntryWithHash<K, V, P>, ArcK>>),
+    LeafCollision(Peekable<list::Iter<'a, EntryWithHash<K, V, P>, P>>),
 }
 
 impl<'a, K, V, P> IterStackElement<'a, K, V, P>
