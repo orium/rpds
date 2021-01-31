@@ -761,6 +761,29 @@ where
     }
 }
 
+impl<K, V, P> Node<K, V, P>
+where
+    K: Ord + Clone,
+    V: Clone,
+    P: SharedPointerKind,
+{
+    fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut Entry<K, V>>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        match key.cmp(self.entry.key.borrow()) {
+            Ordering::Less => {
+                self.left.as_mut().and_then(|l| SharedPointer::make_mut(l).get_mut(key))
+            }
+            Ordering::Equal => Some(SharedPointer::make_mut(&mut self.entry)),
+            Ordering::Greater => {
+                self.right.as_mut().and_then(|r| SharedPointer::make_mut(r).get_mut(key))
+            }
+        }
+    }
+}
+
 impl<K, V> RedBlackTreeMapSync<K, V>
 where
     K: Ord,
@@ -924,6 +947,25 @@ where
             }
             (_, _) => RangeIterPtr::new(self, range).map(|e| (&e.key, &e.value)),
         }
+    }
+}
+
+impl<K, V, P> RedBlackTreeMap<K, V, P>
+where
+    K: Ord + Clone,
+    V: Clone,
+    P: SharedPointerKind,
+{
+    pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut V>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        // Note that unfortunately, even if nothing is found, we still might have cloned some
+        // part of the tree unnecessarily.
+        self.root
+            .as_mut()
+            .and_then(|r| SharedPointer::make_mut(r).get_mut(key).map(|e| &mut e.value))
     }
 }
 
