@@ -1,5 +1,10 @@
 # Release notes
 
+## 0.9.0
+
+* Added `{HashTrie,RedBlackTree}Map::get_mut()`.
+* Improved `HashTrieMap` performance when using `Rc` pointers.
+
 ## 0.8.0
 
 * Added support for `no_std`.
