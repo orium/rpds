@@ -1068,8 +1068,8 @@ mod internal {
             assert!(!map.contains_key(v));
 
             if let Err(error) = map.check_consistent() {
-                panic!(format!("Consistency error in red-black tree ({:?}).  Insertions: {:?}.  Removals: {:?}",
-                               error, &values_insert, &values_remove[0..=i]));
+                panic!("Consistency error in red-black tree ({:?}).  Insertions: {:?}.  Removals: {:?}",
+                       error, &values_insert, &values_remove[0..=i]);
             }
         }
     }
