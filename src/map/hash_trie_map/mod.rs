@@ -15,8 +15,8 @@ use core::borrow::Borrow;
 use core::fmt::Display;
 use core::hash::BuildHasher;
 use core::hash::Hash;
+use core::iter;
 use core::iter::FromIterator;
-use core::iter::Peekable;
 use core::mem::size_of;
 use core::ops::Index;
 use core::slice;
@@ -1032,9 +1032,9 @@ enum IterStackElement<'a, K, V, P>
 where
     P: SharedPointerKind,
 {
-    Branch(Peekable<slice::Iter<'a, SharedPointer<Node<K, V, P>, P>>>),
-    LeafSingle(&'a EntryWithHash<K, V, P>),
-    LeafCollision(Peekable<list::Iter<'a, EntryWithHash<K, V, P>, P>>),
+    Branch(slice::Iter<'a, SharedPointer<Node<K, V, P>, P>>),
+    LeafCollision(list::Iter<'a, EntryWithHash<K, V, P>, P>),
+    LeafSingle(iter::Once<&'a SharedPointer<Entry<K, V>, P>>),
 }
 
 impl<'a, K, V, P> IterStackElement<'a, K, V, P>
@@ -1042,37 +1042,32 @@ where
     K: Eq + Hash,
     P: SharedPointerKind,
 {
+    #[inline]
     fn new(node: &Node<K, V, P>) -> IterStackElement<'_, K, V, P> {
         match node {
-            Node::Branch(children) => IterStackElement::Branch(children.iter().peekable()),
-            Node::Leaf(Bucket::Single(entry)) => IterStackElement::LeafSingle(entry),
+            Node::Branch(children) => IterStackElement::Branch(children.iter()),
             Node::Leaf(Bucket::Collision(entries)) => {
-                IterStackElement::LeafCollision(entries.iter().peekable())
+                IterStackElement::LeafCollision(entries.iter())
+            }
+            Node::Leaf(Bucket::Single(entry)) => {
+                IterStackElement::LeafSingle(iter::once(&entry.entry))
             }
         }
     }
 
-    fn current_elem(&mut self) -> &'a SharedPointer<Entry<K, V>, P> {
-        match self {
-            IterStackElement::Branch(_) => panic!("called current element of a branch"),
-            IterStackElement::LeafSingle(entry) => &entry.entry,
-            IterStackElement::LeafCollision(iter) => &iter.peek().unwrap().entry,
-        }
-    }
-
-    /// Advance and returns `true` if finished.
+    /// Returns the next `Entry` _or_ the next `IterStackElement` to be pushed into the stack.
+    /// If the result is None the `IterStackElement` should be popped from the stack.
     #[inline]
-    fn advance(&mut self) -> bool {
+    fn next(&mut self) -> Option<Result<&'a SharedPointer<Entry<K, V>, P>, Self>> {
         match self {
-            IterStackElement::Branch(iter) => {
-                iter.next();
-                iter.peek().is_none()
-            }
-            IterStackElement::LeafSingle(_) => true,
-            IterStackElement::LeafCollision(iter) => {
-                iter.next();
-                iter.peek().is_none()
-            }
+            IterStackElement::Branch(i) => i.next().map(|node| match &**node {
+                Node::Branch(_) | Node::Leaf(Bucket::Collision(_)) => {
+                    Err(IterStackElement::new(node))
+                }
+                Node::Leaf(Bucket::Single(e)) => Ok(&e.entry),
+            }),
+            IterStackElement::LeafCollision(i) => i.next().map(|i| Ok(&i.entry)),
+            IterStackElement::LeafSingle(i) => i.next().map(Ok),
         }
     }
 }
@@ -1102,44 +1097,7 @@ where
             stack.push(IterStackElement::new(map.root.borrow()));
         }
 
-        let mut iter = IterPtr { stack, size: map.size() };
-
-        iter.dig();
-
-        iter
-    }
-
-    fn dig(&mut self) {
-        let next_stack_elem: Option<IterStackElement<'_, K, V, P>> =
-            self.stack.last_mut().and_then(|stack_top| match stack_top {
-                IterStackElement::Branch(iter) => {
-                    iter.peek().map(|node| IterStackElement::new(node))
-                }
-                _ => None,
-            });
-
-        if let Some(e) = next_stack_elem {
-            self.stack.push(e);
-            self.dig();
-        }
-    }
-
-    fn advance(&mut self) {
-        if let Some(mut stack_element) = self.stack.pop() {
-            let finished = stack_element.advance();
-
-            if finished {
-                self.advance();
-            } else {
-                self.stack.push(stack_element);
-
-                self.dig();
-            }
-        }
-    }
-
-    fn current(&mut self) -> Option<&'a SharedPointer<Entry<K, V>, P>> {
-        self.stack.last_mut().map(|e| e.current_elem())
+        IterPtr { stack, size: map.size() }
     }
 }
 
@@ -1151,17 +1109,24 @@ where
     type Item = &'a SharedPointer<Entry<K, V>, P>;
 
     fn next(&mut self) -> Option<&'a SharedPointer<Entry<K, V>, P>> {
-        let current = self.current();
-
-        self.advance();
-
-        if current.is_some() {
-            self.size -= 1;
+        while let Some(stack_element) = self.stack.last_mut() {
+            match stack_element.next() {
+                Some(Ok(elem)) => {
+                    self.size -= 1;
+                    return Some(elem);
+                }
+                Some(Err(stack_elem)) => {
+                    self.stack.push(stack_elem);
+                }
+                None => {
+                    self.stack.pop();
+                }
+            }
         }
-
-        current
+        None
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (self.size, Some(self.size))
     }
