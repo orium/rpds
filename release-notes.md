@@ -1,5 +1,9 @@
 # Release notes
 
+## 0.10.0
+
+* Improved `{HashTrieMap,HashTrieSet}` iteration performance.
+
 ## 0.9.0
 
 * Added `{HashTrie,RedBlackTree}Map::get_mut()`.
