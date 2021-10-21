@@ -15,6 +15,9 @@ function set_version {
     local version=$1
 
     sed -i "0,/version = .*$/s//version = \"$version\"/" Cargo.toml
+
+    # Update version in `Cargo.lock`.
+    cargo update -p $(project_name) --offline
 }
 
 if [ $(git symbolic-ref --short HEAD) != master ]; then

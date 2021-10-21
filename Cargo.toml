@@ -4,7 +4,8 @@ description = "Persistent data structures with structural sharing"
 version = "0.10.1-pre"
 authors = ["Diogo Sousa <diogogsousa@gmail.com>"]
 
-edition = "2018"
+edition = "2021"
+rust-version = "1.56.0"
 
 homepage = "https://github.com/orium/rpds"
 repository = "https://github.com/orium/rpds"
@@ -35,7 +36,6 @@ include = [
 ]
 
 [badges]
-travis-ci = { repository = "orium/rpds", branch = "master" }
 codecov = { repository = "orium/rpds", branch = "master", service = "github" }
 
 [dependencies]
