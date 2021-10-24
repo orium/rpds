@@ -223,7 +223,6 @@ where
         self.size() == 0
     }
 
-    #[must_use]
     pub fn iter(&self) -> Iter<'_, T, P> {
         self.map.keys()
     }

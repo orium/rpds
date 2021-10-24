@@ -383,8 +383,8 @@ where
             is_root: bool,
         ) -> bool {
             match node {
-                Some(n) => {
-                    let node = SharedPointer::make_mut(n);
+                Some(node) => {
+                    let node = SharedPointer::make_mut(node);
 
                     let ret = match k.cmp(&node.entry.key) {
                         Ordering::Less => {
@@ -725,8 +725,8 @@ where
             P: SharedPointerKind,
         {
             let (removed, make_node_none) = match *node {
-                Some(ref mut node_ptr) => {
-                    let node = SharedPointer::make_mut(node_ptr);
+                Some(ref mut node) => {
+                    let node = SharedPointer::make_mut(node);
 
                     let ret = match k.cmp(node.entry.key.borrow()) {
                         Ordering::Less => (del_left(node, k), false),
@@ -904,7 +904,6 @@ where
         self.size() == 0
     }
 
-    #[must_use]
     pub fn iter(&self) -> Iter<'_, K, V, P> {
         self.iter_ptr().map(|e| (&e.key, &e.value))
     }
@@ -914,17 +913,14 @@ where
         IterPtr::new(self)
     }
 
-    #[must_use]
     pub fn keys(&self) -> IterKeys<'_, K, V, P> {
         self.iter().map(|(k, _)| k)
     }
 
-    #[must_use]
     pub fn values(&self) -> IterValues<'_, K, V, P> {
         self.iter().map(|(_, v)| v)
     }
 
-    #[must_use]
     pub fn range<Q, RB>(&self, range: RB) -> RangeIter<'_, K, V, RB, Q, P>
     where
         K: Borrow<Q>,

@@ -370,10 +370,7 @@ where
                             let subtree = subtrees.first().unwrap();
 
                             // Keep collision at the bottom of the tree.
-                            match subtree.borrow() {
-                                Node::Leaf(Bucket::Single(_)) => true,
-                                _ => false,
-                            }
+                            matches!(subtree.borrow(), Node::Leaf(Bucket::Single(_)))
                         };
 
                         match compress {
@@ -542,12 +539,10 @@ where
             Bucket::Collision(entries) => {
                 let removed =
                     bucket_utils::list_remove_first(entries, |e| e.matches(key, key_hash));
-                if let Some(e) = removed {
+                removed.and_then(|e| {
                     entries.push_front_mut(e);
                     entries.first_mut()
-                } else {
-                    None
-                }
+                })
             }
         }
     }
@@ -780,7 +775,7 @@ where
     {
         let key_hash = node_utils::hash(key, &self.hasher_builder);
 
-        self.root.get(key, key_hash, 0, self.degree).map(|e| e.value())
+        self.root.get(key, key_hash, 0, self.degree).map(EntryWithHash::value)
     }
 
     #[must_use]
@@ -856,7 +851,6 @@ where
         self.size() == 0
     }
 
-    #[must_use]
     pub fn iter(&self) -> Iter<'_, K, V, P> {
         self.iter_ptr().map(|e| (&e.key, &e.value))
     }
@@ -866,12 +860,10 @@ where
         IterPtr::new(self)
     }
 
-    #[must_use]
     pub fn keys(&self) -> IterKeys<'_, K, V, P> {
         self.iter().map(|(k, _)| k)
     }
 
-    #[must_use]
     pub fn values(&self) -> IterValues<'_, K, V, P> {
         self.iter().map(|(_, v)| v)
     }
@@ -894,7 +886,7 @@ where
         let key_hash = node_utils::hash(key, &self.hasher_builder);
         SharedPointer::make_mut(&mut self.root)
             .get_mut(key, key_hash, 0, self.degree)
-            .map(|e| e.value_mut())
+            .map(EntryWithHash::value_mut)
     }
 }
 

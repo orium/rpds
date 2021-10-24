@@ -9,10 +9,16 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::match_bool)]
 #![allow(clippy::if_not_else)]
-#![allow(clippy::stutter)]
+#![allow(clippy::module_name_repetitions)]
 #![allow(clippy::similar_names)]
 #![allow(clippy::use_self)]
 #![allow(clippy::single_match_else)]
+#![allow(clippy::unnested_or_patterns)]
+#![allow(clippy::wildcard_imports)]
+#![allow(clippy::match_same_arms)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::type_complexity)]
+#![allow(clippy::enum_glob_use)]
 // Note: If you change this remember to update `README.md`.  To do so run `./tools/update-readme.sh`.
 //! # Rust Persistent Data Structures
 //!

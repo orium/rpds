@@ -185,7 +185,7 @@ where
     }
 
     pub fn drop_first_mut(&mut self) -> bool {
-        if let Some(h) = self.head.take() {
+        self.head.take().map_or(false, |h| {
             self.head = h.next.clone();
             self.length -= 1;
 
@@ -194,9 +194,7 @@ where
             }
 
             true
-        } else {
-            false
-        }
+        })
     }
 
     fn push_front_ptr_mut(&mut self, v: SharedPointer<T, P>) {
@@ -220,7 +218,7 @@ where
     }
 
     pub fn push_front_mut(&mut self, v: T) {
-        self.push_front_ptr_mut(SharedPointer::new(v))
+        self.push_front_ptr_mut(SharedPointer::new(v));
     }
 
     #[must_use]
@@ -269,7 +267,6 @@ where
         self.len() == 0
     }
 
-    #[must_use]
     pub fn iter(&self) -> Iter<'_, T, P> {
         self.iter_ptr().map(|v| v.borrow())
     }
@@ -444,7 +441,7 @@ where
     P: SharedPointerKind,
 {
     fn new(list: &List<T, P>) -> IterPtr<'_, T, P> {
-        IterPtr { next: list.head.as_ref().map(|node| node.as_ref()), length: list.len() }
+        IterPtr { next: list.head.as_ref().map(AsRef::as_ref), length: list.len() }
     }
 }
 
@@ -457,7 +454,7 @@ where
     fn next(&mut self) -> Option<&'a SharedPointer<T, P>> {
         match self.next {
             Some(Node { value: ref v, next: ref t }) => {
-                self.next = t.as_ref().map(|node| node.as_ref());
+                self.next = t.as_ref().map(AsRef::as_ref);
                 self.length -= 1;
                 Some(v)
             }

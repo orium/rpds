@@ -162,7 +162,7 @@ where
 
                 match a.get_mut(b) {
                     Some(subtree) => {
-                        SharedPointer::make_mut(subtree).assoc(value, height - 1, bucket)
+                        SharedPointer::make_mut(subtree).assoc(value, height - 1, bucket);
                     }
                     None => {
                         let mut subtree = if height > 1 {
@@ -418,17 +418,17 @@ where
 
             match new_root {
                 Node::Branch(ref mut values) => values.push(SharedPointer::clone(&self.root)),
-                _ => unreachable!("expected a branch"),
+                Node::Leaf(_) => unreachable!("expected a branch"),
             }
 
             let length = self.length;
             self.root = SharedPointer::new(new_root);
             self.length += 1;
 
-            self.assoc(length, v)
+            self.assoc(length, v);
         } else {
             let length = self.length;
-            self.assoc(length, v)
+            self.assoc(length, v);
         }
     }
 
@@ -490,7 +490,6 @@ where
         self.len() == 0
     }
 
-    #[must_use]
     pub fn iter(&self) -> Iter<'_, T, P> {
         self.iter_ptr().map(|v| v.borrow())
     }
@@ -782,7 +781,7 @@ where
 
     #[inline]
     fn current(stack: &[IterStackElement<'a, T, P>]) -> Option<&'a SharedPointer<T, P>> {
-        stack.last().map(|e| e.current_elem())
+        stack.last().map(IterStackElement::current_elem)
     }
 
     #[inline]

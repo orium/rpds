@@ -171,7 +171,6 @@ where
         self.list.is_empty()
     }
 
-    #[must_use]
     pub fn iter(&self) -> Iter<'_, T, P> {
         self.list.iter()
     }
@@ -222,7 +221,7 @@ where
     P: SharedPointerKind,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.list.hash(state)
+        self.list.hash(state);
     }
 }
 

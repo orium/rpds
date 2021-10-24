@@ -247,12 +247,10 @@ where
         self.size() == 0
     }
 
-    #[must_use]
     pub fn iter(&self) -> Iter<'_, T, P> {
         self.map.keys()
     }
 
-    #[must_use]
     pub fn range<Q, RB>(&self, range: RB) -> RangeIter<'_, T, RB, Q, P>
     where
         T: Borrow<Q>,
