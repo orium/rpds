@@ -30,6 +30,7 @@ pub type Iter<'a, K, V, P> =
 pub type IterKeys<'a, K, V, P> = core::iter::Map<Iter<'a, K, V, P>, fn((&'a K, &V)) -> &'a K>;
 pub type IterValues<'a, K, V, P> = core::iter::Map<Iter<'a, K, V, P>, fn((&K, &'a V)) -> &'a V>;
 
+#[allow(clippy::cast_possible_truncation)]
 const DEFAULT_DEGREE: u8 = 8 * size_of::<usize>() as u8;
 
 /// Creates a [`HashTrieMap`](map/hash_trie_map/struct.HashTrieMap.html) containing the
@@ -224,10 +225,13 @@ mod node_utils {
     pub fn index_from_hash(hash: HashValue, depth: usize, degree: u8) -> Option<usize> {
         debug_assert!(degree.is_power_of_two());
 
+        #[allow(clippy::cast_possible_truncation)]
         let shift = depth as u32 * degree.trailing_zeros();
 
+        #[allow(clippy::cast_lossless)]
         if (shift as usize) < 8 * size_of_val(&hash) {
             let mask = degree as HashValue - 1;
+            #[allow(clippy::cast_possible_truncation)]
             Some(((hash >> shift) & mask) as usize)
         } else {
             None

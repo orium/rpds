@@ -687,17 +687,22 @@ where
     P: SharedPointerKind,
 {
     fn new(node: &Node<T, P>, backwards: bool) -> IterStackElement<'_, T, P> {
+        #[allow(clippy::cast_possible_wrap)]
         IterStackElement { node, index: if backwards { node.used() as isize - 1 } else { 0 } }
     }
 
+    #[inline]
     fn current_node(&self) -> &'a Node<T, P> {
+        #[allow(clippy::cast_sign_loss)]
         match self.node {
             Node::Branch(a) => a[self.index as usize].as_ref(),
             Node::Leaf(_) => panic!("called current node of a branch"),
         }
     }
 
+    #[inline]
     fn current_elem(&self) -> &'a SharedPointer<T, P> {
+        #[allow(clippy::cast_sign_loss)]
         match self.node {
             Node::Leaf(a) => &a[self.index as usize],
             Node::Branch(_) => panic!("called current element of a branch"),
@@ -707,6 +712,7 @@ where
     /// Advance and returns `true` if finished.
     #[inline]
     fn advance(&mut self, backwards: bool) -> bool {
+        #[allow(clippy::cast_sign_loss)]
         if backwards {
             self.index -= 1;
             self.index < 0
