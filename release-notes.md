@@ -1,5 +1,9 @@
 # Release notes
 
+## 0.11.0
+
+* Added `{HashTrie,RedBlackTree}Map::get_key_value()` and `{HashTrie,RedBlackTree}Set::get()`.
+
 ## 0.10.0
 
 * Improved `{HashTrieMap,HashTrieSet}` iteration performance.
