@@ -162,6 +162,15 @@ where
     }
 
     #[must_use]
+    pub fn get<V: ?Sized>(&self, v: &V) -> Option<&T>
+    where
+        T: Borrow<V>,
+        V: Ord,
+    {
+        self.map.get_key_value(v).map(|(k, _)| k)
+    }
+
+    #[must_use]
     pub fn contains<V: ?Sized>(&self, v: &V) -> bool
     where
         T: Borrow<V>,

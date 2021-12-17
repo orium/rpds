@@ -793,6 +793,18 @@ fn test_macro_ht_map() {
 }
 
 #[test]
+fn test_get_key_value() {
+    let mut map = HashTrieMap::new();
+
+    map = map.insert("foo", 4);
+    assert_eq!(map.get_key_value("foo"), Some((&"foo", &4)));
+
+    map = map.insert("bar", 2);
+    assert_eq!(map.get_key_value("foo"), Some((&"foo", &4)));
+    assert_eq!(map.get_key_value("bar"), Some((&"bar", &2)));
+}
+
+#[test]
 fn test_insert_simple() {
     let mut map = HashTrieMap::new();
     assert_eq!(map.size(), 0);

@@ -823,6 +823,15 @@ where
     }
 
     #[must_use]
+    pub fn get_key_value<Q: ?Sized>(&self, key: &Q) -> Option<(&K, &V)>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        self.root.as_ref().and_then(|r| r.get(key)).map(|e| (&e.key, &e.value))
+    }
+
+    #[must_use]
     pub fn first(&self) -> Option<(&K, &V)> {
         self.root.as_ref().map(|r| r.first()).map(|e| (&e.key, &e.value))
     }

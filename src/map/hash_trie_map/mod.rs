@@ -782,6 +782,17 @@ where
     }
 
     #[must_use]
+    pub fn get_key_value<Q: ?Sized>(&self, key: &Q) -> Option<(&K, &V)>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        let key_hash = node_utils::hash(key, &self.hasher_builder);
+
+        self.root.get(key, key_hash, 0, self.degree).map(|e| (e.key(), e.value()))
+    }
+
+    #[must_use]
     pub fn insert(&self, key: K, value: V) -> HashTrieMap<K, V, P, H> {
         let mut new_map = self.clone();
 

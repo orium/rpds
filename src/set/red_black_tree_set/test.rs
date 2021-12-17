@@ -268,6 +268,18 @@ fn test_remove_mut() {
 }
 
 #[test]
+fn test_get() {
+    let mut set = RedBlackTreeSet::new();
+
+    set = set.insert("foo");
+    assert_eq!(set.get("foo"), Some(&"foo"));
+
+    set = set.insert("bar");
+    assert_eq!(set.get("foo"), Some(&"foo"));
+    assert_eq!(set.get("bar"), Some(&"bar"));
+}
+
+#[test]
 fn test_is_disjoint() {
     assert!(!RedBlackTreeSet::is_disjoint(&rbt_set![1, 2, 3], &rbt_set![1, 2, 3]));
     assert!(!RedBlackTreeSet::is_disjoint(&rbt_set![1, 2, 3], &rbt_set![0, 1]));

@@ -83,6 +83,7 @@ macro_rules! ht_set_sync {
 /// | `new()`           |    Θ(1) |        Θ(1) |
 /// | `insert()`        |    Θ(1) |        Θ(n) |
 /// | `remove()`        |    Θ(1) |        Θ(n) |
+/// | `get()`           |    Θ(1) |        Θ(n) |
 /// | `contains()`      |    Θ(1) |        Θ(n) |
 /// | `size()`          |    Θ(1) |        Θ(1) |
 /// | `clone()`         |    Θ(1) |        Θ(1) |
@@ -184,6 +185,15 @@ where
         V: Hash + Eq,
     {
         self.map.remove_mut(v)
+    }
+
+    #[must_use]
+    pub fn get<V: ?Sized>(&self, v: &V) -> Option<&T>
+    where
+        T: Borrow<V>,
+        V: Hash + Eq,
+    {
+        self.map.get_key_value(v).map(|(k, _)| k)
     }
 
     #[must_use]

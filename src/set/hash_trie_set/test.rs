@@ -225,6 +225,18 @@ fn test_remove_mut() {
 }
 
 #[test]
+fn test_get() {
+    let mut set = HashTrieSet::new();
+
+    set = set.insert("foo");
+    assert_eq!(set.get("foo"), Some(&"foo"));
+
+    set = set.insert("bar");
+    assert_eq!(set.get("foo"), Some(&"foo"));
+    assert_eq!(set.get("bar"), Some(&"bar"));
+}
+
+#[test]
 fn test_is_disjoint() {
     assert!(!HashTrieSet::is_disjoint(&ht_set![1, 2, 3], &ht_set![1, 2, 3]));
     assert!(!HashTrieSet::is_disjoint(&ht_set![1, 2, 3], &ht_set![0, 1]));
