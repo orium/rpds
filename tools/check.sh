@@ -33,7 +33,7 @@ cargo test  --features fatal-warnings,serde
 echo 'Checking the benchmarks:'
 cargo bench --features fatal-warnings,serde -- --test
 echo 'Checking documentation:'
-cargo doc   --features fatal-warnings,serde --document-private-items
+cargo doc   --features fatal-warnings,serde --no-deps --document-private-items
 
 echo 'Checking links:'
 cargo deadlinks
