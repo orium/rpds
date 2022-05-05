@@ -9,6 +9,7 @@ use archery::{ArcK, RcK, SharedPointerKind};
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt::Display;
+use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
 use core::ops::RangeBounds;
 
@@ -322,6 +323,22 @@ where
 {
     fn cmp(&self, other: &RedBlackTreeSet<T, P>) -> Ordering {
         self.iter().cmp(other.iter())
+    }
+}
+
+impl<T: Hash, P: SharedPointerKind> Hash for RedBlackTreeSet<T, P>
+where
+    T: Ord,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Add the hash of length so that if two collections are added one after the other it
+        // doesn't hash to the same thing as a single collection with the same elements in the same
+        // order.
+        self.size().hash(state);
+
+        for e in self {
+            e.hash(state);
+        }
     }
 }
 

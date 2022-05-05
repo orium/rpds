@@ -5,6 +5,7 @@
 
 use super::*;
 use alloc::vec::Vec;
+use core::hash::{Hash, Hasher};
 use pretty_assertions::assert_eq;
 use static_assertions::assert_impl_all;
 
@@ -396,6 +397,37 @@ fn test_ord_pointer_kind_consistent() {
     assert!(set_a_sync >= set_a);
     assert!(set_b_sync > set_a);
     assert!(set_b_sync <= set_b);
+}
+
+fn hash<T: Ord + Hash, P>(set: &RedBlackTreeSet<T, P>) -> u64
+where
+    P: SharedPointerKind,
+{
+    #[allow(deprecated)]
+    let mut hasher = core::hash::SipHasher::new();
+
+    set.hash(&mut hasher);
+
+    hasher.finish()
+}
+
+#[test]
+fn test_hash() {
+    let set_1 = rbt_set!["a"];
+    let set_1_prime = rbt_set!["a"];
+    let set_2 = rbt_set!["b", "a"];
+
+    assert_eq!(hash(&set_1), hash(&set_1));
+    assert_eq!(hash(&set_1), hash(&set_1_prime));
+    assert_ne!(hash(&set_1), hash(&set_2));
+}
+
+#[test]
+fn test_hash_pointer_kind_consistent() {
+    let set = rbt_set!["a"];
+    let set_sync = rbt_set_sync!["a"];
+
+    assert_eq!(hash(&set), hash(&set_sync));
 }
 
 #[test]
