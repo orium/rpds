@@ -1,5 +1,9 @@
 # Release notes
 
+## 0.12.0
+
+* Implemented `Hash` ofr `RedBlackTreeSet`.
+
 ## 0.11.0
 
 * Added `{HashTrie,RedBlackTree}Map::get_key_value()` and `{HashTrie,RedBlackTree}Set::get()`.
