@@ -20,12 +20,10 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::enum_glob_use)]
 // Note: If you change this remember to update `README.md`.  To do so run `./tools/update-readme.sh`.
-//! # Rust Persistent Data Structures
-//!
 //! Rust Persistent Data Structures provides [fully persistent data structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
 //! with structural sharing.
 //!
-//! ## Setup
+//! # Setup
 //!
 //! To use rpds add the following to your `Cargo.toml`:
 //!
@@ -34,7 +32,7 @@
 //! rpds = "<version>"
 //! ```
 //!
-//! ## Data structures
+//! # Data structures
 //!
 //! This crate offers the following data structures:
 //!
@@ -47,12 +45,12 @@
 //!   7. [`RedBlackTreeMap`](#redblacktreemap)
 //!   8. [`RedBlackTreeSet`](#redblacktreeset)
 //!
-//! ### `List`
+//! ## `List`
 //! [![List documentation](https://img.shields.io/badge/doc-List-303070.svg)](crate::list::List)
 //!
 //! Your classic functional list.
 //!
-//! #### Example
+//! ### Example
 //!
 //! ```rust
 //! use rpds::List;
@@ -70,14 +68,14 @@
 //! assert_eq!(list_dropped, list);
 //! ```
 //!
-//! ### `Vector`
+//! ## `Vector`
 //! [![`Vector` documentation](https://img.shields.io/badge/doc-Vector-303070.svg)](crate::vector::Vector)
 //!
 //! A sequence that can be indexed.  The implementation is described in
 //! [Understanding Persistent Vector Part 1](http://hypirion.com/musings/understanding-persistent-vector-pt-1)
 //! and [Understanding Persistent Vector Part 2](http://hypirion.com/musings/understanding-persistent-vector-pt-2).
 //!
-//! #### Example
+//! ### Example
 //!
 //! ```rust
 //! use rpds::Vector;
@@ -96,12 +94,12 @@
 //! assert_eq!(screaming_vector[2], "VECTOR!!!");
 //! ```
 //!
-//! ### `Stack`
+//! ## `Stack`
 //! [![`Stack` documentation](https://img.shields.io/badge/doc-Stack-303070.svg)](crate::stack::Stack)
 //!
 //! A LIFO (last in, first out) data structure.  This is just a [`List`](#list) in disguise.
 //!
-//! #### Example
+//! ### Example
 //!
 //! ```rust
 //! use rpds::Stack;
@@ -119,12 +117,12 @@
 //! assert_eq!(stack_popped, stack);
 //! ```
 //!
-//! ### `Queue`
+//! ## `Queue`
 //! [![`Queue` documentation](https://img.shields.io/badge/doc-Queue-303070.svg)](crate::queue::Queue)
 //!
 //! A FIFO (first in, first out) data structure.
 //!
-//! #### Example
+//! ### Example
 //!
 //! ```rust
 //! use rpds::Queue;
@@ -141,14 +139,14 @@
 //! assert_eq!(queue_dequeued.peek(), Some(&"dois"));
 //! ```
 //!
-//! ### `HashTrieMap`
+//! ## `HashTrieMap`
 //! [![`HashTrieMap` documentation](https://img.shields.io/badge/doc-HashTrieMap-303070.svg)](crate::map::hash_trie_map::HashTrieMap)
 //!
 //! A map implemented with a [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie).
 //! See [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf) for
 //! details.
 //!
-//! #### Example
+//! ### Example
 //!
 //! ```rust
 //! use rpds::HashTrieMap;
@@ -170,12 +168,12 @@
 //! assert_eq!(map_pt_binary.get(&2), None);
 //! ```
 //!
-//! ### `HashTrieSet`
+//! ## `HashTrieSet`
 //! [![`HashTrieSet` documentation](https://img.shields.io/badge/doc-HashTrieSet-303070.svg)](crate::set::hash_trie_set::HashTrieSet)
 //!
 //! A set implemented with a [`HashTrieMap`](#hashtriemap).
 //!
-//! #### Example
+//! ### Example
 //!
 //! ```rust
 //! use rpds::HashTrieSet;
@@ -195,12 +193,12 @@
 //! assert!(!set_positive.contains(&"zero"));
 //! ```
 //!
-//! ### `RedBlackTreeMap`
+//! ## `RedBlackTreeMap`
 //! [![`RedBlackTreeMap` documentation](https://img.shields.io/badge/doc-RedBlackTreeMap-303070.svg)](crate::map::red_black_tree_map::RedBlackTreeMap)
 //!
 //! A map implemented with a [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree).
 //!
-//! #### Example
+//! ### Example
 //!
 //! ```rust
 //! use rpds::RedBlackTreeMap;
@@ -224,12 +222,12 @@
 //! assert_eq!(map_pt_binary.first(), Some((&0, &"zero")));
 //! ```
 //!
-//! ### `RedBlackTreeSet`
+//! ## `RedBlackTreeSet`
 //! [![`RedBlackTreeSet` documentation](https://img.shields.io/badge/doc-RedBlackTreeSet-303070.svg)](crate::set::red_black_tree_set::RedBlackTreeSet)
 //!
 //! A set implemented with a [`RedBlackTreeMap`](#redblacktreemap).
 //!
-//! #### Example
+//! ### Example
 //!
 //! ```rust
 //! use rpds::RedBlackTreeSet;
@@ -251,9 +249,9 @@
 //! assert_eq!(set_positive.first(), Some(&"one"));
 //! ```
 //!
-//! ## Other features
+//! # Other features
 //!
-//! ### Mutable methods
+//! ## Mutable methods
 //!
 //! When you change a data structure you often do not need its previous versions.  For those cases
 //! rpds offers you mutable methods which are generally faster:
@@ -270,7 +268,7 @@
 //! let set_0_1_2 = set.insert("two");
 //! ```
 //!
-//! ### Initialization macros
+//! ## Initialization macros
 //!
 //! There are convenient initialization macros for all data structures:
 //!
@@ -283,7 +281,7 @@
 //!
 //! Check the documentation for initialization macros of other data structures.
 //!
-//! ### Thread safety
+//! ## Thread safety
 //!
 //! All data structures in this crate can be shared between threads, but that is an opt-in ability.
 //! This is because there is a performance cost to make data structures thread safe.  That cost
@@ -310,16 +308,7 @@
 //! let vec = vector_sync!(42);
 //! ```
 //!
-//! ### `no_std` support
-//!
-//! This crate supports `no_std`.  To enable that you need to disable the default feature `std`:
-//!
-//! ```toml
-//! [dependencies]
-//! rpds = { version = "<version>", default-features = false }
-//! ```
-//!
-//! #### Further details
+//! ### Further details
 //!
 //! Internally the data structures in this crate maintain a lot of reference-counting pointers.
 //! These pointers are used both for links between the internal nodes of the data structure as well
@@ -349,7 +338,16 @@
 //! //                                Change it to `archery::RcK` to use a `Rc` pointer.
 //! ```
 //!
-//! ### Serialization
+//! ## `no_std` support
+//!
+//! This crate supports `no_std`.  To enable that you need to disable the default feature `std`:
+//!
+//! ```toml
+//! [dependencies]
+//! rpds = { version = "<version>", default-features = false }
+//! ```
+//!
+//! ## Serialization
 //!
 //! We support serialization through [serde](https://crates.io/crates/serde).  To use it
 //! enable the `serde` feature.  To do so change the rpds dependency in your `Cargo.toml` to
