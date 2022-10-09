@@ -11,12 +11,6 @@ cd "$(git rev-parse --show-toplevel)"
 
 source "tools/utils.sh"
 
-function on_finish() {
-    # TODO See workarounds below.
-    find src/ -name '*.rs' \
-        | xargs -d '\n' -n1 sed -i 's,// WORKAROUND TARPAULIN ,,g'
-}
-
 assert_installed "cargo-tarpaulin"
 
 output_format=Html
@@ -41,19 +35,9 @@ while [ $# -ge 1 ]; do
     shift
 done
 
-trap on_finish EXIT
-
-# TODO This is a workaround for a tarpaulin bug: https://github.com/xd009642/tarpaulin/issues/136#issuecomment-471340525
-find src/ -name '*.rs' \
-    | xargs -d '\n' -n1 sed -i 's,\(#\[inline.*\]\),// WORKAROUND TARPAULIN \0,'
-
-# TODO This may be fixed in the future.
-find src/ -name '*.rs' \
-    | xargs -d '\n' -n1 sed -i 's,static_assertions::assert_eq_size!,// WORKAROUND TARPAULIN \0,'
-
 # TODO it seems the `--force-clean` is not working.
 cargo clean
-cargo tarpaulin --features serde --force-clean --ignore-tests --ignore-panics --timeout 1200 --out $output_format
+cargo tarpaulin --force-clean --ignore-panics --engine llvm --timeout 1200 --out $output_format
 
 if [ "$output_format" == "Html" ]; then
     echo
