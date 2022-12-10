@@ -55,7 +55,7 @@ pretty_assertions = "1.2.1"
 static_assertions = "1.1.0"
 
 [features]
-default = ["std"]
+default = ["std", "sync"]
 fatal-warnings = []
 std = []
 sync = ["archery/arc"]
