@@ -39,12 +39,8 @@ include = [
 codecov = { repository = "orium/rpds", branch = "master", service = "github" }
 
 [dependencies]
-archery = { version = "0.4.1-pre", default-features = false }
+archery = { version = "0.4.0", default-features = false }
 serde = { version = "1.0.139", optional = true, default-features = false }
-
-
-[patch.crates-io]
-archery = { git = "https://github.com/stevefan1999-personal/archery", branch = "patch-arc", package = "archery" }
 
 [dev-dependencies]
 criterion = "0.3.6"
@@ -58,7 +54,7 @@ static_assertions = "1.1.0"
 default = ["std", "sync"]
 fatal-warnings = []
 std = []
-sync = ["archery/arc"]
+sync = []
 
 [package.metadata.docs.rs]
 features = ["serde"]
