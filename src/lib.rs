@@ -373,18 +373,22 @@ pub mod stack;
 pub mod vector;
 
 pub use crate::list::List;
-pub use crate::list::ListSync;
 pub use crate::map::hash_trie_map::HashTrieMap;
-pub use crate::map::hash_trie_map::HashTrieMapSync;
 pub use crate::map::red_black_tree_map::RedBlackTreeMap;
-pub use crate::map::red_black_tree_map::RedBlackTreeMapSync;
 pub use crate::queue::Queue;
-pub use crate::queue::QueueSync;
 pub use crate::set::hash_trie_set::HashTrieSet;
-pub use crate::set::hash_trie_set::HashTrieSetSync;
 pub use crate::set::red_black_tree_set::RedBlackTreeSet;
-pub use crate::set::red_black_tree_set::RedBlackTreeSetSync;
 pub use crate::stack::Stack;
-pub use crate::stack::StackSync;
 pub use crate::vector::Vector;
-pub use crate::vector::VectorSync;
+
+#[cfg(feature = "sync")]
+pub use {
+    crate::list::ListSync,
+    crate::map::hash_trie_map::HashTrieMapSync,
+    crate::map::red_black_tree_map::RedBlackTreeMapSync,
+    crate::queue::QueueSync,
+    crate::set::hash_trie_set::HashTrieSetSync,
+    crate::set::red_black_tree_set::RedBlackTreeSetSync,
+    crate::stack::StackSync,
+    crate::vector::VectorSync
+};

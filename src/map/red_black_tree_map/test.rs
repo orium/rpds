@@ -6,10 +6,11 @@
 use super::*;
 use alloc::vec::Vec;
 use pretty_assertions::assert_eq;
-use static_assertions::assert_impl_all;
 
-assert_impl_all!(RedBlackTreeMapSync<i32, i32>: Send, Sync);
+#[cfg(feature = "sync")]
+static_assertions::assert_impl_all!(RedBlackTreeMapSync<i32, i32>: Send, Sync);
 
+#[cfg(feature = "sync")]
 #[allow(dead_code)]
 fn compile_time_macro_red_black_tree_map_sync_is_send_and_sync() -> impl Send + Sync {
     rbt_map_sync!(0 => 0)
@@ -1729,6 +1730,7 @@ fn test_eq() {
     assert!(map_2.ne(&map_3));
 }
 
+#[cfg(feature = "sync")]
 #[test]
 fn test_eq_pointer_kind_consistent() {
     let map_a = rbt_map!["a" => 0];
@@ -1766,6 +1768,7 @@ fn test_ord() {
     assert_eq!(map_2.cmp(&map_1), Ordering::Greater);
 }
 
+#[cfg(feature = "sync")]
 #[test]
 fn test_ord_pointer_kind_consistent() {
     let map_a = rbt_map!["a" => 0];
@@ -1805,6 +1808,7 @@ fn test_hash() {
     assert_ne!(hash(&map_1), hash(&map_2));
 }
 
+#[cfg(feature = "sync")]
 #[test]
 fn test_hash_pointer_kind_consistent() {
     let map = rbt_map!["a" => 0];

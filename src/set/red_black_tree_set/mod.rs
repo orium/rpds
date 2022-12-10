@@ -5,7 +5,7 @@
 
 use crate::map::red_black_tree_map;
 use crate::RedBlackTreeMap;
-use archery::{ArcK, RcK, SharedPointerKind};
+use archery::{RcK, SharedPointerKind};
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt::Display;
@@ -56,6 +56,7 @@ macro_rules! rbt_set {
 ///
 /// assert_eq!(rbt_set_sync![1, 2, 3], s);
 /// ```
+#[cfg(feature = "sync")]
 #[macro_export]
 macro_rules! rbt_set_sync {
     ($($e:expr),*) => {
@@ -104,8 +105,10 @@ where
     map: RedBlackTreeMap<T, (), P>,
 }
 
-pub type RedBlackTreeSetSync<T> = RedBlackTreeSet<T, ArcK>;
+#[cfg(feature = "sync")]
+pub type RedBlackTreeSetSync<T> = RedBlackTreeSet<T, archery::ArcK>;
 
+#[cfg(feature = "sync")]
 impl<T> RedBlackTreeSetSync<T>
 where
     T: Ord,

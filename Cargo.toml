@@ -39,7 +39,7 @@ include = [
 codecov = { repository = "orium/rpds", branch = "master", service = "github" }
 
 [dependencies]
-archery = { version = "0.4.0", default-features = false }
+archery = { version = "0.4.1-pre", default-features = false }
 serde = { version = "1.0.139", optional = true, default-features = false }
 
 
@@ -58,6 +58,7 @@ static_assertions = "1.1.0"
 default = ["std"]
 fatal-warnings = []
 std = []
+sync = ["archery/arc"]
 
 [package.metadata.docs.rs]
 features = ["serde"]
@@ -73,6 +74,7 @@ harness = false
 [[bench]]
 name = "rpds_list_sync"
 harness = false
+required-features = ["sync"]
 
 [[bench]]
 name = "std_vec"
@@ -85,6 +87,7 @@ harness = false
 [[bench]]
 name = "rpds_queue_sync"
 harness = false
+required-features = ["sync"]
 
 [[bench]]
 name = "std_vec_deque"
@@ -97,6 +100,7 @@ harness = false
 [[bench]]
 name = "rpds_vector_sync"
 harness = false
+required-features = ["sync"]
 
 [[bench]]
 name = "std_hash_map"
@@ -109,6 +113,7 @@ harness = false
 [[bench]]
 name = "rpds_hash_trie_map_sync"
 harness = false
+required-features = ["sync"]
 
 [[bench]]
 name = "std_btree_map"
@@ -121,3 +126,4 @@ harness = false
 [[bench]]
 name = "rpds_red_black_tree_map_sync"
 harness = false
+required-features = ["sync"]

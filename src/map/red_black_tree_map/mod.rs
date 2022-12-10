@@ -4,7 +4,7 @@
  */
 
 use super::entry::Entry;
-use archery::{ArcK, RcK, SharedPointer, SharedPointerKind};
+use archery::{RcK, SharedPointer, SharedPointerKind};
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt::Display;
@@ -62,6 +62,7 @@ macro_rules! rbt_map {
 ///
 /// assert_eq!(rbt_map_sync![1 => "one", 2 => "two", 3 => "three"], m);
 /// ```
+#[cfg(feature = "sync")]
 #[macro_export]
 macro_rules! rbt_map_sync {
     ($($k:expr => $v:expr),*) => {
@@ -113,7 +114,8 @@ where
     size: usize,
 }
 
-pub type RedBlackTreeMapSync<K, V> = RedBlackTreeMap<K, V, ArcK>;
+#[cfg(feature = "sync")]
+pub type RedBlackTreeMapSync<K, V> = RedBlackTreeMap<K, V, archery::ArcK>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Color {
@@ -783,6 +785,7 @@ where
     }
 }
 
+#[cfg(feature = "sync")]
 impl<K, V> RedBlackTreeMapSync<K, V>
 where
     K: Ord,

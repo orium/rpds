@@ -59,6 +59,7 @@ macro_rules! queue {
 ///     queue_sync![0, 1, 3]
 /// }
 /// ```
+#[cfg(feature = "sync")]
 #[macro_export]
 macro_rules! queue_sync {
     ($($e:expr),*) => {
@@ -107,8 +108,10 @@ where
     out_list: List<T, P>,
 }
 
-pub type QueueSync<T> = Queue<T, ArcK>;
+#[cfg(feature = "sync")]
+pub type QueueSync<T> = Queue<T, archery::ArcK>;
 
+#[cfg(feature = "sync")]
 impl<T> QueueSync<T> {
     #[must_use]
     pub fn new_sync() -> QueueSync<T> {

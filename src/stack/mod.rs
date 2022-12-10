@@ -55,6 +55,7 @@ macro_rules! stack {
 ///     stack_sync![0, 1, 1, 2, 3, 5, 8]
 /// }
 /// ```
+#[cfg(feature = "sync")]
 #[macro_export]
 macro_rules! stack_sync {
     ($($e:expr),*) => {
@@ -100,8 +101,10 @@ where
     list: List<T, P>,
 }
 
-pub type StackSync<T> = Stack<T, ArcK>;
+#[cfg(feature = "sync")]
+pub type StackSync<T> = Stack<T, archery::ArcK>;
 
+#[cfg(feature = "sync")]
 impl<T> StackSync<T> {
     #[must_use]
     pub fn new_sync() -> StackSync<T> {

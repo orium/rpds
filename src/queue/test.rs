@@ -5,10 +5,11 @@
 
 use super::*;
 use pretty_assertions::assert_eq;
-use static_assertions::assert_impl_all;
 
-assert_impl_all!(QueueSync<i32>: Send, Sync);
+#[cfg(feature = "sync")]
+static_assertions::assert_impl_all!(QueueSync<i32>: Send, Sync);
 
+#[cfg(feature = "sync")]
 #[allow(dead_code)]
 fn compile_time_macro_queue_sync_is_send_and_sync() -> impl Send + Sync {
     queue_sync!(0)
@@ -335,6 +336,7 @@ fn test_eq() {
     assert_eq!(queue_2, queue_2);
 }
 
+#[cfg(feature = "sync")]
 #[test]
 fn test_eq_pointer_kind_consistent() {
     let queue_a = queue!["a"];
@@ -372,6 +374,7 @@ fn test_ord() {
     assert_eq!(queue_2.cmp(&queue_1), Ordering::Greater);
 }
 
+#[cfg(feature = "sync")]
 #[test]
 fn test_ord_pointer_kind_consistent() {
     let queue_a = queue!["a"];
@@ -408,6 +411,7 @@ fn test_hash() {
     assert_ne!(hash(&queue_1), hash(&queue_2));
 }
 
+#[cfg(feature = "sync")]
 #[test]
 fn test_hash_pointer_kind_consistent() {
     let queue = queue!["a"];

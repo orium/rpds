@@ -57,6 +57,7 @@ macro_rules! vector {
 ///
 /// assert_eq!(vector_sync![1, 2, 3], v);
 /// ```
+#[cfg(feature = "sync")]
 #[macro_export]
 macro_rules! vector_sync {
     ($($e:expr),*) => {
@@ -107,7 +108,8 @@ where
     length: usize,
 }
 
-pub type VectorSync<T> = Vector<T, ArcK>;
+#[cfg(feature = "sync")]
+pub type VectorSync<T> = Vector<T, archery::ArcK>;
 
 #[derive(Debug)]
 enum Node<T, P = RcK>
@@ -274,6 +276,7 @@ mod vector_utils {
     }
 }
 
+#[cfg(feature = "sync")]
 impl<T> VectorSync<T> {
     #[must_use]
     pub fn new_sync() -> VectorSync<T> {

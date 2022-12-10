@@ -6,7 +6,7 @@
 use crate::map::hash_trie_map;
 use crate::utils::DefaultBuildHasher;
 use crate::HashTrieMap;
-use archery::{ArcK, RcK, SharedPointerKind};
+use archery::{RcK, SharedPointerKind};
 use core::borrow::Borrow;
 use core::fmt::Display;
 use core::hash::BuildHasher;
@@ -104,7 +104,8 @@ where
     map: HashTrieMap<T, (), P, H>,
 }
 
-pub type HashTrieSetSync<T, H = DefaultBuildHasher> = HashTrieSet<T, ArcK, H>;
+#[cfg(feature = "sync")]
+pub type HashTrieSetSync<T, H = DefaultBuildHasher> = HashTrieSet<T, archery::ArcK, H>;
 
 impl<T> HashTrieSet<T, RcK, DefaultBuildHasher>
 where
@@ -123,6 +124,7 @@ where
     }
 }
 
+#[cfg(feature = "sync")]
 impl<T> HashTrieSetSync<T>
 where
     T: Eq + Hash,

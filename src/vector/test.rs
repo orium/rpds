@@ -6,10 +6,11 @@
 use super::*;
 use alloc::string::String;
 use pretty_assertions::assert_eq;
-use static_assertions::assert_impl_all;
 
-assert_impl_all!(VectorSync<i32>: Send, Sync);
+#[cfg(feature = "sync")]
+static_assertions::assert_impl_all!(VectorSync<i32>: Send, Sync);
 
+#[cfg(feature = "sync")]
 #[allow(dead_code)]
 fn compile_time_macro_vector_sync_is_send_and_sync() -> impl Send + Sync {
     vector_sync!(0)
@@ -622,6 +623,7 @@ fn test_eq() {
     assert!(vector_2.ne(&vector_3));
 }
 
+#[cfg(feature = "sync")]
 #[test]
 fn test_eq_pointer_kind_consistent() {
     let vector_a = vector!["a"];
@@ -659,6 +661,7 @@ fn test_ord() {
     assert_eq!(vector_2.cmp(&vector_1), Ordering::Greater);
 }
 
+#[cfg(feature = "sync")]
 #[test]
 fn test_ord_pointer_kind_consistent() {
     let vector_a = vector!["a"];
@@ -695,6 +698,7 @@ fn test_hash() {
     assert_ne!(hash(&vector_1), hash(&vector_2));
 }
 
+#[cfg(feature = "sync")]
 #[test]
 fn test_hash_pointer_kind_consistent() {
     let vector = vector!["a"];

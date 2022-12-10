@@ -76,6 +76,7 @@ macro_rules! list {
 ///     list_sync![0, 1, 1, 2, 3, 5, 8]
 /// }
 /// ```
+#[cfg(feature = "sync")]
 #[macro_export]
 macro_rules! list_sync {
     ($($e:expr),*) => {
@@ -137,8 +138,10 @@ where
     }
 }
 
-pub type ListSync<T> = List<T, ArcK>;
+#[cfg(feature = "sync")]
+pub type ListSync<T> = List<T, archery::ArcK>;
 
+#[cfg(feature = "sync")]
 impl<T> ListSync<T> {
     #[must_use]
     pub fn new_sync() -> ListSync<T> {

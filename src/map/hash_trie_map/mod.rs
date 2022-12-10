@@ -10,7 +10,7 @@ use crate::list;
 use crate::utils::DefaultBuildHasher;
 use crate::List;
 use alloc::vec::Vec;
-use archery::{ArcK, RcK, SharedPointer, SharedPointerKind};
+use archery::{RcK, SharedPointer, SharedPointerKind};
 use core::borrow::Borrow;
 use core::fmt::Display;
 use core::hash::BuildHasher;
@@ -72,6 +72,7 @@ macro_rules! ht_map {
 ///
 /// assert_eq!(ht_map_sync![1 => "one", 2 => "two", 3 => "three"], m);
 /// ```
+#[cfg(feature = "sync")]
 #[macro_export]
 macro_rules! ht_map_sync {
     ($($k:expr => $v:expr),*) => {
@@ -127,7 +128,8 @@ where
     hasher_builder: H,
 }
 
-pub type HashTrieMapSync<K, V, H = DefaultBuildHasher> = HashTrieMap<K, V, ArcK, H>;
+#[cfg(feature = "sync")]
+pub type HashTrieMapSync<K, V, H = DefaultBuildHasher> = HashTrieMap<K, V, archery::ArcK, H>;
 
 /// This map works like a trie that breaks the hash of the key in segments, and the segments are
 /// used as the index in the trie branches.
@@ -728,6 +730,7 @@ where
     }
 }
 
+#[cfg(feature = "sync")]
 impl<K, V> HashTrieMapSync<K, V>
 where
     K: Eq + Hash,
