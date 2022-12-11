@@ -29,7 +29,7 @@ echo 'Building:'
 cargo check --no-default-features --features fatal-warnings,serde --all-targets
 cargo build --features fatal-warnings,serde --all-targets
 echo 'Testing:'
-cargo test  --features fatal-warnings,serde --all-targets
+cargo test  --features fatal-warnings,serde --all-targets --benches
 echo 'Checking documentation:'
 cargo doc   --features fatal-warnings,serde --no-deps --document-private-items
 
