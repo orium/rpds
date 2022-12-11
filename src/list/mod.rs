@@ -25,7 +25,7 @@ macro_rules! list_reverse {
                 l.push_front_mut($reversed);
             )*
             l
-        }
+         }
     };
     ($ptr_kind:ty ; $h:expr ; $($reversed:expr),*) => {
         $crate::list_reverse!($ptr_kind ; ; $h, $($reversed),*)
