@@ -6,6 +6,8 @@
 
 set -e
 
+MAIN_BRANCH=master
+
 cd $(dirname "$0")
 cd "$(git rev-parse --show-toplevel)"
 
@@ -17,16 +19,25 @@ function set_version {
     sed -i "0,/version = .*$/s//version = \"$version\"/" Cargo.toml
 
     # Update version in `Cargo.lock`.
-    cargo update -p $(project_name) --offline
+    cargo update -w --offline
 }
 
-if [ $(git symbolic-ref --short HEAD) != master ]; then
-    echo "Not in master branch." >&2
+if [ $(git symbolic-ref --short HEAD) != $MAIN_BRANCH ]; then
+    echo "Not in $MAIN_BRANCH branch." >&2
     exit 1
 fi
 
-if [ $(git status --porcelain | wc -l) -ne 0 ]; then
+if [ $(git status --porcelain --untracked-files=no | wc -l) -ne 0 ]; then
     echo "Working directory is not clean." >&2
+    exit 1
+fi
+
+echo 'Checking if local branch is up to date...'
+
+git remote update origin > /dev/null 2> /dev/null
+
+if git status -uno | grep --silent "behind"; then
+    echo "Local branch is not up to date." >&2
     exit 1
 fi
 
@@ -80,5 +91,5 @@ git commit -am "Bump to version $next_version."
 
 echo "Check if everything is alright.  If so do:"
 echo
-echo "  git checkout \"v${release_version}\" && cargo publish && git checkout master && git push --follow-tags"
+echo "  git push --atomic origin $MAIN_BRANCH v${release_version} && git checkout v${release_version} && cargo publish && git checkout $MAIN_BRANCH"
 echo
