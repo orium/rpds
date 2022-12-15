@@ -5,8 +5,9 @@
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use rpds::QueueSync;
+use std::hint::black_box;
 
 fn rpds_queue_sync_enqueue(c: &mut Criterion) {
     let limit = 10_000;

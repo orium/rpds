@@ -5,8 +5,9 @@
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use std::collections::HashMap;
+use std::hint::black_box;
 
 fn std_hash_map_insert(c: &mut Criterion) {
     let limit = 10_000;
