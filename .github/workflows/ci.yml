@@ -12,7 +12,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  check:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -47,3 +47,10 @@ jobs:
           cargo install cargo-tarpaulin
           ./tools/codecov.sh --xml
           bash <(curl -s https://codecov.io/bash)
+
+  clippy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check everything
+        run: cargo clippy --features serde --all-targets
