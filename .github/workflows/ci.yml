@@ -20,7 +20,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - name: Install rust stable
+      - name: Install rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install rust stable
+      - name: Install rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -65,5 +65,7 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Check everything
-        run: cargo clippy --features serde --all-targets
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --features serde --all-targets

@@ -389,3 +389,8 @@ pub use crate::stack::Stack;
 pub use crate::stack::StackSync;
 pub use crate::vector::Vector;
 pub use crate::vector::VectorSync;
+
+// WIP!
+fn foo(mut x: isize) -> isize {
+    --x
+}
