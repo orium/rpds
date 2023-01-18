@@ -299,7 +299,7 @@ fn test_dequeue() {
 #[test]
 fn test_from_iterator() {
     let vec: Vec<u32> = vec![10, 11, 12, 13];
-    let queue: Queue<u32> = vec.iter().map(|v| *v).collect();
+    let queue: Queue<u32> = vec.iter().copied().collect();
 
     assert!(vec.iter().eq(queue.iter()));
 }

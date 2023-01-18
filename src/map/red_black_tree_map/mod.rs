@@ -160,7 +160,7 @@ where
     }
 
     fn borrow(node: &Option<SharedPointer<Node<K, V, P>, P>>) -> Option<&Node<K, V, P>> {
-        node.as_ref().map(|n| n.borrow())
+        node.as_ref().map(Borrow::borrow)
     }
 
     fn left_color(&self) -> Option<Color> {
@@ -1121,7 +1121,6 @@ mod iter_utils {
     use alloc::vec::Vec;
     use archery::{SharedPointer, SharedPointerKind};
     use core::borrow::Borrow;
-    use core::mem::size_of;
     use core::ops::Bound;
 
     // This is a stack for navigating through the tree. It can be used to go either forwards or
@@ -1202,7 +1201,7 @@ mod iter_utils {
             self.stack.last().map(|node| &node.entry)
         }
 
-        fn dig<Q>(&mut self, start_bound: Bound<&Q>, end_bound: Bound<&Q>)
+        fn dig<Q>(&mut self)
         where
             K: Borrow<Q>,
             Q: Ord + ?Sized,
@@ -1214,7 +1213,7 @@ mod iter_utils {
 
             if let Some(c) = child {
                 self.stack.push(c);
-                self.dig(start_bound, end_bound);
+                self.dig();
             }
         }
 
@@ -1269,7 +1268,7 @@ mod iter_utils {
 
                 if let Some(c) = Node::borrow(child) {
                     self.stack.push(c);
-                    self.dig(start_bound, end_bound);
+                    self.dig();
                 }
 
                 self.clear_if_finished(start_bound, end_bound);
@@ -1280,7 +1279,7 @@ mod iter_utils {
     pub fn lg_floor(size: usize) -> usize {
         debug_assert!(size > 0);
 
-        let c: usize = 8 * size_of::<usize>() - size.leading_zeros() as usize;
+        let c: usize = usize::BITS as usize - size.leading_zeros() as usize;
 
         c - 1
     }

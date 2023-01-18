@@ -308,7 +308,7 @@ fn test_is_superset() {
 #[test]
 fn test_from_iterator() {
     let vec: Vec<&str> = vec![("two"), ("five")];
-    let set: RedBlackTreeSet<&str> = vec.iter().map(|v| *v).collect();
+    let set: RedBlackTreeSet<&str> = vec.iter().copied().collect();
     let expected_set = rbt_set!["two", "five"];
 
     assert_eq!(set, expected_set);

@@ -40,7 +40,7 @@ where
 
             if bheight_left == bheight_right {
                 let bheight = bheight_right;
-                Ok(bheight + if node.color == Color::Black { 1 } else { 0 })
+                Ok(bheight + usize::from(node.color == Color::Black))
             } else {
                 Err(())
             }
@@ -163,8 +163,8 @@ mod node {
         Node {
             entry: SharedPointer::new(dummy_entry(v)),
             color: Color::Red,
-            left: left.map(|n| SharedPointer::new(n)),
-            right: right.map(|n| SharedPointer::new(n)),
+            left: left.map(SharedPointer::new),
+            right: right.map(SharedPointer::new),
         }
     }
 
@@ -189,9 +189,8 @@ mod node {
         let node_0 = dummy_node(0);
         let node_3 = dummy_node(3);
         let node_2 = dummy_node_with_children(2, None, Some(node_3));
-        let node_1 = dummy_node_with_children(1, Some(node_0), Some(node_2));
 
-        node_1
+        dummy_node_with_children(1, Some(node_0), Some(node_2))
     }
 
     #[test]
@@ -241,6 +240,7 @@ mod node {
         assert_eq!(tree.last().key, 3);
     }
 
+    #[allow(clippy::too_many_lines)]
     #[test]
     fn test_balance() {
         //                                                                ╭────────────────────╮
@@ -448,13 +448,13 @@ mod node {
         let expected_node: Node<_, _, RcK> = Node::new_black(Entry::new(0, 1));
 
         assert!(is_new_key);
-        assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
+        assert_eq!(node.as_ref().map(Borrow::borrow), Some(&expected_node));
 
         let is_new_key = Node::insert(&mut node, 0, 2);
         let expected_node: Node<_, _, RcK> = Node::new_black(Entry::new(0, 2));
 
         assert!(!is_new_key);
-        assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
+        assert_eq!(node.as_ref().map(Borrow::borrow), Some(&expected_node));
 
         let is_new_key = Node::insert(&mut node, 10, 3);
         let expected_node: Node<_, _, RcK> = Node {
@@ -470,7 +470,7 @@ mod node {
         };
 
         assert!(is_new_key);
-        assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
+        assert_eq!(node.as_ref().map(Borrow::borrow), Some(&expected_node));
 
         let is_new_key = Node::insert(&mut node, 10, 4);
         let expected_node: Node<_, _, RcK> = Node {
@@ -486,7 +486,7 @@ mod node {
         };
 
         assert!(!is_new_key);
-        assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
+        assert_eq!(node.as_ref().map(Borrow::borrow), Some(&expected_node));
 
         let is_new_key = Node::insert(&mut node, 5, 5);
         // It is going to get rebalanced (by case 3).
@@ -508,7 +508,7 @@ mod node {
         };
 
         assert!(is_new_key);
-        assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
+        assert_eq!(node.as_ref().map(Borrow::borrow), Some(&expected_node));
 
         let is_new_key = Node::insert(&mut node, 0, 1);
         // It is going to get rebalanced (by case 3).
@@ -530,9 +530,10 @@ mod node {
         };
 
         assert!(!is_new_key);
-        assert_eq!(node.as_ref().map(|n| n.borrow()), Some(&expected_node));
+        assert_eq!(node.as_ref().map(Borrow::borrow), Some(&expected_node));
     }
 
+    #[allow(clippy::too_many_lines)]
     #[test]
     fn test_remove_fuse() {
         let mut node = dummy_node("");
@@ -1301,17 +1302,14 @@ mod iter {
             2 => 4,
             3 => 6
         ];
-        let mut expected = 0;
         let mut left = 4;
 
-        for (k, v) in &map {
+        for (expected, (k, v)) in map.into_iter().enumerate() {
             left -= 1;
 
             assert!(left >= 0);
             assert_eq!(*k, expected);
             assert_eq!(*v, 2 * expected);
-
-            expected += 1;
         }
 
         assert_eq!(left, 0);
@@ -1319,17 +1317,12 @@ mod iter {
 
     #[test]
     fn test_range() {
-        let map = rbt_map![
-            0 => 0,
-            1 => 2,
-            2 => 4,
-            3 => 6
-        ];
+        use core::ops::Bound::*;
 
         fn cmp<RB: RangeBounds<i32> + Clone>(
             map: &RedBlackTreeMap<i32, i32>,
             range: RB,
-            expected: Vec<(i32, i32)>,
+            expected: &[(i32, i32)],
         ) {
             assert_eq!(
                 map.range(range.clone()).map(|(k, v)| (*k, *v)).collect::<Vec<_>>(),
@@ -1337,18 +1330,24 @@ mod iter {
             );
             assert_eq!(
                 map.range(range).rev().map(|(k, v)| (*k, *v)).collect::<Vec<_>>(),
-                expected.iter().cloned().rev().collect::<Vec<_>>()
+                expected.iter().copied().rev().collect::<Vec<_>>()
             );
         }
 
-        cmp(&map, .., vec![(0, 0), (1, 2), (2, 4), (3, 6)]);
-        cmp(&map, 1.., vec![(1, 2), (2, 4), (3, 6)]);
-        cmp(&map, 1..3, vec![(1, 2), (2, 4)]);
-        cmp(&map, 1..=3, vec![(1, 2), (2, 4), (3, 6)]);
-        cmp(&map, ..3, vec![(0, 0), (1, 2), (2, 4)]);
+        let map = rbt_map![
+            0 => 0,
+            1 => 2,
+            2 => 4,
+            3 => 6
+        ];
 
-        use core::ops::Bound::*;
-        cmp(&map, (Excluded(1), Included(3)), vec![(2, 4), (3, 6)]);
+        cmp(&map, .., &[(0, 0), (1, 2), (2, 4), (3, 6)]);
+        cmp(&map, 1.., &[(1, 2), (2, 4), (3, 6)]);
+        cmp(&map, 1..3, &[(1, 2), (2, 4)]);
+        cmp(&map, 1..=3, &[(1, 2), (2, 4), (3, 6)]);
+        cmp(&map, ..3, &[(0, 0), (1, 2), (2, 4)]);
+
+        cmp(&map, (Excluded(1), Included(3)), &[(2, 4), (3, 6)]);
     }
 
     #[test]
@@ -1429,25 +1428,25 @@ fn test_insert() {
     let overwrite_limit = 1_000;
 
     for i in 0..limit {
-        map = map.insert(i, -(i as i32));
+        map = map.insert(i, -i);
 
         assert_eq!(map.size(), (i as usize) + 1);
-        assert_eq!(map.get(&i), Some(&-(i as i32)));
+        assert_eq!(map.get(&i), Some(&-i));
 
         // Lets also check a previous value.
         let prev_key = i / 2;
-        assert_eq!(map.get(&prev_key), Some(&-(prev_key as i32)));
+        assert_eq!(map.get(&prev_key), Some(&-prev_key));
     }
 
     // Now we test some overwrites.
 
     for i in 0..overwrite_limit {
-        assert_eq!(map.get(&i), Some(&-(i as i32)));
+        assert_eq!(map.get(&i), Some(&-i));
 
-        map = map.insert(i, 2 * i as i32);
+        map = map.insert(i, 2 * i);
 
         assert_eq!(map.size(), limit as usize);
-        assert_eq!(map.get(&i), Some(&(2 * i as i32)));
+        assert_eq!(map.get(&i), Some(&(2 * i)));
     }
 }
 
@@ -1487,25 +1486,25 @@ fn test_insert_mut() {
     let overwrite_limit = 5_000;
 
     for i in 0..limit {
-        map.insert_mut(i, -(i as i32));
+        map.insert_mut(i, -i);
 
         assert_eq!(map.size(), (i as usize) + 1);
-        assert_eq!(map.get(&i), Some(&-(i as i32)));
+        assert_eq!(map.get(&i), Some(&-i));
 
         // Lets also check a previous value.
         let prev_key = i / 2;
-        assert_eq!(map.get(&prev_key), Some(&-(prev_key as i32)));
+        assert_eq!(map.get(&prev_key), Some(&-prev_key));
     }
 
     // Now we test some overwrites.
 
     for i in 0..overwrite_limit {
-        assert_eq!(map.get(&i), Some(&-(i as i32)));
+        assert_eq!(map.get(&i), Some(&-i));
 
-        map.insert_mut(i, 2 * i as i32);
+        map.insert_mut(i, 2 * i);
 
         assert_eq!(map.size(), limit as usize);
-        assert_eq!(map.get(&i), Some(&(2 * i as i32)));
+        assert_eq!(map.get(&i), Some(&(2 * i)));
     }
 }
 
@@ -1572,13 +1571,13 @@ fn test_remove() {
     let limit = 5_000;
 
     for i in 0..limit {
-        map = map.insert(i, -(i as i32));
+        map = map.insert(i, -i);
     }
 
     // Now lets remove half of it.
 
     for i in (0..limit / 2).map(|i| 2 * i) {
-        assert_eq!(map.get(&i), Some(&-(i as i32)));
+        assert_eq!(map.get(&i), Some(&-i));
 
         map = map.remove(&i);
 
@@ -1587,7 +1586,7 @@ fn test_remove() {
 
         // Also check than the previous one is ok.
         if i > 0 {
-            assert_eq!(map.get(&(i - 1)), Some(&-((i - 1) as i32)));
+            assert_eq!(map.get(&(i - 1)), Some(&-(i - 1)));
         }
     }
 }
@@ -1641,13 +1640,13 @@ fn test_remove_mut() {
     let limit = 25_000;
 
     for i in 0..limit {
-        map.insert_mut(i, -(i as i32));
+        map.insert_mut(i, -i);
     }
 
     // Now lets remove half of it.
 
     for i in (0..limit / 2).map(|i| 2 * i) {
-        assert_eq!(map.get(&i), Some(&-(i as i32)));
+        assert_eq!(map.get(&i), Some(&-i));
 
         map.remove_mut(&i);
 
@@ -1656,7 +1655,7 @@ fn test_remove_mut() {
 
         // Also check than the previous one is ok.
         if i > 0 {
-            assert_eq!(map.get(&(i - 1)), Some(&-((i - 1) as i32)));
+            assert_eq!(map.get(&(i - 1)), Some(&-(i - 1)));
         }
     }
 }
@@ -1686,7 +1685,7 @@ fn test_index() {
 #[test]
 fn test_from_iterator() {
     let vec: Vec<(i32, &str)> = vec![(2, "two"), (5, "five")];
-    let map: RedBlackTreeMap<i32, &str> = vec.iter().map(|v| *v).collect();
+    let map: RedBlackTreeMap<i32, &str> = vec.iter().copied().collect();
     let expected_map = rbt_map![2 => "two", 5 => "five"];
 
     assert_eq!(map, expected_map);

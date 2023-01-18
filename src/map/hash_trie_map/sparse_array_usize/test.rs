@@ -4,7 +4,6 @@
  */
 
 use super::*;
-use core::mem::size_of;
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -106,7 +105,7 @@ fn test_pop() {
 
 #[test]
 fn test_map_index() {
-    for i in 0..(8 * size_of::<usize>()) {
+    for i in 0..(usize::BITS as usize) {
         assert_eq!(sparse_array_usize_utils::map_index(0, i), None);
     }
 

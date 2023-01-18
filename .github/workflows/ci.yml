@@ -12,8 +12,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  check:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -21,7 +20,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - name: Install rust stable
+      - name: Install rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable

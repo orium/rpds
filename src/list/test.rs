@@ -59,16 +59,13 @@ mod iter {
     #[test]
     fn test_into_iterator() {
         let list = list![0, 1, 2, 3];
-        let mut expected = 0;
         let mut left = 4;
 
-        for n in &list {
+        for (expected, n) in list.into_iter().enumerate() {
             left -= 1;
 
             assert!(left >= 0);
             assert_eq!(*n, expected);
-
-            expected += 1;
         }
 
         assert_eq!(left, 0);
@@ -206,7 +203,7 @@ fn test_reverse_mut() {
 #[test]
 fn test_from_iterator() {
     let vec: Vec<u32> = vec![10, 11, 12, 13];
-    let list: List<u32> = vec.iter().map(|v| *v).collect();
+    let list: List<u32> = vec.iter().copied().collect();
 
     assert!(vec.iter().eq(list.iter()));
 }
@@ -333,6 +330,7 @@ fn test_clone() {
     assert_eq!(clone.last(), list.last());
 }
 
+#[allow(clippy::many_single_char_names)]
 #[test]
 fn test_drop_list() {
     // When it is dropped, it will set the variable it owned to false.

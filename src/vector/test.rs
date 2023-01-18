@@ -43,7 +43,7 @@ mod node {
                 assert_eq!(a.len(), 0);
                 assert_eq!(a.capacity(), 0, "Capacity of the branch array is wasteful");
             }
-            _ => panic!("Invalid node type"),
+            Node::Leaf(_) => panic!("Invalid node type"),
         }
     }
 
@@ -56,7 +56,7 @@ mod node {
                 assert_eq!(a.len(), 0);
                 assert_eq!(a.capacity(), 0, "Capacity of the leaf array is wasteful");
             }
-            _ => panic!("Invalid node type"),
+            Node::Branch(_) => panic!("Invalid node type"),
         }
     }
 
@@ -88,31 +88,17 @@ mod node {
             .clone();
 
         let node_three_after_drop = {
-            let a_leaf = {
-                let mut a = Vec::with_capacity(2);
-                a.push(SharedPointer::new(0));
-                a.push(SharedPointer::new(1));
-                a
-            };
+            let a_leaf = vec![SharedPointer::new(0), SharedPointer::new(1)];
 
             let leaf = Node::Leaf(a_leaf);
 
-            let a_branch = {
-                let mut a = Vec::with_capacity(2);
-                a.push(SharedPointer::new(leaf));
-                a
-            };
+            let a_branch = vec![SharedPointer::new(leaf)];
 
             Node::Branch(a_branch)
         };
 
         let node_four_after_drop = {
-            let a_leaf_0 = {
-                let mut a = Vec::with_capacity(2);
-                a.push(SharedPointer::new(0));
-                a.push(SharedPointer::new(1));
-                a
-            };
+            let a_leaf_0 = vec![SharedPointer::new(0), SharedPointer::new(1)];
 
             let leaf_0 = Node::Leaf(a_leaf_0);
 
@@ -124,12 +110,7 @@ mod node {
 
             let leaf_1 = Node::Leaf(a_leaf_1);
 
-            let a_branch = {
-                let mut a = Vec::with_capacity(2);
-                a.push(SharedPointer::new(leaf_0));
-                a.push(SharedPointer::new(leaf_1));
-                a
-            };
+            let a_branch = vec![SharedPointer::new(leaf_0), SharedPointer::new(leaf_1)];
 
             Node::Branch(a_branch)
         };
@@ -265,16 +246,13 @@ mod iter {
     #[test]
     fn test_into_iterator() {
         let vector = vector![0, 1, 2, 3];
-        let mut expected = 0;
         let mut left = 4;
 
-        for n in &vector {
+        for (expected, n) in vector.into_iter().enumerate() {
             left -= 1;
 
             assert!(left >= 0);
             assert_eq!(*n, expected);
-
-            expected += 1;
         }
 
         assert_eq!(left, 0);
@@ -313,10 +291,10 @@ mod internal {
         assert_eq!(dummy_vector_with_length(512).height(), 1);
         assert_eq!(dummy_vector_with_length(1024).height(), 1);
         assert_eq!(dummy_vector_with_length(1025).height(), 2);
-        assert_eq!(dummy_vector_with_length(32768).height(), 2);
-        assert_eq!(dummy_vector_with_length(32769).height(), 3);
-        assert_eq!(dummy_vector_with_length(1048576).height(), 3);
-        assert_eq!(dummy_vector_with_length(1048577).height(), 4);
+        assert_eq!(dummy_vector_with_length(32_768).height(), 2);
+        assert_eq!(dummy_vector_with_length(32_769).height(), 3);
+        assert_eq!(dummy_vector_with_length(1_048_576).height(), 3);
+        assert_eq!(dummy_vector_with_length(1_048_577).height(), 4);
     }
 
     #[test]
@@ -330,6 +308,7 @@ mod internal {
         assert_eq!(mask(5), 0b11111);
     }
 
+    #[allow(clippy::unusual_byte_groupings)]
     #[test]
     fn test_bucket() {
         use vector_utils::bucket;
@@ -366,7 +345,7 @@ mod internal {
         assert_eq!(Vector::compress_root(&mut compressed_branch.clone()), None);
         assert_eq!(
             Vector::compress_root(&mut uncompressed_branch.clone()),
-            Some(SharedPointer::new(uncompressed_branch_leaf.clone())),
+            Some(SharedPointer::new(uncompressed_branch_leaf)),
         );
     }
 
@@ -377,9 +356,9 @@ mod internal {
         assert_eq!(dummy_vector_with_length(32).root_max_capacity(), 32);
         assert_eq!(dummy_vector_with_length(33).root_max_capacity(), 1024);
         assert_eq!(dummy_vector_with_length(1024).root_max_capacity(), 1024);
-        assert_eq!(dummy_vector_with_length(1025).root_max_capacity(), 32768);
-        assert_eq!(dummy_vector_with_length(32768).root_max_capacity(), 32768);
-        assert_eq!(dummy_vector_with_length(32769).root_max_capacity(), 1048576);
+        assert_eq!(dummy_vector_with_length(1025).root_max_capacity(), 32_768);
+        assert_eq!(dummy_vector_with_length(32_768).root_max_capacity(), 32_768);
+        assert_eq!(dummy_vector_with_length(32_769).root_max_capacity(), 1_048_576);
     }
 
     #[test]
@@ -390,8 +369,8 @@ mod internal {
         assert!(!dummy_vector_with_length(33).is_root_full());
         assert!(dummy_vector_with_length(1024).is_root_full());
         assert!(!dummy_vector_with_length(1025).is_root_full());
-        assert!(dummy_vector_with_length(32768).is_root_full());
-        assert!(!dummy_vector_with_length(32769).is_root_full());
+        assert!(dummy_vector_with_length(32_768).is_root_full());
+        assert!(!dummy_vector_with_length(32_769).is_root_full());
     }
 }
 
@@ -437,7 +416,7 @@ fn test_drop_last_drops_last_element() {
 
     for i in 0..limit {
         vector = vector.push_back(2 * i as i32);
-        vectors.push(vector.clone())
+        vectors.push(vector.clone());
     }
 
     for _ in 0..limit {
@@ -468,7 +447,7 @@ fn test_drop_last_keeps_vector_consistent() {
         assert_eq!(vector.get(i).unwrap(), &(2 * i as i32));
     }
 
-    assert_eq!(vector.get(new_len as usize), None);
+    assert_eq!(vector.get(new_len), None);
 }
 
 #[test]
@@ -514,7 +493,7 @@ fn test_set_overwrites() {
 
 #[test]
 fn test_set_maintains_size() {
-    let limit = 32 * 32 * 32 * 1;
+    let limit = 32 * 32 * 32;
     let mut vector: Vector<i32> = Vector::new();
 
     for i in 0..limit {
@@ -581,7 +560,7 @@ fn test_last() {
 #[test]
 fn test_from_iterator() {
     let vec: Vec<u32> = vec![10, 11, 12, 13];
-    let vector: Vector<u32> = vec.iter().map(|v| *v).collect();
+    let vector: Vector<u32> = vec.iter().copied().collect();
 
     assert!(vec.iter().eq(vector.iter()));
 }

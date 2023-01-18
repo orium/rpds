@@ -169,7 +169,7 @@ where
 
     #[must_use]
     pub fn last(&self) -> Option<&T> {
-        self.last.as_ref().map(|node| node.borrow())
+        self.last.as_ref().map(Borrow::borrow)
     }
 
     #[must_use]

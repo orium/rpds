@@ -264,7 +264,7 @@ fn test_is_superset() {
 #[test]
 fn test_from_iterator() {
     let vec: Vec<&str> = vec![("two"), ("five")];
-    let set: HashTrieSet<&str> = vec.iter().map(|v| *v).collect();
+    let set: HashTrieSet<&str> = vec.iter().copied().collect();
     let expected_set = ht_set!["two", "five"];
 
     assert_eq!(set, expected_set);

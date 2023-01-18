@@ -50,16 +50,13 @@ mod iter {
     #[test]
     fn test_into_iterator() {
         let stack = stack![3, 2, 1, 0];
-        let mut expected = 0;
         let mut left = 4;
 
-        for n in &stack {
+        for (expected, n) in stack.into_iter().enumerate() {
             left -= 1;
 
             assert!(left >= 0);
             assert_eq!(*n, expected);
-
-            expected += 1;
         }
 
         assert_eq!(left, 0);
@@ -137,7 +134,7 @@ fn test_pop() {
 #[test]
 fn test_from_iterator() {
     let vec: Vec<u32> = vec![10, 11, 12, 13];
-    let stack: Stack<u32> = vec.iter().map(|v| *v).collect();
+    let stack: Stack<u32> = vec.iter().copied().collect();
 
     assert!(vec.iter().eq(stack.iter()));
 }

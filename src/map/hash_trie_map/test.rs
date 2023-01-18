@@ -84,7 +84,7 @@ mod bucket {
         assert!(list_remove_first(&mut list, |c| *c == 'b').is_some());
         assert_eq!(list, list_a_c);
 
-        let mut list = list_a_b_c.clone();
+        let mut list = list_a_b_c;
         assert!(list_remove_first(&mut list, |c| *c == 'c').is_some());
         assert_eq!(list, list_a_b);
     }
@@ -126,12 +126,8 @@ mod bucket {
             Bucket::Collision(list![entry_a.clone(), entry_b.clone(), entry_c.clone()]);
         let bucket_collision_b9_a_c =
             Bucket::Collision(list![entry_b9.clone(), entry_a.clone(), entry_c.clone()]);
-        let bucket_collision_d_a_b_c = Bucket::Collision(list![
-            entry_d.clone(),
-            entry_a.clone(),
-            entry_b.clone(),
-            entry_c.clone()
-        ]);
+        let bucket_collision_d_a_b_c =
+            Bucket::Collision(list![entry_d.clone(), entry_a, entry_b.clone(), entry_c]);
 
         // Note that we care about the position of the inserted entry: we want it to be in the
         // beginning of the list as to improve performance with high temporal locality (since
@@ -139,19 +135,19 @@ mod bucket {
         // list must be preserved for the same reason.
 
         let mut bucket = bucket_single_a.clone();
-        assert!(!bucket.insert(entry_a9.clone()));
+        assert!(!bucket.insert(entry_a9));
         assert_eq!(bucket, bucket_single_a9);
 
-        let mut bucket = bucket_single_a.clone();
-        assert!(bucket.insert(entry_b.clone()));
+        let mut bucket = bucket_single_a;
+        assert!(bucket.insert(entry_b));
         assert_eq!(bucket, bucket_collision_b_a);
 
         let mut bucket = bucket_collision_a_b_c.clone();
-        assert!(!bucket.insert(entry_b9.clone()));
+        assert!(!bucket.insert(entry_b9));
         assert_eq!(bucket, bucket_collision_b9_a_c);
 
-        let mut bucket = bucket_collision_a_b_c.clone();
-        assert!(bucket.insert(entry_d.clone()));
+        let mut bucket = bucket_collision_a_b_c;
+        assert!(bucket.insert(entry_d));
         assert_eq!(bucket, bucket_collision_d_a_b_c);
     }
 
@@ -167,7 +163,7 @@ mod bucket {
         let bucket_single_a = Bucket::Single(entry_a.clone());
         let bucket_collision_b_c = Bucket::Collision(list![entry_b.clone(), entry_c.clone()]);
         let bucket_collision_a_b_c =
-            Bucket::Collision(list![entry_a.clone(), entry_b.clone(), entry_c.clone()]);
+            Bucket::Collision(list![entry_a.clone(), entry_b.clone(), entry_c]);
 
         let mut bucket_ref: Option<&mut Bucket<u8, i32>> = None;
         assert!(!Bucket::remove(&mut bucket_ref, entry_a.key(), entry_a.key_hash));
@@ -236,7 +232,7 @@ mod hasher_mocks {
         }
 
         fn write(&mut self, bytes: &[u8]) {
-            self.last_byte = self.last_byte.or(bytes.last().map(|b| *b));
+            self.last_byte = self.last_byte.or_else(|| bytes.last().copied());
         }
     }
 
@@ -302,10 +298,12 @@ mod node {
 
         match node {
             Node::Branch(array) => assert_eq!(array.size(), 0),
-            _ => panic!("Invalid node type"),
+            Node::Leaf(_) => panic!("Invalid node type"),
         }
     }
 
+    #[allow(clippy::unusual_byte_groupings)]
+    #[allow(clippy::unreadable_literal)]
     #[test]
     fn test_index_from_hash() {
         let hash: HashValue = 0b_000100_100011_000010_100001 | (1 << 63);
@@ -333,7 +331,7 @@ mod node {
             (0x2, 0b_0000_1111 | (0b0111 << 60)),
         ]
         .iter()
-        .cloned()
+        .copied()
         .collect();
 
         MockedHashBuilder::new(hash_mapping)
@@ -524,7 +522,7 @@ mod node {
 
         let bucket_a = Bucket::Single(entry_a.clone());
         let bucket_b = Bucket::Single(entry_b.clone());
-        let bucket_a_b = Bucket::Collision(list![entry_a.clone(), entry_b.clone()]);
+        let bucket_a_b = Bucket::Collision(list![entry_a, entry_b]);
 
         let empty_branch = Node::<u8, i32>::new_empty_branch();
         let branch_with_collision = {
@@ -687,7 +685,7 @@ mod iter {
         for (k, v) in map.iter() {
             assert!(!touched[*k as usize]);
 
-            assert_eq!(*k as i32, -(*v as i32));
+            assert_eq!(*k as i32, -*v);
 
             touched[*k as usize] = true;
         }
@@ -697,8 +695,8 @@ mod iter {
 
     #[test]
     fn test_iter() {
-        let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
-            .map(|d| *d)
+        let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE]
+            .into_iter()
             .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
             .collect();
 
@@ -709,8 +707,8 @@ mod iter {
 
     #[test]
     fn test_iter_high_collision() {
-        let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
-            .map(|d| *d)
+        let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE]
+            .into_iter()
             .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
             .collect();
 
@@ -864,8 +862,8 @@ fn insert_test<H: BuildHasher + Clone>(initial_map: HashTrieMap<u32, i32, RcK, H
 
 #[test]
 fn test_insert() {
-    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
-        .map(|d| *d)
+    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE]
+        .into_iter()
         .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
         .collect();
 
@@ -876,8 +874,8 @@ fn test_insert() {
 
 #[test]
 fn test_insert_high_collision() {
-    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
-        .map(|d| *d)
+    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE]
+        .into_iter()
         .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
         .collect();
 
@@ -944,8 +942,8 @@ fn insert_test_mut<H: BuildHasher + Clone>(initial_map: HashTrieMap<u32, i32, Rc
 
 #[test]
 fn test_insert_mut() {
-    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
-        .map(|d| *d)
+    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE]
+        .into_iter()
         .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
         .collect();
 
@@ -956,8 +954,8 @@ fn test_insert_mut() {
 
 #[test]
 fn test_insert_high_collision_mut() {
-    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
-        .map(|d| *d)
+    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE]
+        .into_iter()
         .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
         .collect();
 
@@ -1043,8 +1041,8 @@ fn remove_test<H: BuildHasher + Clone>(initial_map: HashTrieMap<u32, i32, RcK, H
 
 #[test]
 fn test_remove() {
-    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
-        .map(|d| *d)
+    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE]
+        .into_iter()
         .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
         .collect();
 
@@ -1055,8 +1053,8 @@ fn test_remove() {
 
 #[test]
 fn test_remove_high_collision() {
-    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
-        .map(|d| *d)
+    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE]
+        .into_iter()
         .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
         .collect();
 
@@ -1136,8 +1134,8 @@ fn remove_test_mut<H: BuildHasher + Clone>(initial_map: HashTrieMap<u32, i32, Rc
 
 #[test]
 fn test_remove_mut() {
-    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
-        .map(|d| *d)
+    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE]
+        .into_iter()
         .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
         .collect();
 
@@ -1148,8 +1146,8 @@ fn test_remove_mut() {
 
 #[test]
 fn test_remove_high_collision_mut() {
-    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE].iter()
-        .map(|d| *d)
+    let degrees: Vec<u8> = [2, 4, 16, 32, DEFAULT_DEGREE]
+        .into_iter()
         .filter(|d| *d <= DEFAULT_DEGREE) // we only want valid degrees
         .collect();
 
@@ -1170,7 +1168,7 @@ fn test_index() {
 #[test]
 fn test_from_iterator() {
     let vec: Vec<(i32, &str)> = vec![(2, "two"), (5, "five")];
-    let map: HashTrieMap<i32, &str> = vec.iter().map(|v| *v).collect();
+    let map: HashTrieMap<i32, &str> = vec.iter().copied().collect();
     let expected_map = ht_map![2 => "two", 5 => "five"];
 
     assert_eq!(map, expected_map);

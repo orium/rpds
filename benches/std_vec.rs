@@ -85,7 +85,7 @@ fn std_vec_get(c: &mut Criterion) {
     c.bench_function("std vec get", move |b| {
         b.iter(|| {
             for i in 0..limit {
-                black_box(vector.get(i as usize));
+                black_box(vector.get(i));
             }
         })
     });
