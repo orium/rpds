@@ -26,9 +26,9 @@ type HashValue = u64;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, K, V, P> =
-    core::iter::Map<IterPtr<'a, K, V, P>, fn(&'a SharedPointer<Entry<K, V>, P>) -> (&'a K, &'a V)>;
-pub type IterKeys<'a, K, V, P> = core::iter::Map<Iter<'a, K, V, P>, fn((&'a K, &V)) -> &'a K>;
-pub type IterValues<'a, K, V, P> = core::iter::Map<Iter<'a, K, V, P>, fn((&K, &'a V)) -> &'a V>;
+    iter::Map<IterPtr<'a, K, V, P>, fn(&'a SharedPointer<Entry<K, V>, P>) -> (&'a K, &'a V)>;
+pub type IterKeys<'a, K, V, P> = iter::Map<Iter<'a, K, V, P>, fn((&'a K, &V)) -> &'a K>;
+pub type IterValues<'a, K, V, P> = iter::Map<Iter<'a, K, V, P>, fn((&K, &'a V)) -> &'a V>;
 
 #[allow(clippy::cast_possible_truncation)]
 const DEFAULT_DEGREE: u8 = 8 * size_of::<usize>() as u8;
@@ -519,10 +519,10 @@ where
         Q: Hash + Eq,
     {
         match self {
-            Bucket::Single(entry) if entry.matches(key, key_hash) => Some(entry.borrow()),
+            Bucket::Single(entry) if entry.matches(key, key_hash) => Some(entry),
             Bucket::Single(_) => None,
             Bucket::Collision(entries) => {
-                entries.iter().find(|e| e.matches(key, key_hash)).map(|e| e.borrow())
+                entries.iter().find(|e| e.matches(key, key_hash))
             }
         }
     }
@@ -1080,13 +1080,12 @@ where
 
 mod iter_utils {
     use super::HashValue;
-    use core::mem::size_of;
 
     pub fn trie_max_height(degree: u8) -> usize {
         let bits_per_level = (degree - 1).count_ones() as usize;
-        let hash_bits = 8 * size_of::<HashValue>();
+        let hash_bits = HashValue::BITS as usize;
 
-        (hash_bits / bits_per_level) + if hash_bits % bits_per_level > 0 { 1 } else { 0 }
+        (hash_bits / bits_per_level) + usize::from(hash_bits % bits_per_level > 0)
     }
 }
 

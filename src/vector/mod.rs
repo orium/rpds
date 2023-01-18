@@ -10,7 +10,6 @@ use archery::*;
 use core::cmp::Ordering;
 use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
-use core::mem::size_of;
 use core::ops::Index;
 use core::ops::IndexMut;
 
@@ -322,10 +321,10 @@ where
     fn height(&self) -> usize {
         if self.length > 1 {
             let u: usize = self.length - 1;
-            let c: usize = 8 * size_of::<usize>() - u.leading_zeros() as usize;
+            let c: usize = usize::BITS as usize - u.leading_zeros() as usize;
             let b: usize = self.bits as usize;
 
-            c / b + if c % b > 0 { 1 } else { 0 } - 1
+            c / b + usize::from(c % b > 0) - 1
         } else {
             0
         }
