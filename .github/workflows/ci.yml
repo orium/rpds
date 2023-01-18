@@ -13,7 +13,6 @@ env:
 
 jobs:
   build:
-
     runs-on: ${{ matrix.os }}
 
     strategy:
