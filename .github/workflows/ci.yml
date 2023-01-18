@@ -52,5 +52,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install rust stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          default: true
+          components: clippy
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
       - name: Check everything
         run: cargo clippy --features serde --all-targets
