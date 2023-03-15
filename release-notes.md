@@ -1,5 +1,9 @@
 # Release notes
 
+## 0.13.0
+
+* Updated archery fixing a soundness bug.  See issue [#18](https://github.com/orium/archery/issues/18).
+
 ## 0.12.0
 
 * Implemented `Hash` ofr `RedBlackTreeSet`.
