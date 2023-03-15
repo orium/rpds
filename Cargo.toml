@@ -1,7 +1,7 @@
 [package]
 name = "rpds"
 description = "Persistent data structures with structural sharing"
-version = "0.13.0"
+version = "0.13.1-pre"
 authors = ["Diogo Sousa <diogogsousa@gmail.com>"]
 
 edition = "2021"
