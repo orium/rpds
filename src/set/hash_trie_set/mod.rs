@@ -212,7 +212,11 @@ where
 
     #[must_use]
     pub fn is_subset<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, P, I>) -> bool {
-        self.iter().all(|v| other.contains(v))
+        if self.map.same_root(&other.map) {
+            return true;
+        }
+
+        self.size() <= other.size() && self.iter().all(|v| other.contains(v))
     }
 
     #[must_use]

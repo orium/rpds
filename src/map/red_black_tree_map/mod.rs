@@ -1006,6 +1006,27 @@ where
     }
 }
 
+impl<K, V, P> RedBlackTreeMap<K, V, P>
+where
+    P: SharedPointerKind,
+{
+    pub(crate) fn same_root<PO: SharedPointerKind>(
+        &self,
+        other: &RedBlackTreeMap<K, V, PO>,
+    ) -> bool {
+        let a = self.root.as_ref().map_or(std::ptr::null(), SharedPointer::as_ptr);
+        // Note how we're casting the raw pointer changing from P to PO
+        // We cannot perform the equality it in a type safe way because the Root type depends
+        // on P/PO, and we can't pass different types to SharedPtr::same_ptr or std::ptr::eq.
+        let b = other
+            .root
+            .as_ref()
+            .map_or(std::ptr::null(), SharedPointer::as_ptr)
+            .cast::<Node<K, V, P>>();
+        std::ptr::eq(a, b)
+    }
+}
+
 impl<K, V: PartialEq, P, PO> PartialEq<RedBlackTreeMap<K, V, PO>> for RedBlackTreeMap<K, V, P>
 where
     K: Ord,

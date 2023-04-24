@@ -217,6 +217,12 @@ where
     where
         PO: SharedPointerKind,
     {
+        if self.map.same_root(&other.map) {
+            return true;
+        }
+        if self.size() > other.size() {
+            return false;
+        }
         let mut other_it = other.iter();
 
         for v in self.iter() {
