@@ -943,6 +943,24 @@ where
     }
 }
 
+impl<K, V, P, H: BuildHasher> HashTrieMap<K, V, P, H>
+where
+    H: Clone,
+    P: SharedPointerKind,
+{
+    pub(crate) fn same_root<PO: SharedPointerKind, I: BuildHasher>(
+        &self,
+        other: &HashTrieMap<K, V, PO, I>,
+    ) -> bool {
+        let a = SharedPointer::as_ptr(&self.root).cast::<Node<K, V, P>>();
+        // Note how we're casting the raw pointer changing from P to PO
+        // We cannot perform the equality it in a type safe way because the Root type depends
+        // on P/PO, and we can't pass different types to SharedPtr::same_ptr or std::ptr::eq.
+        let b = SharedPointer::as_ptr(&other.root).cast::<Node<K, V, P>>();
+        std::ptr::eq(a, b)
+    }
+}
+
 impl<K: Eq, V: PartialEq, P, PO, H: BuildHasher> PartialEq<HashTrieMap<K, V, PO, H>>
     for HashTrieMap<K, V, P, H>
 where
@@ -952,6 +970,9 @@ where
     PO: SharedPointerKind,
 {
     fn eq(&self, other: &HashTrieMap<K, V, PO, H>) -> bool {
+        if self.same_root(other) {
+            return true;
+        }
         self.size() == other.size()
             && self.iter().all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
     }
