@@ -957,7 +957,7 @@ where
         // We cannot perform the equality it in a type safe way because the Root type depends
         // on P/PO, and we can't pass different types to SharedPtr::same_ptr or std::ptr::eq.
         let b = SharedPointer::as_ptr(&other.root).cast::<Node<K, V, P>>();
-        std::ptr::eq(a, b)
+        core::ptr::eq(a, b)
     }
 }
 
