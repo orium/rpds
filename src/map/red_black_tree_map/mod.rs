@@ -1034,6 +1034,9 @@ where
     PO: SharedPointerKind,
 {
     fn eq(&self, other: &RedBlackTreeMap<K, V, PO>) -> bool {
+        if self.same_root(other) {
+            return true;
+        }
         self.size() == other.size()
             && self.iter().all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
     }
