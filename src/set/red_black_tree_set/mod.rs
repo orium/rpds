@@ -217,7 +217,7 @@ where
     where
         PO: SharedPointerKind,
     {
-        if self.map.same_root(&other.map) {
+        if self.ptr_eq(other) {
             return true;
         }
         if self.size() > other.size() {
@@ -292,6 +292,20 @@ where
 {
     fn default() -> RedBlackTreeSet<T, P> {
         RedBlackTreeSet::new_with_ptr_kind()
+    }
+}
+
+impl<T, P> RedBlackTreeSet<T, P>
+where
+    T: Ord,
+    P: SharedPointerKind,
+{
+    /// Test whether the two sets refer to the same content in memory.
+    ///
+    /// This would return true if you’re comparing a set to itself,
+    /// or if you’re comparing a set to a fresh clone of itself.
+    pub fn ptr_eq<PO: SharedPointerKind>(&self, other: &RedBlackTreeSet<T, PO>) -> bool {
+        self.map.ptr_eq(&other.map)
     }
 }
 

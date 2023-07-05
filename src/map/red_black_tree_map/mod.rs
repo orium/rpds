@@ -1010,13 +1010,14 @@ impl<K, V, P> RedBlackTreeMap<K, V, P>
 where
     P: SharedPointerKind,
 {
-    pub(crate) fn same_root<PO: SharedPointerKind>(
-        &self,
-        other: &RedBlackTreeMap<K, V, PO>,
-    ) -> bool {
+    /// Test whether the two maps refer to the same content in memory.
+    ///
+    /// This would return true if you’re comparing a map to itself,
+    /// or if you’re comparing a map to a fresh clone of itself.
+    pub fn ptr_eq<PO: SharedPointerKind>(&self, other: &RedBlackTreeMap<K, V, PO>) -> bool {
         let a = self.root.as_ref().map_or(core::ptr::null(), SharedPointer::as_ptr);
         // Note how we're casting the raw pointer changing from P to PO
-        // We cannot perform the equality it in a type safe way because the Root type depends
+        // We cannot perform the equality in a type safe way because the Root type depends
         // on P/PO, and we can't pass different types to SharedPtr::same_ptr or std::ptr::eq.
         let b = other
             .root
@@ -1034,7 +1035,7 @@ where
     PO: SharedPointerKind,
 {
     fn eq(&self, other: &RedBlackTreeMap<K, V, PO>) -> bool {
-        if self.same_root(other) {
+        if self.ptr_eq(other) {
             return true;
         }
         self.size() == other.size()

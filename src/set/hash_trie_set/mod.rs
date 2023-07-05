@@ -212,7 +212,7 @@ where
 
     #[must_use]
     pub fn is_subset<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, P, I>) -> bool {
-        if self.map.same_root(&other.map) {
+        if self.ptr_eq(other) {
             return true;
         }
 
@@ -260,6 +260,24 @@ where
 {
     fn default() -> HashTrieSet<T, P, H> {
         HashTrieSet::new_with_hasher_with_ptr_kind(H::default())
+    }
+}
+
+impl<T, P, H: BuildHasher> HashTrieSet<T, P, H>
+where
+    T: Eq + Hash,
+    H: Clone,
+    P: SharedPointerKind,
+{
+    /// Test whether the two sets refer to the same content in memory.
+    ///
+    /// This would return true if you’re comparing a set to itself,
+    /// or if you’re comparing a set to a fresh clone of itself.
+    pub fn ptr_eq<PO: SharedPointerKind, I: BuildHasher + Clone>(
+        &self,
+        other: &HashTrieSet<T, PO, I>,
+    ) -> bool {
+        self.map.ptr_eq(&other.map)
     }
 }
 
