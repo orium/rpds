@@ -100,11 +100,11 @@ mod bucket {
         let bucket_single = Bucket::Single(entry_a.clone());
         let bucket_collision = Bucket::Collision(list![entry_b.clone(), entry_a.clone()]);
 
-        assert_eq!(bucket_single.get(entry_a.key(), entry_a.key_hash), Some(entry_a.borrow()));
+        assert_eq!(bucket_single.get(entry_a.key(), entry_a.key_hash), Some(&entry_a));
         assert_eq!(bucket_single.get(entry_b.key(), entry_b.key_hash), None);
 
-        assert_eq!(bucket_collision.get(entry_a.key(), entry_a.key_hash), Some(entry_a.borrow()));
-        assert_eq!(bucket_collision.get(entry_b.key(), entry_b.key_hash), Some(entry_b.borrow()));
+        assert_eq!(bucket_collision.get(entry_a.key(), entry_a.key_hash), Some(&entry_a));
+        assert_eq!(bucket_collision.get(entry_b.key(), entry_b.key_hash), Some(&entry_b));
         assert_eq!(bucket_collision.get(entry_c.key(), entry_c.key_hash), None);
     }
 
