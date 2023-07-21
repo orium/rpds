@@ -39,11 +39,11 @@ include = [
 codecov = { repository = "orium/rpds", branch = "master", service = "github" }
 
 [dependencies]
-archery = "0.5.0"
+archery = "1.0.0"
 serde = { version = "1.0.149", optional = true, default-features = false }
 
 [dev-dependencies]
-criterion = "0.4.0"
+criterion = "0.5.1"
 rand = "0.8.5"
 # Needed to test serde:
 bincode = "1.3.3"
