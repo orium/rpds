@@ -47,3 +47,25 @@ jobs:
           cargo install cargo-tarpaulin
           ./tools/codecov.sh --xml
           bash <(curl -s https://codecov.io/bash)
+
+  msrv:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          default: true
+
+      - name: Install cargo plugins
+        run: cargo install cargo-msrv
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Check the minimum supported rust version
+        run: cargo msrv verify
