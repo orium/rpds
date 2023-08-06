@@ -135,19 +135,19 @@ mod bucket {
         // list must be preserved for the same reason.
 
         let mut bucket = bucket_single_a.clone();
-        assert!(!bucket.insert(entry_a9));
+        assert!(bucket.insert(entry_a9).is_some());
         assert_eq!(bucket, bucket_single_a9);
 
         let mut bucket = bucket_single_a;
-        assert!(bucket.insert(entry_b));
+        assert!(bucket.insert(entry_b).is_none());
         assert_eq!(bucket, bucket_collision_b_a);
 
         let mut bucket = bucket_collision_a_b_c.clone();
-        assert!(!bucket.insert(entry_b9));
+        assert!(bucket.insert(entry_b9).is_some());
         assert_eq!(bucket, bucket_collision_b9_a_c);
 
         let mut bucket = bucket_collision_a_b_c;
-        assert!(bucket.insert(entry_d));
+        assert!(bucket.insert(entry_d).is_none());
         assert_eq!(bucket, bucket_collision_d_a_b_c);
     }
 

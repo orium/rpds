@@ -303,8 +303,13 @@ where
         }
     }
 
-    /// Returns a pair with the node with the new entry and whether the key is new.
-    fn insert(&mut self, entry: EntryWithHash<K, V, P>, depth: usize, degree: u8) -> bool {
+    /// Returns `None` if the key was new, or `Some(replaced_entry)` if it was occupied.
+    fn insert(
+        &mut self,
+        entry: EntryWithHash<K, V, P>,
+        depth: usize,
+        degree: u8,
+    ) -> Option<SharedPointer<Entry<K, V>, P>> {
         match self {
             Node::Branch(subtrees) => {
                 let index: usize = node_utils::index_from_hash(entry.key_hash, depth, degree)
@@ -318,7 +323,7 @@ where
                     None => {
                         let new_subtree = Node::Leaf(Bucket::Single(entry));
                         subtrees.set(index, SharedPointer::new(new_subtree));
-                        true
+                        None
                     }
                 }
             }
@@ -352,7 +357,7 @@ where
                         self.insert(old_entry, depth, degree);
                         self.insert(entry, depth, degree);
 
-                        true
+                        None
                     }
 
                     // Hash was already totally consumed.  This is a collision.
@@ -557,19 +562,20 @@ where
         self.get(key, key_hash).is_some()
     }
 
-    /// Returns `true` if the key is new.
+    /// Returns `None` if the key is new, and `Some(entry)` if a previous entry was replaced.
     ///
     /// If there is a collision then `entry` will be put on the front of the entries list to
     /// improve performance with high temporal locality (since `get()` will try to match according
     /// to the list order).  The order of the rest of the list must be preserved for the same
     /// reason.
-    fn insert(&mut self, entry: EntryWithHash<K, V, P>) -> bool {
+    fn insert(&mut self, entry: EntryWithHash<K, V, P>) -> Option<SharedPointer<Entry<K, V>, P>> {
         match self {
             Bucket::Single(existing_entry)
                 if existing_entry.matches(entry.key(), entry.key_hash) =>
             {
-                *existing_entry = entry;
-                false
+                let previous = std::mem::replace(existing_entry, entry);
+
+                Some(previous.into_entry())
             }
             Bucket::Single(existing_entry) => {
                 let mut entries = List::new_with_ptr_kind();
@@ -580,17 +586,17 @@ where
 
                 *self = Bucket::Collision(entries);
 
-                true
+                None
             }
             Bucket::Collision(entries) => {
-                let key_existed = bucket_utils::list_remove_first(entries, |e| {
+                let previous = bucket_utils::list_remove_first(entries, |e| {
                     e.matches(entry.key(), entry.key_hash)
                 })
-                .is_some();
+                .map(EntryWithHash::into_entry);
 
                 entries.push_front_mut(entry);
 
-                !key_existed
+                previous
             }
         }
     }
@@ -678,6 +684,10 @@ where
 
     fn value(&self) -> &V {
         &self.entry.value
+    }
+
+    fn into_entry(self) -> SharedPointer<Entry<K, V>, P> {
+        self.entry
     }
 
     #[inline]
@@ -800,12 +810,30 @@ where
     }
 
     pub fn insert_mut(&mut self, key: K, value: V) {
-        let entry = EntryWithHash::new(key, value, &self.hasher_builder);
-        let is_new_key = SharedPointer::make_mut(&mut self.root).insert(entry, 0, self.degree);
+        self.replace_mut(key, value);
+    }
 
-        if is_new_key {
+    #[must_use]
+    pub fn replace(
+        &self,
+        key: K,
+        value: V,
+    ) -> (HashTrieMap<K, V, P, H>, Option<SharedPointer<Entry<K, V>, P>>) {
+        let mut new_map = self.clone();
+
+        let previous_entry = new_map.replace_mut(key, value);
+
+        (new_map, previous_entry)
+    }
+
+    pub fn replace_mut(&mut self, key: K, value: V) -> Option<SharedPointer<Entry<K, V>, P>> {
+        let entry = EntryWithHash::new(key, value, &self.hasher_builder);
+        let previous_entry = SharedPointer::make_mut(&mut self.root).insert(entry, 0, self.degree);
+
+        if previous_entry.is_none() {
             self.size += 1;
         }
+        previous_entry
     }
 
     #[must_use]
