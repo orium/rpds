@@ -206,7 +206,7 @@ where
     }
 
     #[must_use]
-    pub fn is_disjoint<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, P, I>) -> bool {
+    pub fn is_disjoint<HO: BuildHasher + Clone>(&self, other: &HashTrieSet<T, P, HO>) -> bool {
         self.iter().all(|v| !other.contains(v))
     }
 
@@ -214,15 +214,15 @@ where
     ///
     /// This would return true if you’re comparing a set to itself,
     /// or if you’re comparing a set to a fresh clone of itself.
-    fn ptr_eq<PO: SharedPointerKind, I: BuildHasher + Clone>(
+    fn ptr_eq<PO: SharedPointerKind, HO: BuildHasher + Clone>(
         &self,
-        other: &HashTrieSet<T, PO, I>,
+        other: &HashTrieSet<T, PO, HO>,
     ) -> bool {
         self.map.ptr_eq(&other.map)
     }
 
     #[must_use]
-    pub fn is_subset<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, P, I>) -> bool {
+    pub fn is_subset<HO: BuildHasher + Clone>(&self, other: &HashTrieSet<T, P, HO>) -> bool {
         if self.ptr_eq(other) {
             return true;
         }
@@ -231,7 +231,7 @@ where
     }
 
     #[must_use]
-    pub fn is_superset<I: BuildHasher + Clone>(&self, other: &HashTrieSet<T, P, I>) -> bool {
+    pub fn is_superset<HO: BuildHasher + Clone>(&self, other: &HashTrieSet<T, P, HO>) -> bool {
         other.is_subset(self)
     }
 

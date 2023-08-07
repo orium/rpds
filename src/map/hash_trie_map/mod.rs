@@ -861,7 +861,7 @@ where
     ) -> bool {
         let a = SharedPointer::as_ptr(&self.root);
         // Note how we're casting the raw pointer changing from P to PO
-        // We cannot perform the equality in a type safe way because the Root type depends
+        // We cannot perform the equality in a type safe way because the root type depends
         // on P/PO, and we can't pass different types to SharedPtr::same_ptr or std::ptr::eq.
         let b = SharedPointer::as_ptr(&other.root).cast::<Node<K, V, P>>();
         core::ptr::eq(a, b)
