@@ -245,6 +245,10 @@ fn test_is_disjoint() {
 
 #[test]
 fn test_is_subset() {
+    let set = ht_set![1, 2, 3];
+
+    assert!(set.is_subset(&set));
+
     assert!(HashTrieSet::is_subset(&ht_set![], &ht_set![1, 2, 3]));
     assert!(HashTrieSet::is_subset(&ht_set![1, 2, 3], &ht_set![1, 2, 3]));
     assert!(!HashTrieSet::is_subset(&ht_set![1, 2, 3], &ht_set![1, 2, 5, 6]));
@@ -254,6 +258,10 @@ fn test_is_subset() {
 
 #[test]
 fn test_is_superset() {
+    let set = ht_set![1, 2, 3];
+
+    assert!(set.is_superset(&set));
+
     assert!(HashTrieSet::is_superset(&ht_set![1, 2, 3], &ht_set![]));
     assert!(HashTrieSet::is_superset(&ht_set![1, 2, 3], &ht_set![1, 2, 3]));
     assert!(!HashTrieSet::is_superset(&ht_set![1, 2, 5, 6], &ht_set![1, 2, 3]));

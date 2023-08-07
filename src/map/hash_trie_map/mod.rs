@@ -851,6 +851,22 @@ where
         self.get(key).is_some()
     }
 
+    /// Test whether the two maps refer to the same content in memory.
+    ///
+    /// This would return true if you’re comparing a map to itself,
+    /// or if you’re comparing a map to a fresh clone of itself.
+    pub(crate) fn ptr_eq<PO: SharedPointerKind, HO: BuildHasher>(
+        &self,
+        other: &HashTrieMap<K, V, PO, HO>,
+    ) -> bool {
+        let a = SharedPointer::as_ptr(&self.root);
+        // Note how we're casting the raw pointer changing from P to PO
+        // We cannot perform the equality in a type safe way because the Root type depends
+        // on P/PO, and we can't pass different types to SharedPtr::same_ptr or std::ptr::eq.
+        let b = SharedPointer::as_ptr(&other.root).cast::<Node<K, V, P>>();
+        core::ptr::eq(a, b)
+    }
+
     #[must_use]
     #[inline]
     pub fn size(&self) -> usize {
@@ -940,28 +956,6 @@ where
 {
     fn default() -> HashTrieMap<K, V, P, H> {
         HashTrieMap::new_with_hasher_and_ptr_kind(H::default())
-    }
-}
-
-impl<K, V, P, H: BuildHasher> HashTrieMap<K, V, P, H>
-where
-    H: Clone,
-    P: SharedPointerKind,
-{
-    /// Test whether the two maps refer to the same content in memory.
-    ///
-    /// This would return true if you’re comparing a map to itself,
-    /// or if you’re comparing a map to a fresh clone of itself.
-    pub fn ptr_eq<PO: SharedPointerKind, I: BuildHasher>(
-        &self,
-        other: &HashTrieMap<K, V, PO, I>,
-    ) -> bool {
-        let a = SharedPointer::as_ptr(&self.root).cast::<Node<K, V, P>>();
-        // Note how we're casting the raw pointer changing from P to PO
-        // We cannot perform the equality in a type safe way because the Root type depends
-        // on P/PO, and we can't pass different types to SharedPtr::same_ptr or std::ptr::eq.
-        let b = SharedPointer::as_ptr(&other.root).cast::<Node<K, V, P>>();
-        core::ptr::eq(a, b)
     }
 }
 

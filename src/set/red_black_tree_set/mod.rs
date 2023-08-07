@@ -212,6 +212,14 @@ where
         true
     }
 
+    /// Test whether the two sets refer to the same content in memory.
+    ///
+    /// This would return true if you’re comparing a set to itself,
+    /// or if you’re comparing a set to a fresh clone of itself.
+    fn ptr_eq<PO: SharedPointerKind>(&self, other: &RedBlackTreeSet<T, PO>) -> bool {
+        self.map.ptr_eq(&other.map)
+    }
+
     #[must_use]
     pub fn is_subset<PO>(&self, other: &RedBlackTreeSet<T, PO>) -> bool
     where
@@ -292,20 +300,6 @@ where
 {
     fn default() -> RedBlackTreeSet<T, P> {
         RedBlackTreeSet::new_with_ptr_kind()
-    }
-}
-
-impl<T, P> RedBlackTreeSet<T, P>
-where
-    T: Ord,
-    P: SharedPointerKind,
-{
-    /// Test whether the two sets refer to the same content in memory.
-    ///
-    /// This would return true if you’re comparing a set to itself,
-    /// or if you’re comparing a set to a fresh clone of itself.
-    pub fn ptr_eq<PO: SharedPointerKind>(&self, other: &RedBlackTreeSet<T, PO>) -> bool {
-        self.map.ptr_eq(&other.map)
     }
 }
 

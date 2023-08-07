@@ -289,6 +289,10 @@ fn test_is_disjoint() {
 
 #[test]
 fn test_is_subset() {
+    let set = rbt_set![1, 2, 3];
+
+    assert!(set.is_subset(&set));
+
     assert!(RedBlackTreeSet::is_subset(&rbt_set![], &rbt_set![1, 2, 3]));
     assert!(RedBlackTreeSet::is_subset(&rbt_set![1, 2, 3], &rbt_set![1, 2, 3]));
     assert!(!RedBlackTreeSet::is_subset(&rbt_set![1, 2, 3], &rbt_set![1, 2, 5, 6]));
@@ -298,6 +302,10 @@ fn test_is_subset() {
 
 #[test]
 fn test_is_superset() {
+    let set = rbt_set![1, 2, 3];
+
+    assert!(set.is_superset(&set));
+
     assert!(RedBlackTreeSet::is_superset(&rbt_set![1, 2, 3], &rbt_set![]));
     assert!(RedBlackTreeSet::is_superset(&rbt_set![1, 2, 3], &rbt_set![1, 2, 3]));
     assert!(!RedBlackTreeSet::is_superset(&rbt_set![1, 2, 5, 6], &rbt_set![1, 2, 3]));
