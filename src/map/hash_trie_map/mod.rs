@@ -855,7 +855,7 @@ where
     ///
     /// This would return true if you’re comparing a map to itself,
     /// or if you’re comparing a map to a fresh clone of itself.
-    pub(crate) fn ptr_eq<PO: SharedPointerKind, HO: BuildHasher>(
+    pub fn ptr_eq<PO: SharedPointerKind, HO: BuildHasher>(
         &self,
         other: &HashTrieMap<K, V, PO, HO>,
     ) -> bool {

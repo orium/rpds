@@ -214,7 +214,7 @@ where
     ///
     /// This would return true if you’re comparing a set to itself,
     /// or if you’re comparing a set to a fresh clone of itself.
-    fn ptr_eq<PO: SharedPointerKind, HO: BuildHasher + Clone>(
+    pub fn ptr_eq<PO: SharedPointerKind, HO: BuildHasher + Clone>(
         &self,
         other: &HashTrieSet<T, PO, HO>,
     ) -> bool {
