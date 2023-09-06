@@ -242,7 +242,7 @@ where
 
         fmt.write_str("Stack(")?;
 
-        for v in self.iter() {
+        for v in self {
             if !first {
                 fmt.write_str(", ")?;
             }

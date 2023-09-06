@@ -17,7 +17,6 @@ use core::hash::BuildHasher;
 use core::hash::Hash;
 use core::iter;
 use core::iter::FromIterator;
-use core::mem::size_of;
 use core::ops::Index;
 use core::slice;
 use sparse_array_usize::SparseArrayUsize;
@@ -31,7 +30,7 @@ pub type IterKeys<'a, K, V, P> = iter::Map<Iter<'a, K, V, P>, fn((&'a K, &V)) ->
 pub type IterValues<'a, K, V, P> = iter::Map<Iter<'a, K, V, P>, fn((&K, &'a V)) -> &'a V>;
 
 #[allow(clippy::cast_possible_truncation)]
-const DEFAULT_DEGREE: u8 = 8 * size_of::<usize>() as u8;
+const DEFAULT_DEGREE: u8 = usize::BITS as u8;
 
 /// Creates a [`HashTrieMap`](crate::HashTrieMap) containing the given arguments:
 ///

@@ -1059,7 +1059,7 @@ mod internal {
     fn remove_test(values_insert: &[u32], values_remove: &[u32]) {
         let mut map = RedBlackTreeMap::new();
 
-        for &v in values_insert.iter() {
+        for &v in values_insert {
             map.insert_mut(v, 2 * v);
         }
 

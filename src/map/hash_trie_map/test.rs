@@ -742,7 +742,7 @@ mod iter {
     fn test_iter_keys() {
         let map = ht_map![0 => 10, 1 => 11, 2 => 12];
 
-        let mut touched = vec![false; 3];
+        let mut touched = [false; 3];
 
         for k in map.keys() {
             assert!(!touched[*k as usize]);
@@ -756,7 +756,7 @@ mod iter {
     fn test_iter_values() {
         let map = ht_map![10 => 0, 11 => 1, 12 => 2];
 
-        let mut touched = vec![false; 3];
+        let mut touched = [false; 3];
 
         for v in map.values() {
             assert!(!touched[*v as usize]);
@@ -1191,8 +1191,7 @@ fn test_display() {
     assert_eq!(format!("{}", empty_map), "{}");
     assert_eq!(format!("{}", singleton_map), "{hi: hello}");
     assert!(
-        format!("{}", map) == "{5: hello, 12: there}"
-            || format!("{}", map) == "{12: there, 5: hello}"
+        format!("{map}") == "{5: hello, 12: there}" || format!("{map}") == "{12: there, 5: hello}"
     );
 }
 
