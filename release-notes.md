@@ -1,5 +1,10 @@
 # Release notes
 
+## 1.0.1
+
+* Fix the tests of `SparseArrayUsize` on 32-bit computers.  This issue did not affect production code which did work 
+  correctly on 32-bit platforms.
+
 ## 1.0.0
 
 * First stable version.  It’s time to commit to a stable release :).
