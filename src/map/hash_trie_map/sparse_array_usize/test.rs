@@ -4,10 +4,9 @@
  */
 
 use super::*;
-use core::mem::size_of;
 use pretty_assertions::assert_eq;
 
-const USIZE_BITS: usize = 8 * size_of::<usize>();
+const USIZE_BITS: usize = usize::BITS as usize;
 
 #[test]
 fn test_new() {

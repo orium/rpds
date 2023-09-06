@@ -275,7 +275,7 @@ where
 
         fmt.write_str("Queue(")?;
 
-        for v in self.iter() {
+        for v in self {
             if !first {
                 fmt.write_str(", ")?;
             }

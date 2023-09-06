@@ -233,7 +233,7 @@ where
         }
         let mut other_it = other.iter();
 
-        for v in self.iter() {
+        for v in self {
             loop {
                 match other_it.next() {
                     Some(u) => match u.cmp(v) {
@@ -366,7 +366,7 @@ where
 
         fmt.write_str("{")?;
 
-        for v in self.iter() {
+        for v in self {
             if !first {
                 fmt.write_str(", ")?;
             }

@@ -527,7 +527,7 @@ where
     type Output = T;
 
     fn index(&self, index: usize) -> &T {
-        self.get(index).unwrap_or_else(|| panic!("index out of bounds {}", index))
+        self.get(index).unwrap_or_else(|| panic!("index out of bounds {index}"))
     }
 }
 
@@ -536,7 +536,7 @@ where
     P: SharedPointerKind,
 {
     fn index_mut(&mut self, index: usize) -> &mut T {
-        self.get_mut(index).unwrap_or_else(|| panic!("index out of bounds {}", index))
+        self.get_mut(index).unwrap_or_else(|| panic!("index out of bounds {index}"))
     }
 }
 
@@ -613,7 +613,7 @@ where
 
         fmt.write_str("[")?;
 
-        for v in self.iter() {
+        for v in self {
             if !first {
                 fmt.write_str(", ")?;
             }

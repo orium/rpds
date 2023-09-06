@@ -118,8 +118,8 @@ fn test_first_mut() {
 
     assert_eq!(a.first(), Some(&0));
     assert_eq!(b.first(), Some(&-1));
-    assert!(a.iter().eq(vec![0, 1, 2, 3].iter()));
-    assert!(b.iter().eq(vec![-1, 1, 2, 3].iter()));
+    assert!(a.iter().eq([0, 1, 2, 3].iter()));
+    assert!(b.iter().eq([-1, 1, 2, 3].iter()));
 }
 
 #[test]

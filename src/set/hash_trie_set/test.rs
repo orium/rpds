@@ -294,7 +294,7 @@ fn test_display() {
 
     assert_eq!(format!("{}", empty_set), "{}");
     assert_eq!(format!("{}", singleton_set), "{hi}");
-    assert!(format!("{}", set) == "{5, 12}" || format!("{}", set) == "{12, 5}");
+    assert!(format!("{set}") == "{5, 12}" || format!("{set}") == "{12, 5}");
 }
 
 #[test]

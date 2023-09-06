@@ -1092,7 +1092,7 @@ where
 
         fmt.write_str("{")?;
 
-        for (k, v) in self.iter() {
+        for (k, v) in self {
             if !first {
                 fmt.write_str(", ")?;
             }
