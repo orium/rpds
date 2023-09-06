@@ -217,9 +217,9 @@ mod node_utils {
     use core::hash::Hasher;
     use core::mem::size_of_val;
 
-    // Returns the index of the array for the given hash on depth `depth`.
-    //
-    // When the hash is exhausted, meaning that we are at the maximum depth, this returns `None`.
+    /// Returns the index of the array for the given hash on depth `depth`.
+    ///
+    /// When the hash is exhausted, meaning that we are at the maximum depth, this returns `None`.
     #[inline]
     pub fn index_from_hash(hash: HashValue, depth: usize, degree: u8) -> Option<usize> {
         debug_assert!(degree.is_power_of_two());
