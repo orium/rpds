@@ -342,4 +342,13 @@ enable the `serde` feature.  To do so change the rpds dependency in your `Cargo.
 rpds = { version = "<version>", features = ["serde"] }
 ```
 
+### Bindings
+
+Bindings to use rpds from other programming languages exist. Below is a short list of those
+known to date.
+
+* [rpds.py](https://github.com/crate-py/rpds/) – Python
+
+Please feel free to send a pull request should you add support in a new language.
+
 <!-- cargo-rdme end -->
