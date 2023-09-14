@@ -26,10 +26,16 @@ assert_installed "cargo-fmt"
 trap on_failure ERR
 
 echo 'Building:'
+# Run check with no default features to check `no_std`.
 cargo check --no-default-features --features fatal-warnings,serde --all-targets
 cargo build --features fatal-warnings,serde --all-targets
 echo 'Testing:'
 cargo test  --features fatal-warnings,serde --all-targets --benches
+# Weirdly, the `cargo test ... --all-targets ...` above does not run the tests in the documentation, so we run the
+# doc tests like this.
+# See https://github.com/rust-lang/cargo/issues/6669.
+echo 'Testing doc:'
+cargo test  --features fatal-warnings,serde --doc
 echo 'Checking documentation:'
 cargo doc   --features fatal-warnings,serde --no-deps --document-private-items
 
