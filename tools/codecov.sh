@@ -13,9 +13,9 @@ source "tools/utils.sh"
 
 assert_installed "cargo-tarpaulin"
 
-output_format=Html
+output_format=html
 
-args=$(getopt -l "xml" -o "x" -- "$@")
+args=$(getopt -o '' -l xml -- "$@")
 
 eval set -- "$args"
 
@@ -26,9 +26,8 @@ while [ $# -ge 1 ]; do
             shift
             break
             ;;
-        -x|--xml)
-            output_format=Xml
-            shift
+        --xml)
+            output_format=xml
             ;;
     esac
 
@@ -39,7 +38,7 @@ done
 cargo clean
 cargo tarpaulin --force-clean --ignore-panics --engine llvm --timeout 1200 --out $output_format
 
-if [ "$output_format" == "Html" ]; then
+if [ "$output_format" == "html" ]; then
     echo
     echo "You can find the test coverage results at file://$(pwd)/tarpaulin-report.html"
 fi
