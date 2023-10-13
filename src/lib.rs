@@ -20,6 +20,9 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::enum_glob_use)]
 #![allow(clippy::type_repetition_in_bounds)]
+// TODO This is only needed because `cargo-rdme` requires a path like `crate::⋯`. Once that limitation is
+//      lifted we can remove this.
+#![allow(rustdoc::redundant_explicit_links)]
 // Note: If you change this remember to update `README.md`.  To do so run `cargo rdme`.
 //! Rust Persistent Data Structures provides [fully persistent data structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
 //! with structural sharing.
