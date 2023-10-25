@@ -6,15 +6,19 @@
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use rpds::VectorSync;
 use std::hint::black_box;
+
+#[cfg(not(feature = "triomphe-bench"))]
+use rpds::VectorSync;
+#[cfg(feature = "triomphe-bench")]
+type VectorSync<T> = rpds::Vector<T, archery::ArcTK>;
 
 fn rpds_vector_syncpush_back(c: &mut Criterion) {
     let limit = 10_000;
 
     c.bench_function("rpds vector sync push back", move |b| {
         b.iter(|| {
-            let mut vector: VectorSync<usize> = VectorSync::new_sync();
+            let mut vector: VectorSync<usize> = VectorSync::new_with_ptr_kind();
 
             for i in 0..limit {
                 vector = vector.push_back(i);
@@ -30,7 +34,7 @@ fn rpds_vector_syncpush_back_mut(c: &mut Criterion) {
 
     c.bench_function("rpds vector sync push back mut", move |b| {
         b.iter(|| {
-            let mut vector: VectorSync<usize> = VectorSync::new_sync();
+            let mut vector: VectorSync<usize> = VectorSync::new_with_ptr_kind();
 
             for i in 0..limit {
                 vector.push_back_mut(i);
@@ -47,7 +51,7 @@ fn rpds_vector_syncdrop_last(c: &mut Criterion) {
     c.bench_function("rpds vector sync drop last", move |b| {
         b.iter_with_setup(
             || {
-                let mut vector: VectorSync<usize> = VectorSync::new_sync();
+                let mut vector: VectorSync<usize> = VectorSync::new_with_ptr_kind();
 
                 for i in 0..limit {
                     vector.push_back_mut(i);
@@ -72,7 +76,7 @@ fn rpds_vector_syncdrop_last_mut(c: &mut Criterion) {
     c.bench_function("rpds vector sync drop last mut", move |b| {
         b.iter_with_setup(
             || {
-                let mut vector: VectorSync<usize> = VectorSync::new_sync();
+                let mut vector: VectorSync<usize> = VectorSync::new_with_ptr_kind();
 
                 for i in 0..limit {
                     vector.push_back_mut(i);
@@ -93,7 +97,7 @@ fn rpds_vector_syncdrop_last_mut(c: &mut Criterion) {
 
 fn rpds_vector_syncget(c: &mut Criterion) {
     let limit = 10_000;
-    let mut vector: VectorSync<usize> = VectorSync::new_sync();
+    let mut vector: VectorSync<usize> = VectorSync::new_with_ptr_kind();
 
     for i in 0..limit {
         vector.push_back_mut(i);
@@ -110,7 +114,7 @@ fn rpds_vector_syncget(c: &mut Criterion) {
 
 fn rpds_vector_synciterate(c: &mut Criterion) {
     let limit = 10_000;
-    let mut vector: VectorSync<usize> = VectorSync::new_sync();
+    let mut vector: VectorSync<usize> = VectorSync::new_with_ptr_kind();
 
     for i in 0..limit {
         vector.push_back_mut(i);

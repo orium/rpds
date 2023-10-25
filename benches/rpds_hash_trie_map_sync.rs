@@ -6,15 +6,19 @@
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use rpds::HashTrieMapSync;
 use std::hint::black_box;
+
+#[cfg(not(feature = "triomphe-bench"))]
+type HashTrieMapSync<K, V> = rpds::HashTrieMapSync<K, V>;
+#[cfg(feature = "triomphe-bench")]
+type HashTrieMapSync<K, V> = rpds::HashTrieMap<K, V, archery::ArcTK>;
 
 fn rpds_hash_trie_map_sync_insert(c: &mut Criterion) {
     let limit = 10_000;
 
     c.bench_function("rpds hash trie map sync insert", move |b| {
         b.iter(|| {
-            let mut map = HashTrieMapSync::new_sync();
+            let mut map = HashTrieMapSync::default();
 
             for i in 0..limit {
                 map = map.insert(i, -(i as isize));
@@ -30,7 +34,7 @@ fn rpds_hash_trie_map_sync_insert_mut(c: &mut Criterion) {
 
     c.bench_function("rpds hash trie map sync insert mut", move |b| {
         b.iter(|| {
-            let mut map = HashTrieMapSync::new_sync();
+            let mut map = HashTrieMapSync::default();
 
             for i in 0..limit {
                 map.insert_mut(i, -(i as isize));
@@ -47,7 +51,7 @@ fn rpds_hash_trie_map_sync_remove(c: &mut Criterion) {
     c.bench_function("rpds hash trie map sync remove", move |b| {
         b.iter_with_setup(
             || {
-                let mut map = HashTrieMapSync::new_sync();
+                let mut map = HashTrieMapSync::default();
 
                 for i in 0..limit {
                     map.insert_mut(i, -(i as isize));
@@ -72,7 +76,7 @@ fn rpds_hash_trie_map_sync_remove_mut(c: &mut Criterion) {
     c.bench_function("rpds hash trie map sync remove mut", move |b| {
         b.iter_with_setup(
             || {
-                let mut map = HashTrieMapSync::new_sync();
+                let mut map = HashTrieMapSync::default();
 
                 for i in 0..limit {
                     map.insert_mut(i, -(i as isize));
@@ -93,7 +97,7 @@ fn rpds_hash_trie_map_sync_remove_mut(c: &mut Criterion) {
 
 fn rpds_hash_trie_map_sync_get(c: &mut Criterion) {
     let limit = 10_000;
-    let mut map = HashTrieMapSync::new_sync();
+    let mut map = HashTrieMapSync::default();
 
     for i in 0..limit {
         map.insert_mut(i, -(i as isize));
@@ -110,7 +114,7 @@ fn rpds_hash_trie_map_sync_get(c: &mut Criterion) {
 
 fn rpds_hash_trie_map_sync_iterate(c: &mut Criterion) {
     let limit = 10_000;
-    let mut map = HashTrieMapSync::new_sync();
+    let mut map = HashTrieMapSync::default();
 
     for i in 0..limit {
         map.insert_mut(i, -(i as isize));

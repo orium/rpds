@@ -41,7 +41,7 @@ codecov = { repository = "orium/rpds", branch = "master", service = "github" }
 [dependencies]
 # FIXME: use release
 # archery = "1.0.0"
-archery = { git = "https://github.com/michaelsproul/archery", branch = "triomphe", features = ["triomphe"] }
+archery = { git = "https://github.com/michaelsproul/archery", branch = "triomphe" }
 serde = { version = "1.0.149", optional = true, default-features = false }
 
 [dev-dependencies]
@@ -56,6 +56,7 @@ static_assertions = "1.1.0"
 default = ["std"]
 fatal-warnings = []
 std = []
+triomphe-bench = ["archery/triomphe"]
 
 [package.metadata.docs.rs]
 features = ["serde"]
@@ -70,10 +71,6 @@ harness = false
 
 [[bench]]
 name = "rpds_list_sync"
-harness = false
-
-[[bench]]
-name = "rpds_list_triomphe"
 harness = false
 
 [[bench]]

@@ -6,15 +6,19 @@
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use rpds::RedBlackTreeMapSync;
 use std::hint::black_box;
+
+#[cfg(not(feature = "triomphe-bench"))]
+use rpds::RedBlackTreeMapSync;
+#[cfg(feature = "triomphe-bench")]
+type RedBlackTreeMapSync<K, V> = rpds::RedBlackTreeMap<K, V, archery::ArcTK>;
 
 fn rpds_red_black_tree_map_sync_insert(c: &mut Criterion) {
     let limit = 10_000;
 
     c.bench_function("rpds red black tree map sync insert", move |b| {
         b.iter(|| {
-            let mut map = RedBlackTreeMapSync::new_sync();
+            let mut map = RedBlackTreeMapSync::default();
 
             for i in 0..limit {
                 map = map.insert(i, -(i as isize));
@@ -30,7 +34,7 @@ fn rpds_red_black_tree_map_sync_insert_mut(c: &mut Criterion) {
 
     c.bench_function("rpds red black tree map sync insert mut", move |b| {
         b.iter(|| {
-            let mut map = RedBlackTreeMapSync::new_sync();
+            let mut map = RedBlackTreeMapSync::default();
 
             for i in 0..limit {
                 map.insert_mut(i, -(i as isize));
@@ -47,7 +51,7 @@ fn rpds_red_black_tree_map_sync_remove(c: &mut Criterion) {
     c.bench_function("rpds red black tree map sync remove", move |b| {
         b.iter_with_setup(
             || {
-                let mut map = RedBlackTreeMapSync::new_sync();
+                let mut map = RedBlackTreeMapSync::default();
 
                 for i in 0..limit {
                     map.insert_mut(i, -(i as isize));
@@ -72,7 +76,7 @@ fn rpds_red_black_tree_map_sync_remove_mut(c: &mut Criterion) {
     c.bench_function("rpds red black tree map sync remove mut", move |b| {
         b.iter_with_setup(
             || {
-                let mut map = RedBlackTreeMapSync::new_sync();
+                let mut map = RedBlackTreeMapSync::default();
 
                 for i in 0..limit {
                     map.insert_mut(i, -(i as isize));
@@ -93,7 +97,7 @@ fn rpds_red_black_tree_map_sync_remove_mut(c: &mut Criterion) {
 
 fn rpds_red_black_tree_map_sync_get(c: &mut Criterion) {
     let limit = 10_000;
-    let mut map = RedBlackTreeMapSync::new_sync();
+    let mut map = RedBlackTreeMapSync::default();
 
     for i in 0..limit {
         map.insert_mut(i, -(i as isize));
@@ -110,7 +114,7 @@ fn rpds_red_black_tree_map_sync_get(c: &mut Criterion) {
 
 fn rpds_red_black_tree_map_sync_iterate(c: &mut Criterion) {
     let limit = 10_000;
-    let mut map = RedBlackTreeMapSync::new_sync();
+    let mut map = RedBlackTreeMapSync::default();
 
     for i in 0..limit {
         map.insert_mut(i, -(i as isize));

@@ -6,15 +6,19 @@
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use rpds::ListSync;
 use std::hint::black_box;
+
+#[cfg(not(feature = "triomphe-bench"))]
+use rpds::ListSync;
+#[cfg(feature = "triomphe-bench")]
+type ListSync<T> = rpds::List<T, archery::ArcTK>;
 
 fn rpds_list_sync_push_front(c: &mut Criterion) {
     let limit = 10_000;
 
     c.bench_function("rpds list sync push front", move |b| {
         b.iter(|| {
-            let mut list: ListSync<usize> = ListSync::new_sync();
+            let mut list: ListSync<usize> = ListSync::new_with_ptr_kind();
 
             for i in 0..limit {
                 list = list.push_front(i);
@@ -30,7 +34,7 @@ fn rpds_list_sync_push_front_mut(c: &mut Criterion) {
 
     c.bench_function("rpds list sync push front mut", move |b| {
         b.iter(|| {
-            let mut list: ListSync<usize> = ListSync::new_sync();
+            let mut list: ListSync<usize> = ListSync::new_with_ptr_kind();
 
             for i in 0..limit {
                 list.push_front_mut(i);
@@ -47,7 +51,7 @@ fn rpds_list_sync_drop_first(c: &mut Criterion) {
     c.bench_function("rpds list sync drop first", move |b| {
         b.iter_with_setup(
             || {
-                let mut list: ListSync<usize> = ListSync::new_sync();
+                let mut list: ListSync<usize> = ListSync::new_with_ptr_kind();
 
                 for i in 0..limit {
                     list.push_front_mut(i);
@@ -72,7 +76,7 @@ fn rpds_list_sync_drop_first_mut(c: &mut Criterion) {
     c.bench_function("rpds list sync drop first mut", move |b| {
         b.iter_with_setup(
             || {
-                let mut list: ListSync<usize> = ListSync::new_sync();
+                let mut list: ListSync<usize> = ListSync::new_with_ptr_kind();
 
                 for i in 0..limit {
                     list.push_front_mut(i);
@@ -97,7 +101,7 @@ fn rpds_list_sync_reverse(c: &mut Criterion) {
     c.bench_function("rpds list sync reverse", move |b| {
         b.iter_with_setup(
             || {
-                let mut list: ListSync<usize> = ListSync::new_sync();
+                let mut list: ListSync<usize> = ListSync::new_with_ptr_kind();
 
                 for i in 0..limit {
                     list.push_front_mut(i);
@@ -122,7 +126,7 @@ fn rpds_list_sync_reverse_mut(c: &mut Criterion) {
     c.bench_function("rpds list sync reverse mut", move |b| {
         b.iter_with_setup(
             || {
-                let mut list: ListSync<usize> = ListSync::new_sync();
+                let mut list: ListSync<usize> = ListSync::new_with_ptr_kind();
 
                 for i in 0..limit {
                     list.push_front_mut(i);
@@ -143,7 +147,7 @@ fn rpds_list_sync_reverse_mut(c: &mut Criterion) {
 
 fn rpds_list_sync_iterate(c: &mut Criterion) {
     let limit = 10_000;
-    let mut list: ListSync<usize> = ListSync::new_sync();
+    let mut list: ListSync<usize> = ListSync::new_with_ptr_kind();
 
     for i in 0..limit {
         list.push_front_mut(i);

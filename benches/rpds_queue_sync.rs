@@ -6,15 +6,19 @@
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use rpds::QueueSync;
 use std::hint::black_box;
+
+#[cfg(not(feature = "triomphe-bench"))]
+use rpds::QueueSync;
+#[cfg(feature = "triomphe-bench")]
+type QueueSync<T> = rpds::Queue<T, archery::ArcTK>;
 
 fn rpds_queue_sync_enqueue(c: &mut Criterion) {
     let limit = 10_000;
 
     c.bench_function("rpds queue sync enqueue", move |b| {
         b.iter(|| {
-            let mut queue: QueueSync<usize> = QueueSync::new_sync();
+            let mut queue: QueueSync<usize> = QueueSync::new_with_ptr_kind();
 
             for i in 0..limit {
                 queue = queue.enqueue(i);
@@ -30,7 +34,7 @@ fn rpds_queue_sync_enqueue_mut(c: &mut Criterion) {
 
     c.bench_function("rpds queue sync enqueue mut", move |b| {
         b.iter(|| {
-            let mut queue: QueueSync<usize> = QueueSync::new_sync();
+            let mut queue: QueueSync<usize> = QueueSync::new_with_ptr_kind();
 
             for i in 0..limit {
                 queue.enqueue_mut(i);
@@ -47,7 +51,7 @@ fn rpds_queue_sync_dequeue(c: &mut Criterion) {
     c.bench_function("rpds queue sync dequeue", move |b| {
         b.iter_with_setup(
             || {
-                let mut queue: QueueSync<usize> = QueueSync::new_sync();
+                let mut queue: QueueSync<usize> = QueueSync::new_with_ptr_kind();
 
                 for i in 0..limit {
                     queue.enqueue_mut(i);
@@ -72,7 +76,7 @@ fn rpds_queue_sync_dequeue_mut(c: &mut Criterion) {
     c.bench_function("rpds queue sync dequeue mut", move |b| {
         b.iter_with_setup(
             || {
-                let mut queue: QueueSync<usize> = QueueSync::new_sync();
+                let mut queue: QueueSync<usize> = QueueSync::new_with_ptr_kind();
 
                 for i in 0..limit {
                     queue.enqueue_mut(i);
@@ -93,7 +97,7 @@ fn rpds_queue_sync_dequeue_mut(c: &mut Criterion) {
 
 fn rpds_queue_sync_iterate(c: &mut Criterion) {
     let limit = 10_000;
-    let mut queue: QueueSync<usize> = QueueSync::new_sync();
+    let mut queue: QueueSync<usize> = QueueSync::new_with_ptr_kind();
 
     for i in 0..limit {
         queue.enqueue_mut(i);
