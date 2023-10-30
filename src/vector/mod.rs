@@ -106,7 +106,7 @@ where
     length: usize,
 }
 
-pub type VectorSync<T> = Vector<T, ArcK>;
+pub type VectorSync<T> = Vector<T, ArcTK>;
 
 #[derive(Debug)]
 enum Node<T, P = RcK>

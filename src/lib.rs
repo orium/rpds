@@ -336,7 +336,7 @@
 //! ```rust
 //! # use rpds::Vector;
 //! #
-//! let vec: Vector<u32, archery::ArcK> = Vector::new_with_ptr_kind();
+//! let vec: Vector<u32, archery::ArcTK> = Vector::new_with_ptr_kind();
 //! //                              ↖
 //! //                                This will use `Arc` pointers.
 //! //                                Change it to `archery::RcK` to use a `Rc` pointer.
