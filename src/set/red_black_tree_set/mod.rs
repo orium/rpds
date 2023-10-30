@@ -5,7 +5,7 @@
 
 use crate::map::red_black_tree_map;
 use crate::RedBlackTreeMap;
-use archery::{ArcK, RcK, SharedPointerKind};
+use archery::{ArcTK, RcK, SharedPointerKind};
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt::Display;
@@ -104,7 +104,7 @@ where
     map: RedBlackTreeMap<T, (), P>,
 }
 
-pub type RedBlackTreeSetSync<T> = RedBlackTreeSet<T, ArcK>;
+pub type RedBlackTreeSetSync<T> = RedBlackTreeSet<T, ArcTK>;
 
 impl<T> RedBlackTreeSetSync<T>
 where

@@ -10,7 +10,7 @@ use crate::list;
 use crate::utils::DefaultBuildHasher;
 use crate::List;
 use alloc::vec::Vec;
-use archery::{ArcK, RcK, SharedPointer, SharedPointerKind};
+use archery::{ArcTK, RcK, SharedPointer, SharedPointerKind};
 use core::borrow::Borrow;
 use core::fmt::Display;
 use core::hash::BuildHasher;
@@ -126,7 +126,7 @@ where
     hasher_builder: H,
 }
 
-pub type HashTrieMapSync<K, V, H = DefaultBuildHasher> = HashTrieMap<K, V, ArcK, H>;
+pub type HashTrieMapSync<K, V, H = DefaultBuildHasher> = HashTrieMap<K, V, ArcTK, H>;
 
 /// This map works like a trie that breaks the hash of the key in segments, and the segments are
 /// used as the index in the trie branches.

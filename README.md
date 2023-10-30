@@ -317,7 +317,7 @@ crate to do this in a convenient way.
 The pointer type can be parameterized like this:
 
 ```rust
-let vec: Vector<u32, archery::ArcK> = Vector::new_with_ptr_kind();
+let vec: Vector<u32, archery::ArcTK> = Vector::new_with_ptr_kind();
 //                              ↖
 //                                This will use `Arc` pointers.
 //                                Change it to `archery::RcK` to use a `Rc` pointer.

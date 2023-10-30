@@ -100,7 +100,7 @@ where
     list: List<T, P>,
 }
 
-pub type StackSync<T> = Stack<T, ArcK>;
+pub type StackSync<T> = Stack<T, ArcTK>;
 
 impl<T> StackSync<T> {
     #[must_use]
