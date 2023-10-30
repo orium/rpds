@@ -6,7 +6,7 @@
 
 set -e
 
-MAIN_BRANCH=master
+MAIN_BRANCH=main
 
 cd $(dirname "$0")
 cd "$(git rev-parse --show-toplevel)"

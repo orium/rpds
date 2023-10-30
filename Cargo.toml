@@ -36,7 +36,7 @@ include = [
 ]
 
 [badges]
-codecov = { repository = "orium/rpds", branch = "master", service = "github" }
+codecov = { repository = "orium/rpds", branch = "main", service = "github" }
 
 [dependencies]
 archery = "1.0.0"
