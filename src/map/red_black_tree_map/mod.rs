@@ -4,7 +4,7 @@
  */
 
 use super::entry::Entry;
-use archery::{ArcK, RcK, SharedPointer, SharedPointerKind};
+use archery::{ArcTK, RcK, SharedPointer, SharedPointerKind};
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt::Display;
@@ -113,7 +113,7 @@ where
     size: usize,
 }
 
-pub type RedBlackTreeMapSync<K, V> = RedBlackTreeMap<K, V, ArcK>;
+pub type RedBlackTreeMapSync<K, V> = RedBlackTreeMap<K, V, ArcTK>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Color {

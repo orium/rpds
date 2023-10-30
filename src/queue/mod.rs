@@ -107,7 +107,7 @@ where
     out_list: List<T, P>,
 }
 
-pub type QueueSync<T> = Queue<T, ArcK>;
+pub type QueueSync<T> = Queue<T, ArcTK>;
 
 impl<T> QueueSync<T> {
     #[must_use]

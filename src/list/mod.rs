@@ -79,7 +79,7 @@ macro_rules! list {
 #[macro_export]
 macro_rules! list_sync {
     ($($e:expr),*) => {
-        $crate::list_reverse!(::archery::ArcK ; $($e),* ; )
+        $crate::list_reverse!(::archery::ArcTK ; $($e),* ; )
     };
 }
 
@@ -137,7 +137,7 @@ where
     }
 }
 
-pub type ListSync<T> = List<T, ArcK>;
+pub type ListSync<T> = List<T, ArcTK>;
 
 impl<T> ListSync<T> {
     #[must_use]
