@@ -1,5 +1,5 @@
 [![Build Status](https://github.com/orium/rpds/workflows/CI/badge.svg)](https://github.com/orium/rpds/actions?query=workflow%3ACI)
-[![Code Coverage](https://codecov.io/gh/orium/rpds/branch/master/graph/badge.svg)](https://codecov.io/gh/orium/rpds)
+[![Code Coverage](https://codecov.io/gh/orium/rpds/branch/main/graph/badge.svg)](https://codecov.io/gh/orium/rpds)
 [![Dependency status](https://deps.rs/repo/github/orium/rpds/status.svg)](https://deps.rs/repo/github/orium/rpds)
 [![crates.io](https://img.shields.io/crates/v/rpds.svg)](https://crates.io/crates/rpds)
 [![Downloads](https://img.shields.io/crates/d/rpds.svg)](https://crates.io/crates/rpds)
