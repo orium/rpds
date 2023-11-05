@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 use std::hint::black_box;
 
 fn std_btree_map_insert(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("std b-tree map insert", move |b| {
         b.iter(|| {
@@ -26,7 +26,7 @@ fn std_btree_map_insert(c: &mut Criterion) {
 }
 
 fn std_btree_map_remove(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("std btree map remove", move |b| {
         b.iter_with_setup(
@@ -51,7 +51,7 @@ fn std_btree_map_remove(c: &mut Criterion) {
 }
 
 fn std_btree_map_get(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
     let mut map: BTreeMap<usize, isize> = BTreeMap::new();
 
     for i in 0..limit {
@@ -68,7 +68,7 @@ fn std_btree_map_get(c: &mut Criterion) {
 }
 
 fn std_btree_map_iterate(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
     let mut map: BTreeMap<usize, isize> = BTreeMap::new();
 
     for i in 0..limit {

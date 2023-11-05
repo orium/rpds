@@ -10,7 +10,7 @@ use rpds::ListSync;
 use std::hint::black_box;
 
 fn rpds_list_sync_push_front(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds list sync push front", move |b| {
         b.iter(|| {
@@ -26,7 +26,7 @@ fn rpds_list_sync_push_front(c: &mut Criterion) {
 }
 
 fn rpds_list_sync_push_front_mut(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds list sync push front mut", move |b| {
         b.iter(|| {
@@ -42,7 +42,7 @@ fn rpds_list_sync_push_front_mut(c: &mut Criterion) {
 }
 
 fn rpds_list_sync_drop_first(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds list sync drop first", move |b| {
         b.iter_with_setup(
@@ -67,7 +67,7 @@ fn rpds_list_sync_drop_first(c: &mut Criterion) {
 }
 
 fn rpds_list_sync_drop_first_mut(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds list sync drop first mut", move |b| {
         b.iter_with_setup(
@@ -92,7 +92,7 @@ fn rpds_list_sync_drop_first_mut(c: &mut Criterion) {
 }
 
 fn rpds_list_sync_reverse(c: &mut Criterion) {
-    let limit = 1_000;
+    let limit = 2_000;
 
     c.bench_function("rpds list sync reverse", move |b| {
         b.iter_with_setup(
@@ -117,7 +117,7 @@ fn rpds_list_sync_reverse(c: &mut Criterion) {
 }
 
 fn rpds_list_sync_reverse_mut(c: &mut Criterion) {
-    let limit = 1_000;
+    let limit = 2_000;
 
     c.bench_function("rpds list sync reverse mut", move |b| {
         b.iter_with_setup(
@@ -142,7 +142,7 @@ fn rpds_list_sync_reverse_mut(c: &mut Criterion) {
 }
 
 fn rpds_list_sync_iterate(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 1_000_000;
     let mut list: ListSync<usize> = ListSync::new_sync();
 
     for i in 0..limit {

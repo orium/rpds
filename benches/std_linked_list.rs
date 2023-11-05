@@ -10,7 +10,7 @@ use std::collections::LinkedList;
 use std::hint::black_box;
 
 fn std_linked_list_push_front(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("std linked list push front", move |b| {
         b.iter(|| {
@@ -26,7 +26,7 @@ fn std_linked_list_push_front(c: &mut Criterion) {
 }
 
 fn std_linked_list_push_back(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("std linked list push back", move |b| {
         b.iter(|| {
@@ -42,7 +42,7 @@ fn std_linked_list_push_back(c: &mut Criterion) {
 }
 
 fn std_linked_list_pop_front(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("std linked list pop front", move |b| {
         b.iter_with_setup(
@@ -67,7 +67,7 @@ fn std_linked_list_pop_front(c: &mut Criterion) {
 }
 
 fn std_linked_list_pop_back(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("std linked list pop back", move |b| {
         b.iter_with_setup(
@@ -92,7 +92,7 @@ fn std_linked_list_pop_back(c: &mut Criterion) {
 }
 
 fn std_linked_list_iterate(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
     let mut linked_list: LinkedList<usize> = LinkedList::new();
 
     for i in 0..limit {
