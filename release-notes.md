@@ -1,5 +1,10 @@
 # Release notes
 
+## 1.1.0
+
+* Use [triomphe](https://crates.io/crates/triomphe) reference-counting pointer by default in `Sync` data structures,
+  which improves their performance.
+
 ## 1.0.1
 
 * Fix the tests of `SparseArrayUsize` on 32-bit computers.  This issue did not affect production code which did work 
