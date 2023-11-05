@@ -10,7 +10,7 @@ use rpds::Queue;
 use std::hint::black_box;
 
 fn rpds_queue_enqueue(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds queue enqueue", move |b| {
         b.iter(|| {
@@ -26,7 +26,7 @@ fn rpds_queue_enqueue(c: &mut Criterion) {
 }
 
 fn rpds_queue_enqueue_mut(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds queue enqueue mut", move |b| {
         b.iter(|| {
@@ -42,7 +42,7 @@ fn rpds_queue_enqueue_mut(c: &mut Criterion) {
 }
 
 fn rpds_queue_dequeue(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds queue dequeue", move |b| {
         b.iter_with_setup(
@@ -67,7 +67,7 @@ fn rpds_queue_dequeue(c: &mut Criterion) {
 }
 
 fn rpds_queue_dequeue_mut(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds queue dequeue mut", move |b| {
         b.iter_with_setup(
@@ -92,7 +92,7 @@ fn rpds_queue_dequeue_mut(c: &mut Criterion) {
 }
 
 fn rpds_queue_iterate(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
     let mut queue: Queue<usize> = Queue::new();
 
     for i in 0..limit {

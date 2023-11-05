@@ -10,7 +10,7 @@ use rpds::Vector;
 use std::hint::black_box;
 
 fn rpds_vector_push_back(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds vector push back", move |b| {
         b.iter(|| {
@@ -26,7 +26,7 @@ fn rpds_vector_push_back(c: &mut Criterion) {
 }
 
 fn rpds_vector_push_back_mut(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds vector push back mut", move |b| {
         b.iter(|| {
@@ -42,7 +42,7 @@ fn rpds_vector_push_back_mut(c: &mut Criterion) {
 }
 
 fn rpds_vector_drop_last(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds vector drop last", move |b| {
         b.iter_with_setup(
@@ -67,7 +67,7 @@ fn rpds_vector_drop_last(c: &mut Criterion) {
 }
 
 fn rpds_vector_drop_last_mut(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds vector drop last mut", move |b| {
         b.iter_with_setup(
@@ -92,7 +92,7 @@ fn rpds_vector_drop_last_mut(c: &mut Criterion) {
 }
 
 fn rpds_vector_get(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
     let mut vector: Vector<usize> = Vector::new();
 
     for i in 0..limit {
@@ -109,7 +109,7 @@ fn rpds_vector_get(c: &mut Criterion) {
 }
 
 fn rpds_vector_iterate(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
     let mut vector: Vector<usize> = Vector::new();
 
     for i in 0..limit {

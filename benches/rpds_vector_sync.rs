@@ -10,7 +10,7 @@ use rpds::VectorSync;
 use std::hint::black_box;
 
 fn rpds_vector_syncpush_back(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds vector sync push back", move |b| {
         b.iter(|| {
@@ -26,7 +26,7 @@ fn rpds_vector_syncpush_back(c: &mut Criterion) {
 }
 
 fn rpds_vector_syncpush_back_mut(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds vector sync push back mut", move |b| {
         b.iter(|| {
@@ -42,7 +42,7 @@ fn rpds_vector_syncpush_back_mut(c: &mut Criterion) {
 }
 
 fn rpds_vector_syncdrop_last(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds vector sync drop last", move |b| {
         b.iter_with_setup(
@@ -67,7 +67,7 @@ fn rpds_vector_syncdrop_last(c: &mut Criterion) {
 }
 
 fn rpds_vector_syncdrop_last_mut(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds vector sync drop last mut", move |b| {
         b.iter_with_setup(
@@ -92,7 +92,7 @@ fn rpds_vector_syncdrop_last_mut(c: &mut Criterion) {
 }
 
 fn rpds_vector_syncget(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 1_000_000;
     let mut vector: VectorSync<usize> = VectorSync::new_sync();
 
     for i in 0..limit {
@@ -109,7 +109,7 @@ fn rpds_vector_syncget(c: &mut Criterion) {
 }
 
 fn rpds_vector_synciterate(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 1_000_000;
     let mut vector: VectorSync<usize> = VectorSync::new_sync();
 
     for i in 0..limit {

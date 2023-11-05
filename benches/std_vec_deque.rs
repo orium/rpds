@@ -10,7 +10,7 @@ use std::collections::VecDeque;
 use std::hint::black_box;
 
 fn std_vec_dequeue_push_back(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("std vec dequeue push back", move |b| {
         b.iter(|| {
@@ -26,7 +26,7 @@ fn std_vec_dequeue_push_back(c: &mut Criterion) {
 }
 
 fn std_vec_dequeue_pop_front(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("std vec dequeue pop front", move |b| {
         b.iter_with_setup(
@@ -51,7 +51,7 @@ fn std_vec_dequeue_pop_front(c: &mut Criterion) {
 }
 
 fn std_vec_dequeue_iterate(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
     let mut deque: VecDeque<usize> = VecDeque::new();
 
     for i in 0..limit {

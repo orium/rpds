@@ -9,7 +9,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use std::hint::black_box;
 
 fn std_vec_push(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("std vec push", move |b| {
         b.iter(|| {
@@ -25,7 +25,7 @@ fn std_vec_push(c: &mut Criterion) {
 }
 
 fn std_vec_pop(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("std vec pop", move |b| {
         b.iter_with_setup(
@@ -50,7 +50,7 @@ fn std_vec_pop(c: &mut Criterion) {
 }
 
 fn std_vec_reverse(c: &mut Criterion) {
-    let limit = 1_000;
+    let limit = 10_000;
 
     c.bench_function("std vec reverse", move |b| {
         b.iter_with_setup(
@@ -75,7 +75,7 @@ fn std_vec_reverse(c: &mut Criterion) {
 }
 
 fn std_vec_get(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
     let mut vector: Vec<usize> = Vec::new();
 
     for i in 0..limit {
@@ -92,7 +92,7 @@ fn std_vec_get(c: &mut Criterion) {
 }
 
 fn std_vec_iterate(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
     let mut vector: Vec<usize> = Vec::new();
 
     for i in 0..limit {

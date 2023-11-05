@@ -10,7 +10,7 @@ use rpds::QueueSync;
 use std::hint::black_box;
 
 fn rpds_queue_sync_enqueue(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds queue sync enqueue", move |b| {
         b.iter(|| {
@@ -26,7 +26,7 @@ fn rpds_queue_sync_enqueue(c: &mut Criterion) {
 }
 
 fn rpds_queue_sync_enqueue_mut(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds queue sync enqueue mut", move |b| {
         b.iter(|| {
@@ -42,7 +42,7 @@ fn rpds_queue_sync_enqueue_mut(c: &mut Criterion) {
 }
 
 fn rpds_queue_sync_dequeue(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds queue sync dequeue", move |b| {
         b.iter_with_setup(
@@ -67,7 +67,7 @@ fn rpds_queue_sync_dequeue(c: &mut Criterion) {
 }
 
 fn rpds_queue_sync_dequeue_mut(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 100_000;
 
     c.bench_function("rpds queue sync dequeue mut", move |b| {
         b.iter_with_setup(
@@ -92,7 +92,7 @@ fn rpds_queue_sync_dequeue_mut(c: &mut Criterion) {
 }
 
 fn rpds_queue_sync_iterate(c: &mut Criterion) {
-    let limit = 10_000;
+    let limit = 1_000_000;
     let mut queue: QueueSync<usize> = QueueSync::new_sync();
 
     for i in 0..limit {
