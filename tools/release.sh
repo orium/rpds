@@ -46,11 +46,6 @@ echo "Current version is $(project_version)."
 echo -n "Which version do you want to release? "
 read release_version
 
-if ! grep "^## " release-notes.md | head -1 | grep --silent "^## $release_version$"; then
-    echo "You forgot to update the release notes." >&2
-    exit 1
-fi
-
 echo -n "Which will be the next version? "
 read next_version
 
@@ -80,6 +75,13 @@ fi
 
 echo "done."
 
+while ! grep "^## " release-notes.md | head -1 | grep --silent "^## $release_version$"; do
+    echo
+    echo "There's no entry for this version in the release notes."
+    echo -n "Go ahead and add them and press enter when you're done... "
+    read
+done
+
 set_version "$release_version"
 
 git commit -am "Release v${release_version}."
@@ -89,7 +91,7 @@ set_version "$next_version"
 
 git commit -am "Bump to version $next_version."
 
-echo "Check if everything is alright.  If so do:"
+echo "Check if everything is alright.  If so, open a PR, merge it, and then do:"
 echo
 echo "  git push --atomic origin $MAIN_BRANCH v${release_version} && git checkout v${release_version} && cargo publish && git checkout $MAIN_BRANCH"
 echo
