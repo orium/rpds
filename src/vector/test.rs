@@ -126,6 +126,8 @@ mod iter {
     use super::*;
     use pretty_assertions::assert_eq;
 
+    #[allow(clippy::explicit_iter_loop)]
+    #[allow(clippy::never_loop)]
     #[test]
     fn test_iter_empty() {
         let vector: Vector<i32> = Vector::new();
@@ -135,6 +137,7 @@ mod iter {
         }
     }
 
+    #[allow(clippy::never_loop)]
     #[test]
     fn test_iter_empty_backwards() {
         let vector: Vector<i32> = Vector::new();
@@ -144,6 +147,7 @@ mod iter {
         }
     }
 
+    #[allow(clippy::explicit_iter_loop)]
     #[test]
     fn test_iter_big_vector() {
         let limit = 32 * 32 * 32 + 1;

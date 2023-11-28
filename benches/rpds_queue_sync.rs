@@ -21,7 +21,7 @@ fn rpds_queue_sync_enqueue(c: &mut Criterion) {
             }
 
             queue
-        })
+        });
     });
 }
 
@@ -37,7 +37,7 @@ fn rpds_queue_sync_enqueue_mut(c: &mut Criterion) {
             }
 
             queue
-        })
+        });
     });
 }
 
@@ -91,6 +91,7 @@ fn rpds_queue_sync_dequeue_mut(c: &mut Criterion) {
     });
 }
 
+#[allow(clippy::explicit_iter_loop)]
 fn rpds_queue_sync_iterate(c: &mut Criterion) {
     let limit = 1_000_000;
     let mut queue: QueueSync<usize> = QueueSync::new_sync();
@@ -104,7 +105,7 @@ fn rpds_queue_sync_iterate(c: &mut Criterion) {
             for i in queue.iter() {
                 black_box(i);
             }
-        })
+        });
     });
 }
 

@@ -21,7 +21,7 @@ fn rpds_red_black_tree_map_insert(c: &mut Criterion) {
             }
 
             map
-        })
+        });
     });
 }
 
@@ -37,7 +37,7 @@ fn rpds_red_black_tree_map_insert_mut(c: &mut Criterion) {
             }
 
             map
-        })
+        });
     });
 }
 
@@ -104,10 +104,11 @@ fn rpds_red_black_tree_map_get(c: &mut Criterion) {
             for i in 0..limit {
                 black_box(map.get(&i));
             }
-        })
+        });
     });
 }
 
+#[allow(clippy::explicit_iter_loop)]
 fn rpds_red_black_tree_map_iterate(c: &mut Criterion) {
     let limit = 100_000;
     let mut map = RedBlackTreeMap::new();
@@ -121,7 +122,7 @@ fn rpds_red_black_tree_map_iterate(c: &mut Criterion) {
             for kv in map.iter() {
                 black_box(kv);
             }
-        })
+        });
     });
 }
 

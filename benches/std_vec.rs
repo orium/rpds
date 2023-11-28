@@ -20,7 +20,7 @@ fn std_vec_push(c: &mut Criterion) {
             }
 
             vector
-        })
+        });
     });
 }
 
@@ -87,7 +87,7 @@ fn std_vec_get(c: &mut Criterion) {
             for i in 0..limit {
                 black_box(vector.get(i));
             }
-        })
+        });
     });
 }
 
@@ -104,7 +104,7 @@ fn std_vec_iterate(c: &mut Criterion) {
             for i in &vector {
                 black_box(i);
             }
-        })
+        });
     });
 }
 

@@ -21,7 +21,7 @@ fn rpds_vector_syncpush_back(c: &mut Criterion) {
             }
 
             vector
-        })
+        });
     });
 }
 
@@ -37,7 +37,7 @@ fn rpds_vector_syncpush_back_mut(c: &mut Criterion) {
             }
 
             vector
-        })
+        });
     });
 }
 
@@ -104,10 +104,11 @@ fn rpds_vector_syncget(c: &mut Criterion) {
             for i in 0..limit {
                 black_box(vector.get(i));
             }
-        })
+        });
     });
 }
 
+#[allow(clippy::explicit_iter_loop)]
 fn rpds_vector_synciterate(c: &mut Criterion) {
     let limit = 1_000_000;
     let mut vector: VectorSync<usize> = VectorSync::new_sync();
@@ -121,7 +122,7 @@ fn rpds_vector_synciterate(c: &mut Criterion) {
             for i in vector.iter() {
                 black_box(i);
             }
-        })
+        });
     });
 }
 

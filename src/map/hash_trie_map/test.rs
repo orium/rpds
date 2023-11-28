@@ -663,6 +663,7 @@ mod iter {
         assert_eq!(iter_utils::trie_max_height(64), 11);
     }
 
+    #[allow(clippy::never_loop)]
     #[test]
     fn test_iter_empty() {
         let map: HashTrieMap<i32, i32> = HashTrieMap::new();

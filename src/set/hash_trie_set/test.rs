@@ -19,6 +19,7 @@ mod iter {
     use super::*;
     use pretty_assertions::assert_eq;
 
+    #[allow(clippy::never_loop)]
     #[test]
     fn test_iter_empty() {
         let set: HashTrieSet<i32> = HashTrieSet::new();

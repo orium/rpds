@@ -18,6 +18,7 @@ mod iter {
     use super::*;
     use pretty_assertions::assert_eq;
 
+    #[allow(clippy::explicit_iter_loop)]
     #[test]
     fn test_iter() {
         let limit = 1024;

@@ -1135,6 +1135,8 @@ mod iter {
         assert_eq!(iter_utils::lg_floor(17), 4);
     }
 
+    #[allow(clippy::explicit_iter_loop)]
+    #[allow(clippy::never_loop)]
     #[test]
     fn test_iter_empty() {
         let map: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::new();
@@ -1144,6 +1146,7 @@ mod iter {
         }
     }
 
+    #[allow(clippy::never_loop)]
     #[test]
     fn test_iter_empty_backwards() {
         let map: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::new();
@@ -1153,6 +1156,7 @@ mod iter {
         }
     }
 
+    #[allow(clippy::explicit_iter_loop)]
     #[test]
     fn test_iter_big_map() {
         let limit = 512;

@@ -21,7 +21,7 @@ fn rpds_list_push_front(c: &mut Criterion) {
             }
 
             list
-        })
+        });
     });
 }
 
@@ -37,7 +37,7 @@ fn rpds_list_push_front_mut(c: &mut Criterion) {
             }
 
             list
-        })
+        });
     });
 }
 
@@ -141,6 +141,7 @@ fn rpds_list_reverse_mut(c: &mut Criterion) {
     });
 }
 
+#[allow(clippy::explicit_iter_loop)]
 fn rpds_list_iterate(c: &mut Criterion) {
     let limit = 100_000;
     let mut list = List::new();
@@ -154,7 +155,7 @@ fn rpds_list_iterate(c: &mut Criterion) {
             for i in list.iter() {
                 black_box(i);
             }
-        })
+        });
     });
 }
 

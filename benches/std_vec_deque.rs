@@ -21,7 +21,7 @@ fn std_vec_dequeue_push_back(c: &mut Criterion) {
             }
 
             deque
-        })
+        });
     });
 }
 
@@ -50,6 +50,7 @@ fn std_vec_dequeue_pop_front(c: &mut Criterion) {
     });
 }
 
+#[allow(clippy::explicit_iter_loop)]
 fn std_vec_dequeue_iterate(c: &mut Criterion) {
     let limit = 100_000;
     let mut deque: VecDeque<usize> = VecDeque::new();
@@ -63,7 +64,7 @@ fn std_vec_dequeue_iterate(c: &mut Criterion) {
             for i in deque.iter() {
                 black_box(i);
             }
-        })
+        });
     });
 }
 

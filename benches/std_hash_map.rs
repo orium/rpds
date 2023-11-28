@@ -21,7 +21,7 @@ fn std_hash_map_insert(c: &mut Criterion) {
             }
 
             map
-        })
+        });
     });
 }
 
@@ -63,7 +63,7 @@ fn std_hash_map_get(c: &mut Criterion) {
             for i in 0..limit {
                 black_box(map.get(&i));
             }
-        })
+        });
     });
 }
 
@@ -80,7 +80,7 @@ fn std_hash_map_iterate(c: &mut Criterion) {
             for kv in &map {
                 black_box(kv);
             }
-        })
+        });
     });
 }
 

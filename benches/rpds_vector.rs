@@ -21,7 +21,7 @@ fn rpds_vector_push_back(c: &mut Criterion) {
             }
 
             vector
-        })
+        });
     });
 }
 
@@ -37,7 +37,7 @@ fn rpds_vector_push_back_mut(c: &mut Criterion) {
             }
 
             vector
-        })
+        });
     });
 }
 
@@ -104,10 +104,11 @@ fn rpds_vector_get(c: &mut Criterion) {
             for i in 0..limit {
                 black_box(vector.get(i));
             }
-        })
+        });
     });
 }
 
+#[allow(clippy::explicit_iter_loop)]
 fn rpds_vector_iterate(c: &mut Criterion) {
     let limit = 100_000;
     let mut vector: Vector<usize> = Vector::new();
@@ -121,7 +122,7 @@ fn rpds_vector_iterate(c: &mut Criterion) {
             for i in vector.iter() {
                 black_box(i);
             }
-        })
+        });
     });
 }
 

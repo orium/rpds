@@ -21,7 +21,7 @@ fn std_linked_list_push_front(c: &mut Criterion) {
             }
 
             linked_list
-        })
+        });
     });
 }
 
@@ -37,7 +37,7 @@ fn std_linked_list_push_back(c: &mut Criterion) {
             }
 
             linked_list
-        })
+        });
     });
 }
 
@@ -104,7 +104,7 @@ fn std_linked_list_iterate(c: &mut Criterion) {
             for i in &linked_list {
                 black_box(i);
             }
-        })
+        });
     });
 }
 

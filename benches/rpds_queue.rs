@@ -21,7 +21,7 @@ fn rpds_queue_enqueue(c: &mut Criterion) {
             }
 
             queue
-        })
+        });
     });
 }
 
@@ -37,7 +37,7 @@ fn rpds_queue_enqueue_mut(c: &mut Criterion) {
             }
 
             queue
-        })
+        });
     });
 }
 
@@ -91,6 +91,7 @@ fn rpds_queue_dequeue_mut(c: &mut Criterion) {
     });
 }
 
+#[allow(clippy::explicit_iter_loop)]
 fn rpds_queue_iterate(c: &mut Criterion) {
     let limit = 100_000;
     let mut queue: Queue<usize> = Queue::new();
@@ -104,7 +105,7 @@ fn rpds_queue_iterate(c: &mut Criterion) {
             for i in queue.iter() {
                 black_box(i);
             }
-        })
+        });
     });
 }
 

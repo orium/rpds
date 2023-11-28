@@ -55,6 +55,30 @@ default = ["std"]
 fatal-warnings = []
 std = []
 
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+correctness = "deny"
+
+enum-glob-use = "allow"
+if-not-else = "allow"
+match-bool = "allow"
+match-same-arms = "allow"
+missing-panics-doc = "allow"
+module-name-repetitions = "allow"
+similar-names = "allow"
+single-match-else = "allow"
+type-complexity = "allow"
+type-repetition-in-bounds = "allow"
+unnested-or-patterns = "allow"
+use-self = "allow"
+wildcard-imports = "allow"
+
+[lints.rustdoc]
+# TODO This is only needed because `cargo-rdme` requires a path like `crate::⋯`. Once that limitation is lifted we
+#      can remove this.
+redundant-explicit-links = "allow"
+
 [package.metadata.docs.rs]
 features = ["serde"]
 

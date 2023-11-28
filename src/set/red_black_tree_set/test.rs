@@ -20,6 +20,8 @@ mod iter {
     use super::*;
     use pretty_assertions::assert_eq;
 
+    #[allow(clippy::explicit_iter_loop)]
+    #[allow(clippy::never_loop)]
     #[test]
     fn test_iter_empty() {
         let set: RedBlackTreeSet<i32> = RedBlackTreeSet::new();
@@ -29,6 +31,7 @@ mod iter {
         }
     }
 
+    #[allow(clippy::explicit_iter_loop)]
     #[test]
     fn test_iter() {
         let mut set = RedBlackTreeSet::new();
