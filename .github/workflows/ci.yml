@@ -31,9 +31,7 @@ jobs:
           cargo install cargo-deadlinks
 
       - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
+        uses: actions/checkout@v4
 
       - name: Check everything
         run: bash ./tools/check.sh
@@ -56,9 +54,7 @@ jobs:
         run: cargo install cargo-msrv
 
       - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
+        uses: actions/checkout@v4
 
       - name: Check the minimum supported rust version
         run: cargo msrv verify
