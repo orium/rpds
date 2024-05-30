@@ -59,5 +59,7 @@ jobs:
       - name: Check the minimum supported rust version
         run: |
           ls
-          cargo check
+          rustup toolchain install 1.60.0
+          cargo clean
+          cargo +1.60.0 check
           cargo msrv verify
