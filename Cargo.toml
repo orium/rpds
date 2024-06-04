@@ -82,6 +82,11 @@ redundant-explicit-links = "allow"
 [package.metadata.docs.rs]
 features = ["serde"]
 
+[lib]
+# Disable libtest to make sure criterion can parse the command line flags.
+# See https://bheisler.github.io/criterion.rs/book/faq.html and https://github.com/rust-lang/rust/issues/47241.
+bench = false
+
 [[bench]]
 name = "std_linked_list"
 harness = false
