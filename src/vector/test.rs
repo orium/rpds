@@ -67,10 +67,10 @@ mod node {
         let mut singleton_node: Node<u32> = vector![0].root.as_ref().clone();
         let mut one_level_node: Node<u32> = vector![0, 1].root.as_ref().clone();
 
-        assert!(empty_leaf.drop_last());
-        assert!(empty_branch.drop_last());
-        assert!(singleton_node.drop_last());
-        assert!(!one_level_node.drop_last());
+        assert!(empty_leaf.drop_last(32));
+        assert!(empty_branch.drop_last(32));
+        assert!(singleton_node.drop_last(32));
+        assert!(!one_level_node.drop_last(32));
         assert_eq!(one_level_node.used(), 1);
     }
 
@@ -88,36 +88,42 @@ mod node {
             .clone();
 
         let node_three_after_drop = {
-            let a_leaf = vec![SharedPointer::new(0), SharedPointer::new(1)];
+            let a_leaf0 = vec![SharedPointer::new(0)];
+            let a_leaf1 = vec![SharedPointer::new(1)];
 
-            let leaf = Node::Leaf(a_leaf);
+            let leaf0 = Node::Leaf(a_leaf0);
+            let leaf1 = Node::Leaf(a_leaf1);
 
-            let a_branch = vec![SharedPointer::new(leaf)];
+            let a_branch = vec![(SharedPointer::new(leaf0), 1), (SharedPointer::new(leaf1), 1)];
 
             Node::Branch(a_branch)
         };
 
         let node_four_after_drop = {
-            let a_leaf_0 = vec![SharedPointer::new(0), SharedPointer::new(1)];
+            let a_leaf_0 = vec![SharedPointer::new(0)];
+            let a_leaf_1 = vec![SharedPointer::new(1)];
+            let a_leaf_2 = vec![SharedPointer::new(2)];
 
             let leaf_0 = Node::Leaf(a_leaf_0);
-
-            let a_leaf_1 = {
-                let mut a = Vec::with_capacity(2);
-                a.push(SharedPointer::new(2));
-                a
-            };
-
             let leaf_1 = Node::Leaf(a_leaf_1);
+            let leaf_2 = Node::Leaf(a_leaf_2);
 
-            let a_branch = vec![SharedPointer::new(leaf_0), SharedPointer::new(leaf_1)];
+            let a_branch0 = vec![(SharedPointer::new(leaf_0), 1)];
+            let a_branch1 = vec![(SharedPointer::new(leaf_1), 1), (SharedPointer::new(leaf_2), 1)];
+
+            let branch0 = Node::Branch(a_branch0);
+            let branch1 = Node::Branch(a_branch1);
+
+            let a_branch = vec![(SharedPointer::new(branch0), 1), (SharedPointer::new(branch1), 2)];
 
             Node::Branch(a_branch)
         };
 
-        assert!(!node_three.drop_last());
+        let vector = Vector::<u32>::new_with_bits(1);
+        let limit_len = vector.limit_len();
+        assert!(!node_three.drop_last(limit_len));
         assert_eq!(node_three, node_three_after_drop);
-        assert!(!node_four.drop_last());
+        assert!(!node_four.drop_last(limit_len));
         assert_eq!(node_four, node_four_after_drop);
     }
 }
@@ -336,7 +342,7 @@ mod internal {
 
             let a_branch = {
                 let mut a = Vec::with_capacity(2);
-                a.push(SharedPointer::new(leaf.clone()));
+                a.push((SharedPointer::new(leaf.clone()), 2));
                 a
             };
 
