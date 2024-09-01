@@ -124,10 +124,6 @@ impl<T, P> Node<T, P>
 where
     P: SharedPointerKind,
 {
-    fn new_empty_branch() -> Node<T, P> {
-        Node::Branch(Vec::new())
-    }
-
     fn new_empty_leaf() -> Node<T, P> {
         Node::Leaf(Vec::new())
     }
@@ -136,7 +132,7 @@ where
         match self {
             Node::Branch(a) => {
                 let mut index = index;
-                for &(ref child, len) in a.iter() {
+                for &(ref child, len) in a {
                     if index < len {
                         return child.get(index);
                     }
@@ -199,17 +195,17 @@ where
     ///
     /// * `index` - The index at which to insert the value.
     /// * `value` - The value to insert.
-    /// * `len_limit` - The maximum length of the node before it needs to be split.
+    /// * `bucket_len_limit` - The maximum length of the node before it needs to be split.
     ///
     /// # Returns
     ///
     /// An `Option` containing the additional node if the node was split, or `None` if no split occurred.
-    fn insert(&mut self, index: usize, value: T, len_limit: usize) -> Option<Node<T, P>> {
+    fn insert(&mut self, index: usize, value: T, bucket_len_limit: usize) -> Option<Node<T, P>> {
         match self {
             Node::Leaf(values) => {
                 values.insert(index, SharedPointer::new(value));
-                if values.len() > len_limit {
-                    let additional_values = values.split_off(len_limit / 2);
+                if values.len() > bucket_len_limit {
+                    let additional_values = values.split_off(bucket_len_limit / 2);
                     Some(Node::Leaf(additional_values))
                 } else {
                     None
@@ -221,7 +217,7 @@ where
                     for (i, (child, len)) in children.iter_mut().enumerate() {
                         if index <= *len {
                             let child = SharedPointer::make_mut(child);
-                            let split_child = child.insert(index, value, len_limit).map(|n| (i, n));
+                            let split_child = child.insert(index, value, bucket_len_limit).map(|n| (i, n));
                             *len = child.len();
                             break 'insertion split_child;
                         }
@@ -236,8 +232,8 @@ where
                 let child_len = additional_child.len();
                 children
                     .insert(update_index + 1, (SharedPointer::new(additional_child), child_len));
-                if children.len() > len_limit {
-                    let additional_child = children.split_off(len_limit / 2);
+                if children.len() > bucket_len_limit {
+                    let additional_child = children.split_off(bucket_len_limit / 2);
                     Some(Node::Branch(additional_child))
                 } else {
                     None
@@ -246,12 +242,12 @@ where
         }
     }
 
-    fn push_back(&mut self, value: T, limit_len: usize) -> Option<Node<T, P>> {
+    fn push_back(&mut self, value: T, bucket_len_limit: usize) -> Option<Node<T, P>> {
         match self {
             Node::Leaf(values) => {
                 values.push(SharedPointer::new(value));
-                if values.len() > limit_len {
-                    let additional_values = values.split_off(limit_len / 2);
+                if values.len() > bucket_len_limit {
+                    let additional_values = values.split_off(bucket_len_limit / 2);
                     Some(Node::Leaf(additional_values))
                 } else {
                     None
@@ -261,13 +257,13 @@ where
                 let last = children.last_mut().unwrap();
                 let (last_children, last_len) = Self::pair_make_mut(last);
                 *last_len += 1;
-                let additional_child = last_children.push_back(value, limit_len);
+                let additional_child = last_children.push_back(value, bucket_len_limit);
                 if let Some(additional_child) = additional_child {
                     *last_len = last_children.len();
                     let additional_child_len = additional_child.len();
                     children.push((SharedPointer::new(additional_child), additional_child_len));
-                    if children.len() > limit_len {
-                        let additional_child = children.split_off(limit_len / 2);
+                    if children.len() > bucket_len_limit {
+                        let additional_child = children.split_off(bucket_len_limit / 2);
                         Some(Node::Branch(additional_child))
                     } else {
                         None
@@ -286,14 +282,14 @@ where
         (SharedPointer::make_mut(node), len)
     }
 
-    /// Try to make the center node have at least `len_limit / 2` children by moving children from the left or right node.
+    /// Try to make the center node have at least `bucket_len_limit / 2` children by moving children from the left or right node.
     ///
     /// # Arguments
     ///
     /// * `left` - An optional mutable reference to a tuple containing a mutable reference to the left node and its length.
     /// * `center` - A mutable reference to a tuple containing a mutable reference to the center node and its length.
     /// * `right` - An optional mutable reference to a tuple containing a mutable reference to the right node and its length.
-    /// * `len_limit` - The maximum length of the node before it needs to be split.
+    /// * `bucket_len_limit` - The maximum length of the node before it needs to be split.
     ///
     /// # Returns
     ///
@@ -302,24 +298,24 @@ where
         left: Option<&mut (&mut Node<T, P>, &mut usize)>,
         center: &mut (&mut Node<T, P>, &mut usize),
         right: Option<&mut (&mut Node<T, P>, &mut usize)>,
-        len_limit: usize,
+        bucket_len_limit: usize,
     ) -> bool {
         match (left, center, right) {
             (Some((left_node, left_len)), (center_node, center_len), _)
-                if left_node.used() > len_limit / 2 =>
+                if left_node.used() > bucket_len_limit / 2 =>
             {
-                fn balance_with_left<T>(left: &mut Vec<T>, center: &mut Vec<T>, len_limit: usize) {
-                    let split_off_len = (left.len() - len_limit / 2).div_ceil(2);
+                fn balance_with_left<T>(left: &mut Vec<T>, center: &mut Vec<T>, bucket_len_limit: usize) {
+                    let split_off_len = (left.len() - bucket_len_limit / 2).div_ceil(2);
                     let mut split_off_vec = left.split_off(left.len() - split_off_len);
-                    split_off_vec.extend(center.drain(..));
+                    split_off_vec.append(center);
                     *center = split_off_vec;
                 }
                 match (&mut *left_node, &mut *center_node) {
                     (Node::Leaf(left), Node::Leaf(center)) => {
-                        balance_with_left(left, center, len_limit)
+                        balance_with_left(left, center, bucket_len_limit);
                     }
                     (Node::Branch(left), Node::Branch(center)) => {
-                        balance_with_left(left, center, len_limit)
+                        balance_with_left(left, center, bucket_len_limit);
                     }
                     _ => unreachable!(),
                 }
@@ -328,24 +324,24 @@ where
                 true
             }
             (_, (center_node, center_len), Some((right_node, right_len)))
-                if right_node.used() > len_limit / 2 =>
+                if right_node.used() > bucket_len_limit / 2 =>
             {
                 fn balance_with_right<T>(
                     center: &mut Vec<T>,
                     right: &mut Vec<T>,
-                    len_limit: usize,
+                    bucket_len_limit: usize,
                 ) {
-                    let split_off_len = (right.len() - len_limit / 2).div_ceil(2);
+                    let split_off_len = (right.len() - bucket_len_limit / 2).div_ceil(2);
                     let mut split_off_vec = right.split_off(split_off_len);
                     mem::swap(right, &mut split_off_vec);
                     center.extend(split_off_vec);
                 }
                 match (&mut *center_node, &mut *right_node) {
                     (Node::Leaf(center), Node::Leaf(right)) => {
-                        balance_with_right(center, right, len_limit)
+                        balance_with_right(center, right, bucket_len_limit);
                     }
                     (Node::Branch(center), Node::Branch(right)) => {
-                        balance_with_right(center, right, len_limit)
+                        balance_with_right(center, right, bucket_len_limit);
                     }
                     _ => unreachable!(),
                 }
@@ -364,7 +360,7 @@ where
     /// * `left` - An optional mutable reference to a tuple containing a mutable reference to the left node and its length.
     /// * `center` - A mutable reference to a tuple containing a mutable reference to the center node and its length.
     /// * `right` - An optional mutable reference to a tuple containing a mutable reference to the right node and its length.
-    /// * `len_limit` - The maximum length of the node before it needs to be split.
+    /// * `bucket_len_limit` - The maximum length of the node before it needs to be split.
     ///
     /// # Panics
     ///
@@ -374,29 +370,29 @@ where
         left: Option<(&mut Node<T, P>, &mut usize)>,
         center: (&mut Node<T, P>, &mut usize),
         right: Option<(&mut Node<T, P>, &mut usize)>,
-        len_limit: usize,
+        bucket_len_limit: usize,
     ) {
         match (left, center, right) {
             (Some((mut left_node, left_len)), (center_node, _), _)
-                if left_node.used() + center_node.used() <= len_limit =>
+                if left_node.used() + center_node.used() <= bucket_len_limit =>
             {
                 match (&mut left_node, center_node) {
-                    (Node::Leaf(left), Node::Leaf(center)) => left.extend(center.drain(..)),
-                    (Node::Branch(left), Node::Branch(center)) => left.extend(center.drain(..)),
+                    (Node::Leaf(left), Node::Leaf(center)) => left.append(center),
+                    (Node::Branch(left), Node::Branch(center)) => left.append(center),
                     _ => unreachable!(),
                 }
                 *left_len = left_node.len();
             }
             (_, (center_node, _), Some((mut right_node, right_len)))
-                if center_node.used() + right_node.used() <= len_limit =>
+                if center_node.used() + right_node.used() <= bucket_len_limit =>
             {
                 match (center_node, &mut right_node) {
                     (Node::Leaf(center), Node::Leaf(right)) => {
-                        center.extend(right.drain(..));
+                        center.append(right);
                         mem::swap(center, right);
                     }
                     (Node::Branch(center), Node::Branch(right)) => {
-                        center.extend(right.drain(..));
+                        center.append(right);
                         mem::swap(center, right);
                     }
                     _ => unreachable!(),
@@ -412,7 +408,7 @@ where
     /// # Arguments
     ///
     /// * `index` - The index of the element to remove.
-    /// * `len_limit` - The maximum length of the node before it needs to be split.
+    /// * `bucket_len_limit` - The maximum length of the node before it needs to be split.
     ///
     /// # Returns
     ///
@@ -421,11 +417,11 @@ where
     /// # Panics
     ///
     /// This function will panic if the index is out of bounds.
-    fn remove(&mut self, index: usize, len_limit: usize) -> bool {
+    fn remove(&mut self, index: usize, bucket_len_limit: usize) -> bool {
         match self {
             Node::Leaf(values) => {
                 values.remove(index);
-                values.len() < len_limit / 2
+                values.len() < bucket_len_limit / 2
             }
             Node::Branch(children) => {
                 let mut index = index;
@@ -433,7 +429,7 @@ where
                     for (i, (child, len)) in children.iter_mut().enumerate() {
                         if index < *len {
                             let require_removal =
-                                SharedPointer::make_mut(child).remove(index, len_limit);
+                                SharedPointer::make_mut(child).remove(index, bucket_len_limit);
                             *len = child.len();
                             break 'removal (i, require_removal);
                         }
@@ -466,12 +462,12 @@ where
                     Self::pair_make_mut(center),
                     right.map(Self::pair_make_mut),
                 );
-                if Self::balance(left.as_mut(), &mut center, right.as_mut(), len_limit) {
+                if Self::balance(left.as_mut(), &mut center, right.as_mut(), bucket_len_limit) {
                     return false;
                 }
-                Self::drain_center(left, center, right, len_limit);
+                Self::drain_center(left, center, right, bucket_len_limit);
                 children.remove(i);
-                children.len() < len_limit / 2
+                children.len() < bucket_len_limit / 2
             }
         }
     }
@@ -481,7 +477,7 @@ where
     /// This will return `true` if the subtree after drop becomes empty (or it already was empty).
     /// Note that this will prune irrelevant branches, i.e. there will be no branches without
     /// elements under it.
-    fn drop_last(&mut self, len_limit: usize) -> bool {
+    fn drop_last(&mut self, bucket_len_limit: usize) -> bool {
         if self.is_empty() {
             return true;
         }
@@ -494,16 +490,16 @@ where
             Node::Branch(a) => {
                 let (last_node, last_len) = a.last_mut().unwrap();
                 *last_len -= 1;
-                if SharedPointer::make_mut(last_node).drop_last(len_limit) {
+                if SharedPointer::make_mut(last_node).drop_last(bucket_len_limit) {
                     a.pop();
                 }
-                if a.len() >= 2 && a.last().unwrap().0.used() < len_limit / 2 {
+                if a.len() >= 2 && a.last().unwrap().0.used() < bucket_len_limit / 2 {
                     let range_start = a.len() - 2;
                     let [left, center] = &mut a[range_start..] else { unreachable!() };
                     let mut left = Self::pair_make_mut(left);
                     let mut center = Self::pair_make_mut(center);
-                    if !Self::balance(Some(&mut left), &mut center, None, len_limit) {
-                        Self::drain_center(Some(left), center, None, len_limit);
+                    if !Self::balance(Some(&mut left), &mut center, None, bucket_len_limit) {
+                        Self::drain_center(Some(left), center, None, bucket_len_limit);
                         a.pop();
                     }
                 }
@@ -552,16 +548,6 @@ mod vector_utils {
     pub fn degree(bits: u8) -> usize {
         1 << bits
     }
-
-    #[inline]
-    pub fn mask(bits: u8) -> usize {
-        degree(bits) - 1
-    }
-
-    #[inline]
-    pub fn bucket(bits: u8, index: usize, height: usize) -> usize {
-        (index >> (height * bits as usize)) & mask(bits)
-    }
 }
 
 impl<T> VectorSync<T> {
@@ -609,11 +595,11 @@ where
     }
 
     #[inline]
-    fn height(&self) -> usize {
+    fn estimate_height(&self) -> usize {
         if self.length > 1 {
             let u: usize = self.length - 1;
             let c: usize = usize::BITS as usize - u.leading_zeros() as usize;
-            let b: usize = self.bits as usize;
+            let b: usize = self.bits as usize - 1;
 
             c / b + usize::from(c % b > 0) - 1
         } else {
@@ -667,10 +653,10 @@ where
             return false;
         }
 
-        let limit_len = self.limit_len();
+        let bucket_len_limit = self.bucket_len_limit();
         self.length += 1;
         let root = SharedPointer::make_mut(&mut self.root);
-        let Some(additional_node) = root.insert(index, v, limit_len) else {
+        let Some(additional_node) = root.insert(index, v, bucket_len_limit) else {
             return true;
         };
         let root_len = root.len();
@@ -700,10 +686,10 @@ where
             return false;
         }
 
-        let limit_len = self.limit_len();
+        let bucket_len_limit = self.bucket_len_limit();
         self.length -= 1;
         let root = SharedPointer::make_mut(&mut self.root);
-        if root.remove(index, limit_len) {
+        if root.remove(index, bucket_len_limit) {
             if let Some(new_root) = Vector::compress_root(root) {
                 self.root = new_root;
             }
@@ -718,33 +704,13 @@ where
     ///
     /// This method will panic if the trie's root doesn't have capacity for the given index.
     fn assoc(&mut self, index: usize, v: T) {
-        debug_assert!(
-            index < self.root_max_capacity(),
-            "This trie's root cannot support this index"
-        );
+        debug_assert!(index < self.len(), "This vector's root cannot support this index");
 
         SharedPointer::make_mut(&mut self.root).assoc(v, index);
     }
 
     #[inline]
-    fn root_max_capacity(&self) -> usize {
-        /* A Trie's root max capacity is
-         *
-         *     degree ** (height + 1)
-         *   = (2 ** bits) ** (height + 1)        (by def. of degree)
-         *   = 2 ** (bits * (height + 1))
-         *   = 1 << (bits * (height + 1))
-         */
-        1 << (self.bits as usize * (self.height() + 1))
-    }
-
-    #[inline]
-    fn is_root_full(&self) -> bool {
-        self.length == self.root_max_capacity()
-    }
-
-    #[inline]
-    fn limit_len(&self) -> usize {
+    fn bucket_len_limit(&self) -> usize {
         vector_utils::degree(self.bits)
     }
 
@@ -758,10 +724,10 @@ where
     }
 
     pub fn push_back_mut(&mut self, v: T) {
-        let limit_len = self.limit_len();
+        let bucket_len_limit = self.bucket_len_limit();
         self.length += 1;
         let root = SharedPointer::make_mut(&mut self.root);
-        let Some(additional_node) = root.push_back(v, limit_len) else {
+        let Some(additional_node) = root.push_back(v, bucket_len_limit) else {
             return;
         };
         let root_len = root.len();
@@ -801,10 +767,10 @@ where
     pub fn drop_last_mut(&mut self) -> bool {
         if self.length > 0 {
             let new_root = {
-                let limit_len = self.limit_len();
+                let bucket_len_limit = self.bucket_len_limit();
                 let root = SharedPointer::make_mut(&mut self.root);
 
-                root.drop_last(limit_len);
+                root.drop_last(bucket_len_limit);
                 self.length -= 1;
 
                 Vector::compress_root(root)
@@ -1097,7 +1063,7 @@ where
 
         if stack_field.is_none() {
             let mut stack: Vec<IterStackElement<'_, T, P>> =
-                Vec::with_capacity(self.vector.height() + 1);
+                Vec::with_capacity(self.vector.estimate_height() + 1);
 
             stack.push(IterStackElement::new(self.vector.root.borrow(), backwards));
 

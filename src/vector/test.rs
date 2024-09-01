@@ -35,19 +35,6 @@ mod node {
     use pretty_assertions::assert_eq;
 
     #[test]
-    fn test_new_empty_branch() {
-        let node: Node<u32> = Node::new_empty_branch();
-
-        match node {
-            Node::Branch(a) => {
-                assert_eq!(a.len(), 0);
-                assert_eq!(a.capacity(), 0, "Capacity of the branch array is wasteful");
-            }
-            Node::Leaf(_) => panic!("Invalid node type"),
-        }
-    }
-
-    #[test]
     fn test_new_empty_leaf() {
         let node: Node<u32> = Node::new_empty_leaf();
 
@@ -63,7 +50,7 @@ mod node {
     #[test]
     fn test_drop_last_single_level() {
         let mut empty_leaf: Node<u32> = Node::new_empty_leaf();
-        let mut empty_branch: Node<u32> = Node::new_empty_branch();
+        let mut empty_branch: Node<u32> = Node::Branch(Vec::new());
         let mut singleton_node: Node<u32> = vector![0].root.as_ref().clone();
         let mut one_level_node: Node<u32> = vector![0, 1].root.as_ref().clone();
 
@@ -120,7 +107,7 @@ mod node {
         };
 
         let vector = Vector::<u32>::new_with_bits(1);
-        let limit_len = vector.limit_len();
+        let limit_len = vector.bucket_len_limit();
         assert!(!node_three.drop_last(limit_len));
         assert_eq!(node_three, node_three_after_drop);
         assert!(!node_four.drop_last(limit_len));
@@ -804,48 +791,26 @@ mod internal {
     }
 
     #[test]
-    fn test_height() {
-        assert_eq!(dummy_vector_with_length(0).height(), 0);
-        assert_eq!(dummy_vector_with_length(5).height(), 0);
-        assert_eq!(dummy_vector_with_length(32).height(), 0);
-        assert_eq!(dummy_vector_with_length(33).height(), 1);
-        assert_eq!(dummy_vector_with_length(64).height(), 1);
-        assert_eq!(dummy_vector_with_length(128).height(), 1);
-        assert_eq!(dummy_vector_with_length(512).height(), 1);
-        assert_eq!(dummy_vector_with_length(1024).height(), 1);
-        assert_eq!(dummy_vector_with_length(1025).height(), 2);
-        assert_eq!(dummy_vector_with_length(32_768).height(), 2);
-        assert_eq!(dummy_vector_with_length(32_769).height(), 3);
-        assert_eq!(dummy_vector_with_length(1_048_576).height(), 3);
-        assert_eq!(dummy_vector_with_length(1_048_577).height(), 4);
-    }
-
-    #[test]
-    fn test_mask() {
-        use vector_utils::mask;
-
-        assert_eq!(mask(1), 0b00001);
-        assert_eq!(mask(2), 0b00011);
-        assert_eq!(mask(3), 0b00111);
-        assert_eq!(mask(4), 0b01111);
-        assert_eq!(mask(5), 0b11111);
-    }
-
-    #[allow(clippy::unusual_byte_groupings)]
-    #[test]
-    fn test_bucket() {
-        use vector_utils::bucket;
-
-        assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 0), 0b00001);
-        assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 1), 0b00010);
-        assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 2), 0b00011);
-        assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 3), 0b00100);
+    fn test_estimate_height() {
+        assert_eq!(dummy_vector_with_length(0).estimate_height(), 0);
+        assert_eq!(dummy_vector_with_length(5).estimate_height(), 0);
+        assert_eq!(dummy_vector_with_length(16).estimate_height(), 0);
+        assert_eq!(dummy_vector_with_length(17).estimate_height(), 1);
+        assert_eq!(dummy_vector_with_length(64).estimate_height(), 1);
+        assert_eq!(dummy_vector_with_length(128).estimate_height(), 1);
+        assert_eq!(dummy_vector_with_length(192).estimate_height(), 1);
+        assert_eq!(dummy_vector_with_length(256).estimate_height(), 1);
+        assert_eq!(dummy_vector_with_length(257).estimate_height(), 2);
+        assert_eq!(dummy_vector_with_length(4_096).estimate_height(), 2);
+        assert_eq!(dummy_vector_with_length(4_097).estimate_height(), 3);
+        assert_eq!(dummy_vector_with_length(65_536).estimate_height(), 3);
+        assert_eq!(dummy_vector_with_length(65_537).estimate_height(), 4);
     }
 
     #[test]
     fn test_compress_root() {
         let empty_leaf: Node<u32> = Node::new_empty_leaf();
-        let empty_branch: Node<u32> = Node::new_empty_branch();
+        let empty_branch: Node<u32> = Node::Branch(Vec::new());
         let singleton_leaf: Node<u32> = vector![0].root.as_ref().clone();
         let compressed_branch: Node<u32> =
             Vector::new_with_bits(1).push_back(0).push_back(1).push_back(3).root.as_ref().clone();
@@ -870,30 +835,6 @@ mod internal {
             Vector::compress_root(&mut uncompressed_branch.clone()),
             Some(SharedPointer::new(uncompressed_branch_leaf)),
         );
-    }
-
-    #[test]
-    fn test_root_max_capacity() {
-        assert_eq!(dummy_vector_with_length(0).root_max_capacity(), 32);
-        assert_eq!(dummy_vector_with_length(5).root_max_capacity(), 32);
-        assert_eq!(dummy_vector_with_length(32).root_max_capacity(), 32);
-        assert_eq!(dummy_vector_with_length(33).root_max_capacity(), 1024);
-        assert_eq!(dummy_vector_with_length(1024).root_max_capacity(), 1024);
-        assert_eq!(dummy_vector_with_length(1025).root_max_capacity(), 32_768);
-        assert_eq!(dummy_vector_with_length(32_768).root_max_capacity(), 32_768);
-        assert_eq!(dummy_vector_with_length(32_769).root_max_capacity(), 1_048_576);
-    }
-
-    #[test]
-    fn test_is_root_full() {
-        assert!(!dummy_vector_with_length(0).is_root_full());
-        assert!(!dummy_vector_with_length(5).is_root_full());
-        assert!(dummy_vector_with_length(32).is_root_full());
-        assert!(!dummy_vector_with_length(33).is_root_full());
-        assert!(dummy_vector_with_length(1024).is_root_full());
-        assert!(!dummy_vector_with_length(1025).is_root_full());
-        assert!(dummy_vector_with_length(32_768).is_root_full());
-        assert!(!dummy_vector_with_length(32_769).is_root_full());
     }
 }
 
