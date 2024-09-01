@@ -246,6 +246,39 @@ where
         }
     }
 
+    fn push_back(&mut self, value: T, limit_len: usize) -> Option<Node<T, P>> {
+        match self {
+            Node::Leaf(values) => {
+                values.push(SharedPointer::new(value));
+                if values.len() > limit_len {
+                    let additional_values = values.split_off(limit_len / 2);
+                    Some(Node::Leaf(additional_values))
+                } else {
+                    None
+                }
+            }
+            Node::Branch(children) => {
+                let last = children.last_mut().unwrap();
+                let (last_children, last_len) = Self::pair_make_mut(last);
+                *last_len += 1;
+                let additional_child = last_children.push_back(value, limit_len);
+                if let Some(additional_child) = additional_child {
+                    *last_len = last_children.len();
+                    let additional_child_len = additional_child.len();
+                    children.push((SharedPointer::new(additional_child), additional_child_len));
+                    if children.len() > limit_len {
+                        let additional_child = children.split_off(limit_len / 2);
+                        Some(Node::Branch(additional_child))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
     fn pair_make_mut(
         v: &mut (SharedPointer<Node<T, P>, P>, usize),
     ) -> (&mut Node<T, P>, &mut usize) {
@@ -725,11 +758,10 @@ where
     }
 
     pub fn push_back_mut(&mut self, v: T) {
-        let last = self.length;
         let limit_len = self.limit_len();
         self.length += 1;
         let root = SharedPointer::make_mut(&mut self.root);
-        let Some(additional_node) = root.insert(last, v, limit_len) else {
+        let Some(additional_node) = root.push_back(v, limit_len) else {
             return;
         };
         let root_len = root.len();
