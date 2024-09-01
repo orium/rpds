@@ -5,6 +5,7 @@
 
 use alloc::borrow::Borrow;
 use alloc::fmt::Display;
+use alloc::vec;
 use alloc::vec::Vec;
 use archery::*;
 use core::cmp::Ordering;
@@ -217,7 +218,8 @@ where
                     for (i, (child, len)) in children.iter_mut().enumerate() {
                         if index <= *len {
                             let child = SharedPointer::make_mut(child);
-                            let split_child = child.insert(index, value, bucket_len_limit).map(|n| (i, n));
+                            let split_child =
+                                child.insert(index, value, bucket_len_limit).map(|n| (i, n));
                             *len = child.len();
                             break 'insertion split_child;
                         }
@@ -304,7 +306,11 @@ where
             (Some((left_node, left_len)), (center_node, center_len), _)
                 if left_node.used() > bucket_len_limit / 2 =>
             {
-                fn balance_with_left<T>(left: &mut Vec<T>, center: &mut Vec<T>, bucket_len_limit: usize) {
+                fn balance_with_left<T>(
+                    left: &mut Vec<T>,
+                    center: &mut Vec<T>,
+                    bucket_len_limit: usize,
+                ) {
                     let split_off_len = (left.len() - bucket_len_limit / 2).div_ceil(2);
                     let mut split_off_vec = left.split_off(left.len() - split_off_len);
                     split_off_vec.append(center);
