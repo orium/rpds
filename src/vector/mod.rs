@@ -643,6 +643,7 @@ where
         }
     }
 
+    #[must_use]
     pub fn insert(&self, index: usize, v: T) -> Option<Vector<T, P>> {
         let mut new_vector = self.clone();
 
@@ -676,6 +677,7 @@ where
         true
     }
 
+    #[must_use]
     pub fn remove(&self, index: usize) -> Option<Vector<T, P>> {
         let mut new_vector = self.clone();
 
