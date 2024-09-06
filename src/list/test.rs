@@ -258,7 +258,7 @@ fn test_partial_ord() {
     let list_1_prime = list!["a"];
     let list_2 = list!["b"];
     let list_3 = list![0.0];
-    let list_4 = list![core::f32::NAN];
+    let list_4 = list![f32::NAN];
 
     assert_eq!(list_1.partial_cmp(&list_1_prime), Some(Ordering::Equal));
     assert_eq!(list_1.partial_cmp(&list_2), Some(Ordering::Less));

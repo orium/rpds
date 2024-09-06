@@ -188,7 +188,7 @@ fn test_partial_ord() {
     let stack_1_prime = stack!["a"];
     let stack_2 = stack!["b"];
     let stack_3 = stack![0.0];
-    let stack_4 = stack![core::f32::NAN];
+    let stack_4 = stack![f32::NAN];
 
     assert_eq!(stack_1.partial_cmp(&stack_1_prime), Some(Ordering::Equal));
     assert_eq!(stack_1.partial_cmp(&stack_2), Some(Ordering::Less));

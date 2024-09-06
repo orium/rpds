@@ -1750,7 +1750,7 @@ fn test_partial_ord() {
     let map_1_prime = rbt_map!["a" => 0xa];
     let map_2 = rbt_map!["b" => 0xb];
     let map_3 = rbt_map![0 => 0.0];
-    let map_4 = rbt_map![0 => core::f32::NAN];
+    let map_4 = rbt_map![0 => f32::NAN];
 
     assert_eq!(map_1.partial_cmp(&map_1_prime), Some(Ordering::Equal));
     assert_eq!(map_1.partial_cmp(&map_2), Some(Ordering::Less));

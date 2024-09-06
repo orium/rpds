@@ -168,7 +168,7 @@ where
         T: Borrow<V>,
         V: Ord,
     {
-        self.map.get_key_value(v).map(|(k, _)| k)
+        self.map.get_key_value(v).map(|(k, ())| k)
     }
 
     #[must_use]
@@ -182,12 +182,12 @@ where
 
     #[must_use]
     pub fn first(&self) -> Option<&T> {
-        self.map.first().map(|(k, _)| k)
+        self.map.first().map(|(k, ())| k)
     }
 
     #[must_use]
     pub fn last(&self) -> Option<&T> {
-        self.map.last().map(|(k, _)| k)
+        self.map.last().map(|(k, ())| k)
     }
 
     #[must_use]
@@ -279,7 +279,7 @@ where
         Q: Ord + ?Sized,
         RB: RangeBounds<Q>,
     {
-        self.map.range(range).map(|(k, _)| k)
+        self.map.range(range).map(|(k, ())| k)
     }
 }
 

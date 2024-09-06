@@ -56,9 +56,9 @@ fatal-warnings = []
 std = []
 
 [lints.clippy]
-all = { level = "warn", priority = -1 }
-pedantic = { level = "warn", priority = -1 }
-correctness = "deny"
+all = { level = "warn", priority = -2 }
+pedantic = { level = "warn", priority = -2 }
+correctness = { level = "deny", priority = -1 }
 
 enum-glob-use = "allow"
 if-not-else = "allow"

@@ -623,7 +623,7 @@ fn test_partial_ord() {
     let vector_1_prime = vector!["a"];
     let vector_2 = vector!["b"];
     let vector_3 = vector![0.0];
-    let vector_4 = vector![core::f32::NAN];
+    let vector_4 = vector![f32::NAN];
 
     assert_eq!(vector_1.partial_cmp(&vector_1_prime), Some(Ordering::Equal));
     assert_eq!(vector_1.partial_cmp(&vector_2), Some(Ordering::Less));

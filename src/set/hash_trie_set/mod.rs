@@ -193,7 +193,7 @@ where
         T: Borrow<V>,
         V: Hash + Eq,
     {
-        self.map.get_key_value(v).map(|(k, _)| k)
+        self.map.get_key_value(v).map(|(k, ())| k)
     }
 
     #[must_use]

@@ -213,7 +213,6 @@ mod node_utils {
     use super::HashValue;
     use core::hash::BuildHasher;
     use core::hash::Hash;
-    use core::hash::Hasher;
     use core::mem::size_of_val;
 
     /// Returns the index of the array for the given hash on depth `depth`.
@@ -237,11 +236,7 @@ mod node_utils {
     }
 
     pub fn hash<T: ?Sized + Hash, H: BuildHasher>(v: &T, hasher_builder: &H) -> HashValue {
-        let mut hasher = hasher_builder.build_hasher();
-
-        v.hash(&mut hasher);
-
-        hasher.finish()
+        hasher_builder.hash_one(&v)
     }
 }
 
