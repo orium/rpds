@@ -74,6 +74,47 @@ fn std_vec_reverse(c: &mut Criterion) {
     });
 }
 
+fn std_vec_insert(c: &mut Criterion) {
+    let limit = 1 << 12;
+
+    c.bench_function("std vec insert", move |b| {
+        b.iter(|| {
+            let mut vector: Vec<usize> = Vec::new();
+
+            for i in 0..limit {
+                vector.insert(vector.len() - i, i);
+            }
+
+            vector
+        });
+    });
+}
+
+fn std_vec_remove(c: &mut Criterion) {
+    let limit = 1 << 12;
+
+    c.bench_function("std vec remove", move |b| {
+        b.iter_with_setup(
+            || {
+                let mut vector: Vec<usize> = Vec::new();
+
+                for i in 0..limit {
+                    vector.push(i);
+                }
+
+                vector
+            },
+            |mut vector| {
+                for i in (0..limit).rev() {
+                    vector.remove(vector.len() - i - 1);
+                }
+
+                vector
+            },
+        );
+    });
+}
+
 fn std_vec_get(c: &mut Criterion) {
     let limit = 100_000;
     let mut vector: Vec<usize> = Vec::new();
@@ -108,5 +149,14 @@ fn std_vec_iterate(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, std_vec_push, std_vec_pop, std_vec_reverse, std_vec_get, std_vec_iterate);
+criterion_group!(
+    benches,
+    std_vec_push,
+    std_vec_pop,
+    std_vec_reverse,
+    std_vec_insert,
+    std_vec_remove,
+    std_vec_get,
+    std_vec_iterate
+);
 criterion_main!(benches);
