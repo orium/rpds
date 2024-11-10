@@ -236,7 +236,7 @@ mod node_utils {
     }
 
     pub fn hash<T: ?Sized + Hash, H: BuildHasher>(v: &T, hasher_builder: &H) -> HashValue {
-        hasher_builder.hash_one(&v)
+        hasher_builder.hash_one(v)
     }
 }
 
@@ -873,6 +873,7 @@ where
         self.size() == 0
     }
 
+    #[allow(clippy::iter_without_into_iter)]
     pub fn iter(&self) -> Iter<'_, K, V, P> {
         self.iter_ptr().map(|e| (&e.key, &e.value))
     }

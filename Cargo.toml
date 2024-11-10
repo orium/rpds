@@ -12,16 +12,8 @@ repository = "https://github.com/orium/rpds"
 documentation = "https://docs.rs/rpds"
 readme = "README.md"
 
-keywords = [
-    "data-structure",
-    "data-structures",
-    "persistent",
-    "immutable",
-    "no_std"
-]
-categories = [
-    "data-structures",
-]
+keywords = ["data-structure", "data-structures", "persistent", "immutable", "no_std"]
+categories = ["data-structures"]
 
 license = "MPL-2.0"
 
@@ -57,8 +49,8 @@ std = []
 
 [lints.clippy]
 all = { level = "warn", priority = -2 }
-pedantic = { level = "warn", priority = -2 }
 correctness = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -2 }
 
 enum-glob-use = "allow"
 if-not-else = "allow"
@@ -66,8 +58,10 @@ match-bool = "allow"
 match-same-arms = "allow"
 missing-panics-doc = "allow"
 module-name-repetitions = "allow"
+multiple-bound-locations = "allow"
 similar-names = "allow"
 single-match-else = "allow"
+struct-field-names = "allow"
 type-complexity = "allow"
 type-repetition-in-bounds = "allow"
 unnested-or-patterns = "allow"

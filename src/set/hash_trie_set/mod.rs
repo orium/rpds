@@ -247,6 +247,7 @@ where
         self.size() == 0
     }
 
+    #[allow(clippy::iter_without_into_iter)]
     pub fn iter(&self) -> Iter<'_, T, P> {
         self.map.keys()
     }

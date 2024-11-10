@@ -1,0 +1,17 @@
+include = ["**/*.toml"]
+exclude = ["target/**"]
+
+[formatting]
+column_width = 100
+indent_string = '    '
+allowed_blank_lines = 1
+
+[[rule]]
+formatting = { reorder_keys = true }
+keys = [
+    "workspace.dependencies",
+    "dependencies",
+    "dev-dependencies",
+    "build-dependencies",
+    "lints.clippy",
+]

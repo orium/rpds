@@ -4,6 +4,7 @@
  */
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
+#![allow(clippy::cast_possible_wrap)]
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::collections::BTreeMap;

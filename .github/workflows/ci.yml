@@ -28,13 +28,15 @@ jobs:
       - name: Install cargo plugins
         run: |
           cargo install cargo-rdme
+          cargo install cargo-machete
+          cargo install taplo-cli
           cargo install cargo-deadlinks
 
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Check everything
-        run: bash ./tools/check.sh
+        run: bash ./tools/check.sh basic doc_url_links unused_deps packaging fmt toml_fmt readme
 
       - name: Code coverage
         if: ${{ runner.os == 'Linux' }}
@@ -57,4 +59,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check the minimum supported rust version
-        run: cargo msrv verify
+        run: bash ./tools/check.sh msrv
+
+  clippy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run clippy
+        run: bash ./tools/check.sh clippy
