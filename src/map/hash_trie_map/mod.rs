@@ -913,7 +913,7 @@ where
     }
 }
 
-impl<'a, K, Q: ?Sized, V, P, H: BuildHasher> Index<&'a Q> for HashTrieMap<K, V, P, H>
+impl<K, Q: ?Sized, V, P, H: BuildHasher> Index<&Q> for HashTrieMap<K, V, P, H>
 where
     K: Eq + Hash + Borrow<Q>,
     Q: Hash + Eq,
@@ -1101,7 +1101,7 @@ mod iter_utils {
     }
 }
 
-impl<'a, K, V, P> IterPtr<'a, K, V, P>
+impl<K, V, P> IterPtr<'_, K, V, P>
 where
     K: Eq + Hash,
     P: SharedPointerKind,
@@ -1149,7 +1149,7 @@ where
     }
 }
 
-impl<'a, K: Eq + Hash, V, P> ExactSizeIterator for IterPtr<'a, K, V, P> where P: SharedPointerKind {}
+impl<K: Eq + Hash, V, P> ExactSizeIterator for IterPtr<'_, K, V, P> where P: SharedPointerKind {}
 
 #[cfg(feature = "serde")]
 pub mod serde {

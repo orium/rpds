@@ -864,7 +864,7 @@ where
     }
 }
 
-impl<'a, T, P> ExactSizeIterator for IterPtr<'a, T, P> where P: SharedPointerKind {}
+impl<T, P> ExactSizeIterator for IterPtr<'_, T, P> where P: SharedPointerKind {}
 
 #[cfg(feature = "serde")]
 pub mod serde {

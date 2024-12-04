@@ -159,8 +159,8 @@ where
         Node { entry: SharedPointer::new(entry), color: Color::Black, left: None, right: None }
     }
 
-    fn borrow(node: &Option<SharedPointer<Node<K, V, P>, P>>) -> Option<&Node<K, V, P>> {
-        node.as_ref().map(Borrow::borrow)
+    fn borrow(node: Option<&SharedPointer<Node<K, V, P>, P>>) -> Option<&Node<K, V, P>> {
+        node.map(Borrow::borrow)
     }
 
     fn left_color(&self) -> Option<Color> {
@@ -990,7 +990,7 @@ where
     }
 }
 
-impl<'a, K, Q: ?Sized, V, P> Index<&'a Q> for RedBlackTreeMap<K, V, P>
+impl<K, Q: ?Sized, V, P> Index<&Q> for RedBlackTreeMap<K, V, P>
 where
     K: Ord + Borrow<Q>,
     Q: Ord,
@@ -1227,7 +1227,7 @@ mod iter_utils {
             Q: Ord + ?Sized,
         {
             let child = self.stack.last().and_then(|node| {
-                let c = if self.backwards { &node.right } else { &node.left };
+                let c = if self.backwards { node.right.as_ref() } else { node.left.as_ref() };
                 Node::borrow(c)
             });
 
@@ -1284,7 +1284,7 @@ mod iter_utils {
             Q: Ord + ?Sized,
         {
             if let Some(node) = self.stack.pop() {
-                let child = if self.backwards { &node.left } else { &node.right };
+                let child = if self.backwards { node.left.as_ref() } else { node.right.as_ref() };
 
                 if let Some(c) = Node::borrow(child) {
                     self.stack.push(c);
@@ -1324,7 +1324,7 @@ where
     size: usize,
 }
 
-impl<'a, K, V, P> IterPtr<'a, K, V, P>
+impl<K, V, P> IterPtr<'_, K, V, P>
 where
     K: Ord,
     P: SharedPointerKind,
@@ -1370,7 +1370,7 @@ where
     }
 }
 
-impl<'a, K: Ord, V, P> ExactSizeIterator for IterPtr<'a, K, V, P> where P: SharedPointerKind {}
+impl<K: Ord, V, P> ExactSizeIterator for IterPtr<'_, K, V, P> where P: SharedPointerKind {}
 
 #[derive(Debug)]
 pub struct RangeIterPtr<'a, K, V, RB, Q: ?Sized, P>
@@ -1393,7 +1393,7 @@ where
     RB: RangeBounds<Q>,
     P: SharedPointerKind,
 {
-    fn new(map: &'a RedBlackTreeMap<K, V, P>, range: RB) -> RangeIterPtr<'_, K, V, RB, Q, P> {
+    fn new(map: &'a RedBlackTreeMap<K, V, P>, range: RB) -> RangeIterPtr<'a, K, V, RB, Q, P> {
         RangeIterPtr { map, stack_forward: None, stack_backward: None, range, _q: PhantomData }
     }
 

@@ -316,7 +316,7 @@ where
     Initialized { vec: Vec<&'a SharedPointer<T, P>>, current: Option<usize> },
 }
 
-impl<'a, T, P> LazilyReversedListIter<'a, T, P>
+impl<T, P> LazilyReversedListIter<'_, T, P>
 where
     P: SharedPointerKind,
 {
@@ -374,7 +374,7 @@ where
     }
 }
 
-impl<'a, T, P> ExactSizeIterator for LazilyReversedListIter<'a, T, P> where P: SharedPointerKind {}
+impl<T, P> ExactSizeIterator for LazilyReversedListIter<'_, T, P> where P: SharedPointerKind {}
 
 #[cfg(feature = "serde")]
 pub mod serde {

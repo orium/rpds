@@ -336,8 +336,10 @@ fn test_clone() {
 fn test_drop_list() {
     // When it is dropped, it will set the variable it owned to false.
     use core::cell::Cell;
+
     struct DropStruct<'a>(&'a Cell<bool>);
-    impl<'a> Drop for DropStruct<'a> {
+
+    impl Drop for DropStruct<'_> {
         fn drop(&mut self) {
             self.0.set(false);
         }
