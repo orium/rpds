@@ -967,7 +967,7 @@ where
             return true;
         }
         self.size() == other.size()
-            && self.iter().all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
+            && self.iter().all(|(key, value)| other.get(key).is_some_and(|v| *value == *v))
     }
 }
 

@@ -184,7 +184,7 @@ where
     }
 
     pub fn drop_first_mut(&mut self) -> bool {
-        self.head.take().map_or(false, |h| {
+        self.head.take().is_some_and(|h| {
             self.head.clone_from(&h.next);
             self.length -= 1;
 
