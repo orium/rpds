@@ -904,7 +904,7 @@ where
     ///
     /// This would return true if you’re comparing a map to itself,
     /// or if you’re comparing a map to a fresh clone of itself.
-    pub(crate) fn ptr_eq<PO: SharedPointerKind>(&self, other: &RedBlackTreeMap<K, V, PO>) -> bool {
+    pub fn ptr_eq<PO: SharedPointerKind>(&self, other: &RedBlackTreeMap<K, V, PO>) -> bool {
         let a = self.root.as_ref().map_or(core::ptr::null(), SharedPointer::as_ptr);
         // Note how we're casting the raw pointer changing from P to PO
         // We cannot perform the equality in a type safe way because the root type depends
