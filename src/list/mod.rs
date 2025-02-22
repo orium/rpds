@@ -176,11 +176,7 @@ where
     pub fn drop_first(&self) -> Option<List<T, P>> {
         let mut new_list = self.clone();
 
-        if new_list.drop_first_mut() {
-            Some(new_list)
-        } else {
-            None
-        }
+        if new_list.drop_first_mut() { Some(new_list) } else { None }
     }
 
     pub fn drop_first_mut(&mut self) -> bool {
@@ -417,10 +413,13 @@ where
     fn drop(&mut self) {
         let mut head = self.head.take();
         while let Some(node) = head {
-            if let Ok(mut node) = SharedPointer::try_unwrap(node) {
-                head = node.next.take();
-            } else {
-                break;
+            match SharedPointer::try_unwrap(node) {
+                Ok(mut node) => {
+                    head = node.next.take();
+                }
+                _ => {
+                    break;
+                }
             }
         }
     }
@@ -452,7 +451,7 @@ where
 
     fn next(&mut self) -> Option<&'a SharedPointer<T, P>> {
         match self.next {
-            Some(Node { value: ref v, next: ref t }) => {
+            Some(Node { value: v, next: t }) => {
                 self.next = t.as_ref().map(AsRef::as_ref);
                 self.length -= 1;
                 Some(v)

@@ -6,9 +6,9 @@
 mod sparse_array_usize;
 
 use super::entry::Entry;
+use crate::List;
 use crate::list;
 use crate::utils::DefaultBuildHasher;
-use crate::List;
 use alloc::vec::Vec;
 use archery::{ArcTK, RcK, SharedPointer, SharedPointerKind};
 use core::borrow::Borrow;

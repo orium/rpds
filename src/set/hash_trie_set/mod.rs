@@ -3,9 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+use crate::HashTrieMap;
 use crate::map::hash_trie_map;
 use crate::utils::DefaultBuildHasher;
-use crate::HashTrieMap;
 use archery::{ArcTK, RcK, SharedPointerKind};
 use core::borrow::Borrow;
 use core::fmt::Display;

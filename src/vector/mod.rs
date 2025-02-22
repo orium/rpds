@@ -345,11 +345,7 @@ where
     pub fn set(&self, index: usize, v: T) -> Option<Vector<T, P>> {
         let mut new_vector = self.clone();
 
-        if new_vector.set_mut(index, v) {
-            Some(new_vector)
-        } else {
-            None
-        }
+        if new_vector.set_mut(index, v) { Some(new_vector) } else { None }
     }
 
     /// Returns `true` if the operation was successful.
@@ -448,11 +444,7 @@ where
     pub fn drop_last(&self) -> Option<Vector<T, P>> {
         let mut new_vector = self.clone();
 
-        if new_vector.drop_last_mut() {
-            Some(new_vector)
-        } else {
-            None
-        }
+        if new_vector.drop_last_mut() { Some(new_vector) } else { None }
     }
 
     pub fn drop_last_mut(&mut self) -> bool {
@@ -802,11 +794,7 @@ where
     }
 
     fn current_forward(&self) -> Option<&'a SharedPointer<T, P>> {
-        if self.non_empty() {
-            IterPtr::current(self.stack_forward.as_ref().unwrap())
-        } else {
-            None
-        }
+        if self.non_empty() { IterPtr::current(self.stack_forward.as_ref().unwrap()) } else { None }
     }
 
     fn advance_backward(&mut self) {

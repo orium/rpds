@@ -5,7 +5,7 @@
 
 #![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use std::collections::LinkedList;
 use std::hint::black_box;
 

@@ -134,22 +134,14 @@ where
 
     #[must_use]
     pub fn peek(&self) -> Option<&T> {
-        if !self.out_list.is_empty() {
-            self.out_list.first()
-        } else {
-            self.in_list.last()
-        }
+        if !self.out_list.is_empty() { self.out_list.first() } else { self.in_list.last() }
     }
 
     #[must_use]
     pub fn dequeue(&self) -> Option<Queue<T, P>> {
         let mut new_queue = self.clone();
 
-        if new_queue.dequeue_mut() {
-            Some(new_queue)
-        } else {
-            None
-        }
+        if new_queue.dequeue_mut() { Some(new_queue) } else { None }
     }
 
     pub fn dequeue_mut(&mut self) -> bool {
@@ -349,7 +341,7 @@ where
                 self.next()
             }
 
-            LazilyReversedListIter::Initialized { ref vec, ref mut current } => {
+            &mut LazilyReversedListIter::Initialized { ref vec, ref mut current } => {
                 let v = current.map(|i| vec[i]);
 
                 *current = match *current {

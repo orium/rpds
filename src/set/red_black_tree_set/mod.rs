@@ -3,8 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use crate::map::red_black_tree_map;
 use crate::RedBlackTreeMap;
+use crate::map::red_black_tree_map;
 use archery::{ArcTK, RcK, SharedPointerKind};
 use core::borrow::Borrow;
 use core::cmp::Ordering;

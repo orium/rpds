@@ -62,8 +62,8 @@ where
         };
 
         self_ok
-            && self.left.as_ref().map_or(true, |l| l.red_nodes_have_black_children())
-            && self.right.as_ref().map_or(true, |r| r.red_nodes_have_black_children())
+            && self.left.as_ref().is_none_or(|l| l.red_nodes_have_black_children())
+            && self.right.as_ref().is_none_or(|r| r.red_nodes_have_black_children())
     }
 
     fn has_binary_search_property(&self) -> bool
@@ -74,15 +74,15 @@ where
             node: &Node<K, V, P>,
             last: &mut Option<K>,
         ) -> bool {
-            let ok_left = node.left.as_ref().map_or(true, |l| go(l, last));
+            let ok_left = node.left.as_ref().is_none_or(|l| go(l, last));
 
             let new_last = node.entry.key.clone();
 
-            let ok_node = last.as_ref().map_or(true, |l| *l < new_last);
+            let ok_node = last.as_ref().is_none_or(|l| *l < new_last);
 
             *last = Some(new_last);
 
-            let ok_right = node.right.as_ref().map_or(true, |r| go(r, last));
+            let ok_right = node.right.as_ref().is_none_or(|r| go(r, last));
 
             ok_left && ok_node && ok_right
         }
@@ -110,16 +110,16 @@ where
     K: Ord + Clone,
 {
     fn check_consistent(&self) -> Result<(), InvariantViolation> {
-        if !self.root.as_ref().map_or(true, |r| r.has_binary_search_property()) {
-            Result::Err(InvariantViolation::BinarySearch)
-        } else if !self.root.as_ref().map_or(true, |r| r.red_nodes_have_black_children()) {
-            Result::Err(InvariantViolation::RedNodeBlackChildren)
-        } else if !self.root.as_ref().map_or(true, |r| r.is_black_height_balanced()) {
-            Result::Err(InvariantViolation::BlackHeightBalanced)
-        } else if !self.root.as_ref().map_or(true, |r| r.color == Color::Black) {
-            Result::Err(InvariantViolation::BlackRoot)
+        if !self.root.as_ref().is_none_or(|r| r.has_binary_search_property()) {
+            Err(InvariantViolation::BinarySearch)
+        } else if !self.root.as_ref().is_none_or(|r| r.red_nodes_have_black_children()) {
+            Err(InvariantViolation::RedNodeBlackChildren)
+        } else if !self.root.as_ref().is_none_or(|r| r.is_black_height_balanced()) {
+            Err(InvariantViolation::BlackHeightBalanced)
+        } else if !self.root.as_ref().is_none_or(|r| r.color == Color::Black) {
+            Err(InvariantViolation::BlackRoot)
         } else if self.root.as_ref().map_or(0, |r| r.count()) != self.size() {
-            Result::Err(InvariantViolation::SizeConsistency)
+            Err(InvariantViolation::SizeConsistency)
         } else {
             Ok(())
         }
@@ -1033,9 +1033,9 @@ mod internal {
 
     #[test]
     fn test_insert() {
+        use rand::SeedableRng;
         use rand::rngs::StdRng;
         use rand::seq::SliceRandom;
-        use rand::SeedableRng;
 
         let limit = 25_000;
         let seed: [u8; 32] = [
@@ -1073,8 +1073,12 @@ mod internal {
             assert!(!map.contains_key(v));
 
             if let Err(error) = map.check_consistent() {
-                panic!("Consistency error in red-black tree ({:?}).  Insertions: {:?}.  Removals: {:?}",
-                       error, &values_insert, &values_remove[0..=i]);
+                panic!(
+                    "Consistency error in red-black tree ({:?}).  Insertions: {:?}.  Removals: {:?}",
+                    error,
+                    &values_insert,
+                    &values_remove[0..=i]
+                );
             }
         }
     }
@@ -1089,9 +1093,9 @@ mod internal {
 
     #[test]
     fn test_remove() {
+        use rand::SeedableRng;
         use rand::rngs::StdRng;
         use rand::seq::SliceRandom;
-        use rand::SeedableRng;
 
         let limit = 25_000;
         let seed: [u8; 32] = [

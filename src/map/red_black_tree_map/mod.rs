@@ -270,9 +270,9 @@ where
     ///                  c   d
     /// ```
     fn balance(&mut self) {
-        use core::mem::swap;
         use Color::Black as B;
         use Color::Red as R;
+        use core::mem::swap;
 
         match self.color {
             B => {
@@ -1305,11 +1305,7 @@ mod iter_utils {
     }
 
     pub fn conservative_height(size: usize) -> usize {
-        if size > 0 {
-            2 * lg_floor(size + 1)
-        } else {
-            0
-        }
+        if size > 0 { 2 * lg_floor(size + 1) } else { 0 }
     }
 }
 

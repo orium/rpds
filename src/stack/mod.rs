@@ -134,11 +134,7 @@ where
     pub fn pop(&self) -> Option<Stack<T, P>> {
         let mut new_stack = self.clone();
 
-        if new_stack.pop_mut() {
-            Some(new_stack)
-        } else {
-            None
-        }
+        if new_stack.pop_mut() { Some(new_stack) } else { None }
     }
 
     pub fn pop_mut(&mut self) -> bool {
