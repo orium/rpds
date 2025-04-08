@@ -387,7 +387,7 @@ fn test_macro_vector() {
     let vector_1 = Vector::new().push_back(1);
     let vector_1_2_3 = Vector::new().push_back(1).push_back(2).push_back(3);
 
-    assert_eq!(Vector::<u32>::new(), vector![]);
+    assert_eq!(Vector::<u32>::new(), vector![] as Vector<u32>);
     assert_eq!(vector_1, vector![1]);
     assert_eq!(vector_1_2_3, vector![1, 2, 3]);
 }
@@ -433,7 +433,7 @@ fn test_drop_last_drops_last_element() {
         vector = vector.drop_last().unwrap();
     }
 
-    assert_eq!(vector, Vector::new());
+    assert_eq!(vector, Vector::<i32>::new());
 }
 
 #[test]
@@ -727,10 +727,9 @@ fn test_index_mut() {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() {
-    use bincode::{deserialize, serialize};
     let vector: Vector<i32> = vector![5, 6, 7, 8];
-    let encoded = serialize(&vector).unwrap();
-    let decoded: Vector<i32> = deserialize(&encoded).unwrap();
+    let encoded = serde_json::to_string(&vector).unwrap();
+    let decoded: Vector<i32> = serde_json::from_str(&encoded).unwrap();
 
     assert_eq!(vector, decoded);
 }

@@ -263,10 +263,9 @@ fn test_clone() {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() {
-    use bincode::{deserialize, serialize};
     let stack: Stack<i32> = stack![5, 6, 7, 8];
-    let encoded = serialize(&stack).unwrap();
-    let decoded: Stack<i32> = deserialize(&encoded).unwrap();
+    let encoded = serde_json::to_string(&stack).unwrap();
+    let decoded: Stack<i32> = serde_json::from_str(&encoded).unwrap();
 
     assert_eq!(stack, decoded);
 }

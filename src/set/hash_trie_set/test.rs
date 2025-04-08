@@ -339,10 +339,9 @@ fn test_clone() {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() {
-    use bincode::{deserialize, serialize};
     let set: HashTrieSet<i32> = ht_set![5, 6, 7, 8];
-    let encoded = serialize(&set).unwrap();
-    let decoded: HashTrieSet<i32> = deserialize(&encoded).unwrap();
+    let encoded = serde_json::to_string(&set).unwrap();
+    let decoded: HashTrieSet<i32> = serde_json::from_str(&encoded).unwrap();
 
     assert_eq!(set, decoded);
 }

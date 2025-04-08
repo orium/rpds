@@ -416,7 +416,7 @@ where
 
                                 self.compress();
                             }
-                        };
+                        }
 
                         removed
                     }
@@ -629,7 +629,7 @@ where
                                 *b = Bucket::Single(entry);
                             }
                             _ => (),
-                        };
+                        }
 
                         *bucket = Some(b);
 

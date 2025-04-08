@@ -1837,10 +1837,9 @@ fn test_clone() {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() {
-    use bincode::{deserialize, serialize};
     let map: RedBlackTreeMap<i32, i32> = rbt_map![5 => 6, 7 => 8, 9 => 10, 11 => 12];
-    let encoded = serialize(&map).unwrap();
-    let decoded: RedBlackTreeMap<i32, i32> = deserialize(&encoded).unwrap();
+    let encoded = serde_json::to_string(&map).unwrap();
+    let decoded: RedBlackTreeMap<i32, i32> = serde_json::from_str(&encoded).unwrap();
 
     assert_eq!(map, decoded);
 }

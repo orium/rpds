@@ -402,10 +402,9 @@ fn test_drop_large() {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() {
-    use bincode::{deserialize, serialize};
     let list: List<i32> = list![5, 6, 7, 8];
-    let encoded = serialize(&list).unwrap();
-    let decoded: List<i32> = deserialize(&encoded).unwrap();
+    let encoded = serde_json::to_string(&list).unwrap();
+    let decoded: List<i32> = serde_json::from_str(&encoded).unwrap();
 
     assert_eq!(list, decoded);
 }

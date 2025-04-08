@@ -1243,10 +1243,9 @@ fn test_clone() {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serde() {
-    use bincode::{deserialize, serialize};
     let map: HashTrieMap<i32, i32> = ht_map![5 => 6, 7 => 8, 9 => 10, 11 => 12];
-    let encoded = serialize(&map).unwrap();
-    let decoded: HashTrieMap<i32, i32> = deserialize(&encoded).unwrap();
+    let encoded = serde_json::to_string(&map).unwrap();
+    let decoded: HashTrieMap<i32, i32> = serde_json::from_str(&encoded).unwrap();
 
     assert_eq!(map, decoded);
 }

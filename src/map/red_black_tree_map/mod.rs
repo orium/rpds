@@ -542,7 +542,7 @@ where
                             }
                         }
                     }
-                };
+                }
 
                 true
             }
@@ -1213,7 +1213,7 @@ mod iter_utils {
                 if !in_range {
                     self.stack.clear();
                 }
-            };
+            }
         }
 
         #[inline]
