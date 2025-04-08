@@ -1,5 +1,9 @@
 # Release notes
 
+## 1.1.1
+
+* Updated dependencies.
+
 ## 1.1.0
 
 * Use [triomphe](https://crates.io/crates/triomphe) reference-counting pointer by default in `Sync` data structures,
