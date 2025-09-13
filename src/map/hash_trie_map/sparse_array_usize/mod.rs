@@ -52,6 +52,10 @@ impl<T> SparseArrayUsize<T> {
         self.array.pop()
     }
 
+    pub(crate) fn as_slice(&self) -> &[T] {
+        self.array.as_slice()
+    }
+
     pub fn set(&mut self, index: usize, value: T) {
         debug_assert!(index < 8 * size_of_val(&self.bitmap));
 
