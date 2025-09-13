@@ -1,3 +1,5 @@
+#[cfg(feature = "rayon")]
+mod rayon;
 mod sparse_array_usize;
 
 use super::entry::Entry;
