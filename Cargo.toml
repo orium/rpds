@@ -32,14 +32,14 @@ codecov = { repository = "orium/rpds", branch = "main", service = "github" }
 
 [dependencies]
 archery = { version = "1.2.1", features = ["triomphe"] }
-serde = { version = "1.0.219", optional = true, default-features = false }
+serde = { version = "1.0.228", optional = true, default-features = false }
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.7.0"
 pretty_assertions = "1.4.1"
-rand = "0.9.0"
+rand = "0.9.2"
 # Needed to test serde:
-serde_json = "1.0.140"
+serde_json = "1.0.145"
 static_assertions = "1.1.0"
 
 [features]
