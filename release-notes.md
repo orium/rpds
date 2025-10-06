@@ -1,5 +1,10 @@
 # Release notes
 
+## 1.1.2
+
+* Relicensed project under the MIT license.
+* Updated dependencies.
+
 ## 1.1.1
 
 * Updated dependencies.
