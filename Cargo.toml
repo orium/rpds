@@ -15,7 +15,7 @@ readme = "README.md"
 keywords = ["data-structure", "data-structures", "persistent", "immutable", "no_std"]
 categories = ["data-structures"]
 
-license = "MPL-2.0"
+license = "MIT"
 
 # What to include when packaging.
 include = [
@@ -31,7 +31,7 @@ include = [
 codecov = { repository = "orium/rpds", branch = "main", service = "github" }
 
 [dependencies]
-archery = { version = "1.2.1", features = ["triomphe"] }
+archery = { version = "1.2.2", features = ["triomphe"] }
 serde = { version = "1.0.228", optional = true, default-features = false }
 
 [dev-dependencies]
