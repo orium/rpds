@@ -32,6 +32,7 @@ codecov = { repository = "orium/rpds", branch = "main", service = "github" }
 
 [dependencies]
 archery = { version = "1.2.2", features = ["triomphe"] }
+rayon = { version = "1.10", optional = true }
 serde = { version = "1.0.228", optional = true, default-features = false }
 
 [dev-dependencies]
@@ -46,6 +47,7 @@ static_assertions = "1.1.0"
 default = ["std"]
 fatal-warnings = []
 std = []
+rayon = ["dep:rayon"]
 
 [lints.clippy]
 all = { level = "warn", priority = -2 }
