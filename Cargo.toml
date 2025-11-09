@@ -45,7 +45,6 @@ static_assertions = "1.1.0"
 
 [features]
 default = ["std"]
-fatal-warnings = []
 std = []
 rayon = ["dep:rayon", "std"]
 

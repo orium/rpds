@@ -1,5 +1,3 @@
-#![cfg_attr(feature = "fatal-warnings", deny(warnings))]
-
 use criterion::{Criterion, criterion_group, criterion_main};
 use rpds::List;
 use std::hint::black_box;
