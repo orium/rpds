@@ -62,7 +62,7 @@ assert_eq!(list_dropped, list);
 ### `Vector`
 [![`Vector` documentation](https://img.shields.io/badge/doc-Vector-303070.svg)](https://docs.rs/rpds/latest/rpds/vector/struct.Vector.html)
 
-A sequence that can be indexed.  The implementation is described in
+A sequence that can be indexed. The implementation is described in
 [Understanding Persistent Vector Part 1](http://hypirion.com/musings/understanding-persistent-vector-pt-1)
 and [Understanding Persistent Vector Part 2](http://hypirion.com/musings/understanding-persistent-vector-pt-2).
 
@@ -88,7 +88,7 @@ assert_eq!(screaming_vector[2], "VECTOR!!!");
 ### `Stack`
 [![`Stack` documentation](https://img.shields.io/badge/doc-Stack-303070.svg)](https://docs.rs/rpds/latest/rpds/stack/struct.Stack.html)
 
-A LIFO (last in, first out) data structure.  This is just a [`List`](#list) in disguise.
+A LIFO (last in, first out) data structure. This is just a [`List`](#list) in disguise.
 
 #### Example
 
@@ -244,7 +244,7 @@ assert_eq!(set_positive.first(), Some(&"one"));
 
 ### Mutable methods
 
-When you change a data structure you often do not need its previous versions.  For those cases
+When you change a data structure you often do not need its previous versions. For those cases
 rpds offers you mutable methods which are generally faster:
 
 ```rust
@@ -275,11 +275,11 @@ Check the documentation for initialization macros of other data structures.
 ### Thread safety
 
 All data structures in this crate can be shared between threads, but that is an opt-in ability.
-This is because there is a performance cost to make data structures thread safe.  That cost
+This is because there is a performance cost to make data structures thread safe. That cost
 is worth avoiding when you are not actually sharing them between threads.
 
 Of course if you try to share a rpds data structure across different threads you can count on
-the rust compiler to ensure that it is safe to do so.  If you are using the version of the data
+the rust compiler to ensure that it is safe to do so. If you are using the version of the data
 structure that is not thread safe you will get a compile-time error.
 
 To create a thread-safe version of any data structure use `new_sync()`:
@@ -303,15 +303,15 @@ as for the values it stores.
 
 There are two implementations of reference-counting pointers in the standard library:
 [`Rc`](https://doc.rust-lang.org/stable/alloc/rc/struct.Rc.html) and
-[`Arc`](https://doc.rust-lang.org/stable/alloc/sync/struct.Arc.html).  They behave the same way, but
-`Arc` allows you to share the data it points to across multiple threads.  The downside is that
+[`Arc`](https://doc.rust-lang.org/stable/alloc/sync/struct.Arc.html). They behave the same way, but
+`Arc` allows you to share the data it points to across multiple threads. The downside is that
 it is significantly slower to clone and drop than `Rc`, and persistent data structures do a
 lot of those operations. In some microbenchmarks with rpds data structure we can see that
 using `Rc` instead of  `Arc` can make some operations twice as fast!  You can see this for
 yourself by running `cargo bench`.
 
 To implement this we parameterize the type of reference-counting pointer (`Rc` or `Arc`) as a
-type argument of the data structure.  We use the [archery](https://github.com/orium/archery/)
+type argument of the data structure. We use the [archery](https://github.com/orium/archery/)
 crate to do this in a convenient way.
 
 The pointer type can be parameterized like this:
@@ -325,17 +325,22 @@ let vec: Vector<u32, archery::ArcTK> = Vector::new_with_ptr_kind();
 
 ### `no_std` support
 
-This crate supports `no_std`.  To enable that you need to disable the default feature `std`:
+This crate supports `no_std`. To enable that you need to disable the default feature `std`:
 
 ```toml
 [dependencies]
 rpds = { version = "<version>", default-features = false }
 ```
 
+### Parallel iterator support
+
+[`HashTrieMap`](https://docs.rs/rpds/latest/rpds/map/hash_trie_map/struct.HashTrieMap.html) supports parallel iterator with
+[rayon](https://crates.io/crates/rayon). To use them you need to enable the `rayon` feature.
+
 ### Serialization
 
-We support serialization through [serde](https://crates.io/crates/serde).  To use it
-enable the `serde` feature.  To do so change the rpds dependency in your `Cargo.toml` to
+We support serialization through [serde](https://crates.io/crates/serde). To use it
+enable the `serde` feature. To do so change the rpds dependency in your `Cargo.toml` to
 
 ```toml
 [dependencies]
