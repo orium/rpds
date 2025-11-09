@@ -118,6 +118,29 @@ fn rpds_hash_trie_map_sync_iterate(c: &mut Criterion) {
     });
 }
 
+#[allow(unused_variables)]
+fn rpds_hash_trie_map_sync_iterate_parallel(c: &mut Criterion) {
+    #[cfg(feature = "rayon")]
+    {
+        use rayon::prelude::*;
+
+        let limit = 1_000_000;
+        let mut map = HashTrieMapSync::new_sync();
+
+        for i in 0..limit {
+            map.insert_mut(i, -(i as isize));
+        }
+
+        c.bench_function("rpds hash trie map sync iterate parallel", move |b| {
+            b.iter(|| {
+                map.par_iter().for_each(|kv| {
+                    black_box(kv);
+                });
+            });
+        });
+    }
+}
+
 criterion_group!(
     benches,
     rpds_hash_trie_map_sync_insert,
@@ -125,6 +148,7 @@ criterion_group!(
     rpds_hash_trie_map_sync_remove,
     rpds_hash_trie_map_sync_remove_mut,
     rpds_hash_trie_map_sync_get,
-    rpds_hash_trie_map_sync_iterate
+    rpds_hash_trie_map_sync_iterate,
+    rpds_hash_trie_map_sync_iterate_parallel
 );
 criterion_main!(benches);
