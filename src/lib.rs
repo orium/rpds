@@ -1,5 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(feature = "fatal-warnings", deny(warnings))]
 // Note: If you change this remember to update `README.md`.  To do so run `cargo rdme`.
 //! Rust Persistent Data Structures provides [fully persistent data structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
 //! with structural sharing.

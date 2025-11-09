@@ -21,19 +21,23 @@ assert_installed "cargo"
 trap on_failure ERR
 
 function check_basic {
+    export RUSTFLAGS="-Dwarnings"
+
+    assert_installed "cargo-hack"
+
     echo 'Building:'
-    cargo build --features fatal-warnings --all-targets
+    cargo build --all-targets --all-features
     echo 'Testing:'
-    cargo test  --features fatal-warnings --all-targets
+    cargo hack test --each-feature --all-targets
     # Weirdly, the `cargo test ... --all-targets ...` above does not run the tests in the documentation, so we run the
     # doc tests like this.
     # See https://github.com/rust-lang/cargo/issues/6669.
     echo 'Testing doc:'
-    cargo test  --features fatal-warnings --doc
+    cargo test --doc --all-features
     echo 'Checking the benchmarks:'
-    cargo bench --features fatal-warnings -- --test
+    cargo bench --all-features -- --test
     echo 'Checking documentation:'
-    cargo doc   --features fatal-warnings --no-deps
+    cargo doc --no-deps --all-features
 }
 
 function check_doc_url_links {

@@ -27,6 +27,7 @@ jobs:
 
       - name: Install cargo plugins
         run: |
+          cargo install cargo-hack
           cargo install cargo-rdme
           cargo install cargo-machete
           cargo install taplo-cli
