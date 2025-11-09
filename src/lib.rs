@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-// Note: If you change this remember to update `README.md`.  To do so run `cargo rdme`.
+// Note: If you change this remember to update `README.md`. To do so run `cargo rdme`.
 //! Rust Persistent Data Structures provides [fully persistent data structures](https://en.wikipedia.org/wiki/Persistent_data_structure)
 //! with structural sharing.
 //!
@@ -51,7 +51,7 @@
 //! ## `Vector`
 //! [![`Vector` documentation](https://img.shields.io/badge/doc-Vector-303070.svg)](crate::vector::Vector)
 //!
-//! A sequence that can be indexed.  The implementation is described in
+//! A sequence that can be indexed. The implementation is described in
 //! [Understanding Persistent Vector Part 1](http://hypirion.com/musings/understanding-persistent-vector-pt-1)
 //! and [Understanding Persistent Vector Part 2](http://hypirion.com/musings/understanding-persistent-vector-pt-2).
 //!
@@ -77,7 +77,7 @@
 //! ## `Stack`
 //! [![`Stack` documentation](https://img.shields.io/badge/doc-Stack-303070.svg)](crate::stack::Stack)
 //!
-//! A LIFO (last in, first out) data structure.  This is just a [`List`](#list) in disguise.
+//! A LIFO (last in, first out) data structure. This is just a [`List`](#list) in disguise.
 //!
 //! ### Example
 //!
@@ -233,7 +233,7 @@
 //!
 //! ## Mutable methods
 //!
-//! When you change a data structure you often do not need its previous versions.  For those cases
+//! When you change a data structure you often do not need its previous versions. For those cases
 //! rpds offers you mutable methods which are generally faster:
 //!
 //! ```rust
@@ -264,11 +264,11 @@
 //! ## Thread safety
 //!
 //! All data structures in this crate can be shared between threads, but that is an opt-in ability.
-//! This is because there is a performance cost to make data structures thread safe.  That cost
+//! This is because there is a performance cost to make data structures thread safe. That cost
 //! is worth avoiding when you are not actually sharing them between threads.
 //!
 //! Of course if you try to share a rpds data structure across different threads you can count on
-//! the rust compiler to ensure that it is safe to do so.  If you are using the version of the data
+//! the rust compiler to ensure that it is safe to do so. If you are using the version of the data
 //! structure that is not thread safe you will get a compile-time error.
 //!
 //! To create a thread-safe version of any data structure use `new_sync()`:
@@ -296,15 +296,15 @@
 //!
 //! There are two implementations of reference-counting pointers in the standard library:
 //! [`Rc`](::alloc::rc::Rc) and
-//! [`Arc`](::alloc::sync::Arc).  They behave the same way, but
-//! `Arc` allows you to share the data it points to across multiple threads.  The downside is that
+//! [`Arc`](::alloc::sync::Arc). They behave the same way, but
+//! `Arc` allows you to share the data it points to across multiple threads. The downside is that
 //! it is significantly slower to clone and drop than `Rc`, and persistent data structures do a
 //! lot of those operations. In some microbenchmarks with rpds data structure we can see that
 //! using `Rc` instead of  `Arc` can make some operations twice as fast!  You can see this for
 //! yourself by running `cargo bench`.
 //!
 //! To implement this we parameterize the type of reference-counting pointer (`Rc` or `Arc`) as a
-//! type argument of the data structure.  We use the [archery](https://github.com/orium/archery/)
+//! type argument of the data structure. We use the [archery](https://github.com/orium/archery/)
 //! crate to do this in a convenient way.
 //!
 //! The pointer type can be parameterized like this:
@@ -320,17 +320,22 @@
 //!
 //! ## `no_std` support
 //!
-//! This crate supports `no_std`.  To enable that you need to disable the default feature `std`:
+//! This crate supports `no_std`. To enable that you need to disable the default feature `std`:
 //!
 //! ```toml
 //! [dependencies]
 //! rpds = { version = "<version>", default-features = false }
 //! ```
 //!
+//! ## Parallel iterator support
+//!
+//! [`HashTrieMap`](crate::map::hash_trie_map::HashTrieMap) supports parallel iterator with
+//! [rayon](https://crates.io/crates/rayon). To use them you need to enable the `rayon` feature.
+//!
 //! ## Serialization
 //!
-//! We support serialization through [serde](https://crates.io/crates/serde).  To use it
-//! enable the `serde` feature.  To do so change the rpds dependency in your `Cargo.toml` to
+//! We support serialization through [serde](https://crates.io/crates/serde). To use it
+//! enable the `serde` feature. To do so change the rpds dependency in your `Cargo.toml` to
 //!
 //! ```toml
 //! [dependencies]
