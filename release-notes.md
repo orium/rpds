@@ -1,5 +1,10 @@
 # Release notes
 
+## 1.2.0
+
+* Added parallel iterator support for `HashTrieMapSync`.
+* Added `ptr_eq()` to `{HashTrie,RedBlackTree}Map` and `{HashTrie,RedBlackTree}Set`.
+
 ## 1.1.2
 
 * Relicensed project under the MIT license.
