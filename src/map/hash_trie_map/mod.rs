@@ -1053,7 +1053,7 @@ where
     P: SharedPointerKind,
 {
     Branch(slice::Iter<'a, SharedPointer<Node<K, V, P>, P>>),
-    LeafCollision(list::Iter<'a, EntryWithHash<K, V, P>, P>),
+    LeafCollision(list::IterPtr<'a, EntryWithHash<K, V, P>, P>),
     LeafSingle(iter::Once<&'a SharedPointer<Entry<K, V>, P>>),
 }
 
@@ -1067,7 +1067,7 @@ where
         match node {
             Node::Branch(children) => IterStackElement::Branch(children.iter()),
             Node::Leaf(Bucket::Collision(entries)) => {
-                IterStackElement::LeafCollision(entries.iter())
+                IterStackElement::LeafCollision(entries.iter_ptr())
             }
             Node::Leaf(Bucket::Single(entry)) => {
                 IterStackElement::LeafSingle(iter::once(&entry.entry))
