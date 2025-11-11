@@ -100,22 +100,28 @@ fn rpds_hash_trie_map_get(c: &mut Criterion) {
         });
     });
 }
-
-fn rpds_hash_trie_map_iterate(c: &mut Criterion) {
-    let limit = 100_000;
+fn rpds_hash_trie_map_iterate_impl(c: &mut Criterion, limit: usize, bench_name: &str) {
     let mut map = HashTrieMap::new();
 
     for i in 0..limit {
         map.insert_mut(i, -(i as isize));
     }
 
-    c.bench_function("rpds hash trie map iterate", move |b| {
+    c.bench_function(bench_name, move |b| {
         b.iter(|| {
             for kv in map.iter() {
                 black_box(kv);
             }
         });
     });
+}
+
+fn rdps_hash_trie_map_iterate_big(c: &mut Criterion) {
+    rpds_hash_trie_map_iterate_impl(c, 100_000, "rpds hash trie map iterate big");
+}
+
+fn rpds_hash_trie_map_iterate_small(c: &mut Criterion) {
+    rpds_hash_trie_map_iterate_impl(c, 10, "rpds hash trie map iterate small");
 }
 
 criterion_group!(
@@ -125,6 +131,7 @@ criterion_group!(
     rpds_hash_trie_map_remove,
     rpds_hash_trie_map_remove_mut,
     rpds_hash_trie_map_get,
-    rpds_hash_trie_map_iterate
+    rdps_hash_trie_map_iterate_big,
+    rpds_hash_trie_map_iterate_small
 );
 criterion_main!(benches);
