@@ -16,6 +16,7 @@ use core::iter;
 use core::iter::FromIterator;
 use core::ops::Index;
 use core::slice;
+use smallvec::SmallVec;
 use sparse_array_usize::SparseArrayUsize;
 
 type HashValue = u64;
@@ -1033,12 +1034,16 @@ where
     }
 }
 
+const ITER_STACK_N_INLINE: usize = iter_utils::trie_max_height(DEFAULT_DEGREE) + 1;
+
+type IterPtrStack<'a, K, V, P> = SmallVec<[IterStackElement<'a, K, V, P>; ITER_STACK_N_INLINE]>;
+
 #[derive(Debug)]
 pub struct IterPtr<'a, K, V, P>
 where
     P: SharedPointerKind,
 {
-    stack: Vec<IterStackElement<'a, K, V, P>>,
+    stack: IterPtrStack<'a, K, V, P>,
     size: usize,
 }
 
@@ -1090,11 +1095,11 @@ where
 mod iter_utils {
     use super::HashValue;
 
-    pub fn trie_max_height(degree: u8) -> usize {
+    pub const fn trie_max_height(degree: u8) -> usize {
         let bits_per_level = (degree - 1).count_ones() as usize;
         let hash_bits = HashValue::BITS as usize;
 
-        (hash_bits / bits_per_level) + usize::from(hash_bits % bits_per_level > 0)
+        (hash_bits / bits_per_level) + (hash_bits % bits_per_level > 0) as usize
     }
 }
 
@@ -1104,8 +1109,7 @@ where
     P: SharedPointerKind,
 {
     fn new<H: BuildHasher + Clone>(map: &HashTrieMap<K, V, P, H>) -> IterPtr<'_, K, V, P> {
-        let mut stack: Vec<IterStackElement<'_, K, V, P>> =
-            Vec::with_capacity(iter_utils::trie_max_height(map.degree) + 1);
+        let mut stack = IterPtrStack::new();
 
         if map.size() > 0 {
             stack.push(IterStackElement::new(map.root.borrow()));
