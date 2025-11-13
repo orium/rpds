@@ -20,9 +20,9 @@ assert_installed "cargo"
 
 trap on_failure ERR
 
-function check_basic {
-    export RUSTFLAGS="-Dwarnings"
+export RUSTFLAGS="-Dwarnings"
 
+function check_basic {
     assert_installed "cargo-hack"
 
     echo 'Building:'
