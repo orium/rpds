@@ -16,6 +16,7 @@ use core::iter;
 use core::iter::FromIterator;
 use core::ops::Index;
 use core::slice;
+use smallvec::SmallVec;
 use sparse_array_usize::SparseArrayUsize;
 
 type HashValue = u64;
@@ -1033,12 +1034,16 @@ where
     }
 }
 
+const ITER_STACK_N_INLINE: usize = 4;
+
+type IterPtrStack<'a, K, V, P> = SmallVec<[IterStackElement<'a, K, V, P>; ITER_STACK_N_INLINE]>;
+
 #[derive(Debug)]
 pub struct IterPtr<'a, K, V, P>
 where
     P: SharedPointerKind,
 {
-    stack: Vec<IterStackElement<'a, K, V, P>>,
+    stack: IterPtrStack<'a, K, V, P>,
     size: usize,
 }
 
@@ -1048,7 +1053,7 @@ where
     P: SharedPointerKind,
 {
     Branch(slice::Iter<'a, SharedPointer<Node<K, V, P>, P>>),
-    LeafCollision(list::Iter<'a, EntryWithHash<K, V, P>, P>),
+    LeafCollision(list::IterPtr<'a, EntryWithHash<K, V, P>, P>),
     LeafSingle(iter::Once<&'a SharedPointer<Entry<K, V>, P>>),
 }
 
@@ -1062,7 +1067,7 @@ where
         match node {
             Node::Branch(children) => IterStackElement::Branch(children.iter()),
             Node::Leaf(Bucket::Collision(entries)) => {
-                IterStackElement::LeafCollision(entries.iter())
+                IterStackElement::LeafCollision(entries.iter_ptr())
             }
             Node::Leaf(Bucket::Single(entry)) => {
                 IterStackElement::LeafSingle(iter::once(&entry.entry))
@@ -1087,25 +1092,13 @@ where
     }
 }
 
-mod iter_utils {
-    use super::HashValue;
-
-    pub fn trie_max_height(degree: u8) -> usize {
-        let bits_per_level = (degree - 1).count_ones() as usize;
-        let hash_bits = HashValue::BITS as usize;
-
-        (hash_bits / bits_per_level) + usize::from(hash_bits % bits_per_level > 0)
-    }
-}
-
 impl<K, V, P> IterPtr<'_, K, V, P>
 where
     K: Eq + Hash,
     P: SharedPointerKind,
 {
     fn new<H: BuildHasher + Clone>(map: &HashTrieMap<K, V, P, H>) -> IterPtr<'_, K, V, P> {
-        let mut stack: Vec<IterStackElement<'_, K, V, P>> =
-            Vec::with_capacity(iter_utils::trie_max_height(map.degree) + 1);
+        let mut stack = IterPtrStack::new();
 
         if map.size() > 0 {
             stack.push(IterStackElement::new(map.root.borrow()));
