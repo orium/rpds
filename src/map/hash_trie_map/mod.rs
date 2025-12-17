@@ -1034,7 +1034,7 @@ where
     }
 }
 
-const ITER_STACK_N_INLINE: usize = iter_utils::trie_max_height(DEFAULT_DEGREE) + 1;
+const ITER_STACK_N_INLINE: usize = 4;
 
 type IterPtrStack<'a, K, V, P> = SmallVec<[IterStackElement<'a, K, V, P>; ITER_STACK_N_INLINE]>;
 
@@ -1089,17 +1089,6 @@ where
             IterStackElement::LeafCollision(i) => i.next().map(|i| Ok(&i.entry)),
             IterStackElement::LeafSingle(i) => i.next().map(Ok),
         }
-    }
-}
-
-mod iter_utils {
-    use super::HashValue;
-
-    pub const fn trie_max_height(degree: u8) -> usize {
-        let bits_per_level = (degree - 1).count_ones() as usize;
-        let hash_bits = HashValue::BITS as usize;
-
-        (hash_bits / bits_per_level) + (hash_bits % bits_per_level > 0) as usize
     }
 }
 
