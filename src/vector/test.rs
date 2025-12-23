@@ -34,19 +34,6 @@ mod node {
     use pretty_assertions::assert_eq;
 
     #[test]
-    fn test_new_empty_branch() {
-        let node: Node<u32> = Node::new_empty_branch();
-
-        match node {
-            Node::Branch(a) => {
-                assert_eq!(a.len(), 0);
-                assert_eq!(a.capacity(), 0, "Capacity of the branch array is wasteful");
-            }
-            Node::Leaf(_) => panic!("Invalid node type"),
-        }
-    }
-
-    #[test]
     fn test_new_empty_leaf() {
         let node: Node<u32> = Node::new_empty_leaf();
 
@@ -62,14 +49,14 @@ mod node {
     #[test]
     fn test_drop_last_single_level() {
         let mut empty_leaf: Node<u32> = Node::new_empty_leaf();
-        let mut empty_branch: Node<u32> = Node::new_empty_branch();
+        let mut empty_branch: Node<u32> = Node::Branch(Vec::new());
         let mut singleton_node: Node<u32> = vector![0].root.as_ref().clone();
         let mut one_level_node: Node<u32> = vector![0, 1].root.as_ref().clone();
 
-        assert!(empty_leaf.drop_last());
-        assert!(empty_branch.drop_last());
-        assert!(singleton_node.drop_last());
-        assert!(!one_level_node.drop_last());
+        assert!(empty_leaf.drop_last(32));
+        assert!(empty_branch.drop_last(32));
+        assert!(singleton_node.drop_last(32));
+        assert!(!one_level_node.drop_last(32));
         assert_eq!(one_level_node.used(), 1);
     }
 
@@ -87,37 +74,556 @@ mod node {
             .clone();
 
         let node_three_after_drop = {
-            let a_leaf = vec![SharedPointer::new(0), SharedPointer::new(1)];
+            let a_leaf0 = vec![SharedPointer::new(0)];
+            let a_leaf1 = vec![SharedPointer::new(1)];
 
-            let leaf = Node::Leaf(a_leaf);
+            let leaf0 = Node::Leaf(a_leaf0);
+            let leaf1 = Node::Leaf(a_leaf1);
 
-            let a_branch = vec![SharedPointer::new(leaf)];
+            let a_branch = vec![(SharedPointer::new(leaf0), 1), (SharedPointer::new(leaf1), 1)];
 
             Node::Branch(a_branch)
         };
 
         let node_four_after_drop = {
-            let a_leaf_0 = vec![SharedPointer::new(0), SharedPointer::new(1)];
+            let a_leaf_0 = vec![SharedPointer::new(0)];
+            let a_leaf_1 = vec![SharedPointer::new(1)];
+            let a_leaf_2 = vec![SharedPointer::new(2)];
 
             let leaf_0 = Node::Leaf(a_leaf_0);
-
-            let a_leaf_1 = {
-                let mut a = Vec::with_capacity(2);
-                a.push(SharedPointer::new(2));
-                a
-            };
-
             let leaf_1 = Node::Leaf(a_leaf_1);
+            let leaf_2 = Node::Leaf(a_leaf_2);
 
-            let a_branch = vec![SharedPointer::new(leaf_0), SharedPointer::new(leaf_1)];
+            let a_branch0 = vec![(SharedPointer::new(leaf_0), 1)];
+            let a_branch1 = vec![(SharedPointer::new(leaf_1), 1), (SharedPointer::new(leaf_2), 1)];
+
+            let branch0 = Node::Branch(a_branch0);
+            let branch1 = Node::Branch(a_branch1);
+
+            let a_branch = vec![(SharedPointer::new(branch0), 1), (SharedPointer::new(branch1), 2)];
 
             Node::Branch(a_branch)
         };
 
-        assert!(!node_three.drop_last());
+        let vector = Vector::<u32>::new_with_bits(1);
+        let limit_len = vector.bucket_len_limit();
+        assert!(!node_three.drop_last(limit_len));
         assert_eq!(node_three, node_three_after_drop);
-        assert!(!node_four.drop_last());
+        assert!(!node_four.drop_last(limit_len));
         assert_eq!(node_four, node_four_after_drop);
+    }
+
+    #[test]
+    fn test_insert_node_internal() {
+        let mut vector: Vector<u32> = Vector::new_with_bits(2)
+            .push_back(0)
+            .push_back(1)
+            .push_back(2)
+            .push_back(3)
+            .push_back(4);
+        let mut vec = vec![0, 1, 2, 3, 4];
+
+        assert!(vector.iter().copied().eq(vec.iter().copied()));
+        assert_eq!(
+            vector.root.as_ref(),
+            &Node::Branch(vec![
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(0),
+                        SharedPointer::new(1),
+                    ])),
+                    2
+                ),
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(2),
+                        SharedPointer::new(3),
+                        SharedPointer::new(4),
+                    ])),
+                    3
+                ),
+            ])
+        );
+
+        // The node does not change due to the insert operation
+        vector.insert_mut(2, 5);
+        vector.insert_mut(2, 6);
+        vec.insert(2, 5);
+        vec.insert(2, 6);
+        assert!(vector.iter().copied().eq(vec.iter().copied()));
+        assert_eq!(
+            vector.root.as_ref(),
+            &Node::Branch(vec![
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(0),
+                        SharedPointer::new(1),
+                        SharedPointer::new(6),
+                        SharedPointer::new(5),
+                    ])),
+                    4
+                ),
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(2),
+                        SharedPointer::new(3),
+                        SharedPointer::new(4),
+                    ])),
+                    3
+                ),
+            ])
+        );
+
+        // The Leaf node is split by the insert operation
+        vector.insert_mut(0, 7);
+        vec.insert(0, 7);
+        assert!(vector.iter().copied().eq(vec.iter().copied()));
+        assert_eq!(
+            vector.root.as_ref(),
+            &Node::Branch(vec![
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(7),
+                        SharedPointer::new(0),
+                    ])),
+                    2
+                ),
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(1),
+                        SharedPointer::new(6),
+                        SharedPointer::new(5),
+                    ])),
+                    3
+                ),
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(2),
+                        SharedPointer::new(3),
+                        SharedPointer::new(4),
+                    ])),
+                    3
+                ),
+            ])
+        );
+
+        // The Leaf node is split by the insert operation
+        vector.insert_mut(8, 8);
+        vector.insert_mut(9, 9);
+        vec.insert(8, 8);
+        vec.insert(9, 9);
+        assert!(vector.iter().copied().eq(vec.iter().copied()));
+        assert_eq!(
+            vector.root.as_ref(),
+            &Node::Branch(vec![
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(7),
+                        SharedPointer::new(0),
+                    ])),
+                    2
+                ),
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(1),
+                        SharedPointer::new(6),
+                        SharedPointer::new(5),
+                    ])),
+                    3
+                ),
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(2),
+                        SharedPointer::new(3),
+                    ])),
+                    2
+                ),
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(4),
+                        SharedPointer::new(8),
+                        SharedPointer::new(9),
+                    ])),
+                    3
+                ),
+            ])
+        );
+
+        // The Leaf node is split by the insert operation, and the Branch node is also split
+        vector.insert_mut(8, 10);
+        vector.insert_mut(8, 11);
+        vec.insert(8, 10);
+        vec.insert(8, 11);
+        assert!(vector.iter().copied().eq(vec.iter().copied()));
+        assert_eq!(
+            vector.root.as_ref(),
+            &Node::Branch(vec![
+                (
+                    SharedPointer::new(Node::Branch(vec![
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(7),
+                                SharedPointer::new(0),
+                            ])),
+                            2
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(1),
+                                SharedPointer::new(6),
+                                SharedPointer::new(5),
+                            ])),
+                            3
+                        ),
+                    ])),
+                    5
+                ),
+                (
+                    SharedPointer::new(Node::Branch(vec![
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(2),
+                                SharedPointer::new(3),
+                            ])),
+                            2
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(4),
+                                SharedPointer::new(11),
+                            ])),
+                            2
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(10),
+                                SharedPointer::new(8),
+                                SharedPointer::new(9),
+                            ])),
+                            3
+                        ),
+                    ])),
+                    7
+                ),
+            ])
+        );
+    }
+
+    #[test]
+    fn test_remove_node_internal() {
+        let mut vector: Vector<u32> = Vector::new_with_bits(2)
+            .push_back(0)
+            .push_back(1)
+            .push_back(4)
+            .push_back(5)
+            .push_back(8)
+            .push_back(9)
+            .push_back(12)
+            .push_back(13)
+            .push_back(16)
+            .push_back(17)
+            .push_back(18)
+            .insert(2, 2)
+            .unwrap()
+            .insert(3, 3)
+            .unwrap()
+            .insert(6, 6)
+            .unwrap()
+            .insert(7, 7)
+            .unwrap()
+            .insert(10, 10)
+            .unwrap()
+            .insert(11, 11)
+            .unwrap()
+            .insert(14, 14)
+            .unwrap()
+            .insert(15, 15)
+            .unwrap()
+            .insert(19, 19)
+            .unwrap();
+        let mut vec = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+
+        assert!(vector.iter().copied().eq(vec.iter().copied()));
+        assert_eq!(
+            vector.root.as_ref(),
+            &Node::Branch(vec![
+                (
+                    SharedPointer::new(Node::Branch(vec![
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(0),
+                                SharedPointer::new(1),
+                                SharedPointer::new(2),
+                                SharedPointer::new(3),
+                            ])),
+                            4
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(4),
+                                SharedPointer::new(5),
+                                SharedPointer::new(6),
+                                SharedPointer::new(7),
+                            ])),
+                            4
+                        ),
+                    ])),
+                    8
+                ),
+                (
+                    SharedPointer::new(Node::Branch(vec![
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(8),
+                                SharedPointer::new(9),
+                                SharedPointer::new(10),
+                                SharedPointer::new(11),
+                            ])),
+                            4
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(12),
+                                SharedPointer::new(13),
+                                SharedPointer::new(14),
+                                SharedPointer::new(15),
+                            ])),
+                            4
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(16),
+                                SharedPointer::new(17),
+                                SharedPointer::new(18),
+                                SharedPointer::new(19),
+                            ])),
+                            4
+                        ),
+                    ])),
+                    12
+                ),
+            ])
+        );
+
+        // The element of the Leaf node moves from right to left due to the remove operation
+        vector.remove_mut(11);
+        vector.remove_mut(10);
+        vector.remove_mut(9);
+        vec.remove(11);
+        vec.remove(10);
+        vec.remove(9);
+        assert!(vector.iter().copied().eq(vec.iter().copied()));
+        assert_eq!(
+            vector.root.as_ref(),
+            &Node::Branch(vec![
+                (
+                    SharedPointer::new(Node::Branch(vec![
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(0),
+                                SharedPointer::new(1),
+                                SharedPointer::new(2),
+                                SharedPointer::new(3),
+                            ])),
+                            4
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(4),
+                                SharedPointer::new(5),
+                                SharedPointer::new(6),
+                                SharedPointer::new(7),
+                            ])),
+                            4
+                        ),
+                    ])),
+                    8
+                ),
+                (
+                    SharedPointer::new(Node::Branch(vec![
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(8),
+                                SharedPointer::new(12),
+                            ])),
+                            2
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(13),
+                                SharedPointer::new(14),
+                                SharedPointer::new(15),
+                            ])),
+                            3
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(16),
+                                SharedPointer::new(17),
+                                SharedPointer::new(18),
+                                SharedPointer::new(19),
+                            ])),
+                            4
+                        ),
+                    ])),
+                    9
+                ),
+            ])
+        );
+
+        // The element of the Leaf node moves from left to right due to the remove operation
+        vector.remove_mut(16);
+        vector.remove_mut(15);
+        vector.remove_mut(14);
+        vec.remove(16);
+        vec.remove(15);
+        vec.remove(14);
+        assert!(vector.iter().copied().eq(vec.iter().copied()));
+        assert_eq!(
+            vector.root.as_ref(),
+            &Node::Branch(vec![
+                (
+                    SharedPointer::new(Node::Branch(vec![
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(0),
+                                SharedPointer::new(1),
+                                SharedPointer::new(2),
+                                SharedPointer::new(3),
+                            ])),
+                            4
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(4),
+                                SharedPointer::new(5),
+                                SharedPointer::new(6),
+                                SharedPointer::new(7),
+                            ])),
+                            4
+                        ),
+                    ])),
+                    8
+                ),
+                (
+                    SharedPointer::new(Node::Branch(vec![
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(8),
+                                SharedPointer::new(12),
+                            ])),
+                            2
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(13),
+                                SharedPointer::new(14),
+                            ])),
+                            2
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(15),
+                                SharedPointer::new(16),
+                            ])),
+                            2
+                        ),
+                    ])),
+                    6
+                ),
+            ])
+        );
+
+        // The Leaf node is merged with the right neighbor due to the remove operation
+        vector.remove_mut(8);
+        vec.remove(8);
+        assert!(vector.iter().copied().eq(vec.iter().copied()));
+        assert_eq!(
+            vector.root.as_ref(),
+            &Node::Branch(vec![
+                (
+                    SharedPointer::new(Node::Branch(vec![
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(0),
+                                SharedPointer::new(1),
+                                SharedPointer::new(2),
+                                SharedPointer::new(3),
+                            ])),
+                            4
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(4),
+                                SharedPointer::new(5),
+                                SharedPointer::new(6),
+                                SharedPointer::new(7),
+                            ])),
+                            4
+                        ),
+                    ])),
+                    8
+                ),
+                (
+                    SharedPointer::new(Node::Branch(vec![
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(12),
+                                SharedPointer::new(13),
+                                SharedPointer::new(14),
+                            ])),
+                            3
+                        ),
+                        (
+                            SharedPointer::new(Node::Leaf(vec![
+                                SharedPointer::new(15),
+                                SharedPointer::new(16),
+                            ])),
+                            2
+                        ),
+                    ])),
+                    5
+                ),
+            ])
+        );
+
+        // The Leaf node is merged with the left neighbor, and the Branch node is also merged due to the remove operation
+        vector.remove_mut(11);
+        vector.remove_mut(11);
+        vec.remove(11);
+        vec.remove(11);
+        assert!(vector.iter().copied().eq(vec.iter().copied()));
+        assert_eq!(
+            vector.root.as_ref(),
+            &Node::Branch(vec![
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(0),
+                        SharedPointer::new(1),
+                        SharedPointer::new(2),
+                        SharedPointer::new(3),
+                    ])),
+                    4
+                ),
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(4),
+                        SharedPointer::new(5),
+                        SharedPointer::new(6),
+                        SharedPointer::new(7),
+                    ])),
+                    4
+                ),
+                (
+                    SharedPointer::new(Node::Leaf(vec![
+                        SharedPointer::new(12),
+                        SharedPointer::new(13),
+                        SharedPointer::new(14),
+                    ])),
+                    3
+                ),
+            ])
+        );
     }
 }
 
@@ -284,48 +790,26 @@ mod internal {
     }
 
     #[test]
-    fn test_height() {
-        assert_eq!(dummy_vector_with_length(0).height(), 0);
-        assert_eq!(dummy_vector_with_length(5).height(), 0);
-        assert_eq!(dummy_vector_with_length(32).height(), 0);
-        assert_eq!(dummy_vector_with_length(33).height(), 1);
-        assert_eq!(dummy_vector_with_length(64).height(), 1);
-        assert_eq!(dummy_vector_with_length(128).height(), 1);
-        assert_eq!(dummy_vector_with_length(512).height(), 1);
-        assert_eq!(dummy_vector_with_length(1024).height(), 1);
-        assert_eq!(dummy_vector_with_length(1025).height(), 2);
-        assert_eq!(dummy_vector_with_length(32_768).height(), 2);
-        assert_eq!(dummy_vector_with_length(32_769).height(), 3);
-        assert_eq!(dummy_vector_with_length(1_048_576).height(), 3);
-        assert_eq!(dummy_vector_with_length(1_048_577).height(), 4);
-    }
-
-    #[test]
-    fn test_mask() {
-        use vector_utils::mask;
-
-        assert_eq!(mask(1), 0b00001);
-        assert_eq!(mask(2), 0b00011);
-        assert_eq!(mask(3), 0b00111);
-        assert_eq!(mask(4), 0b01111);
-        assert_eq!(mask(5), 0b11111);
-    }
-
-    #[allow(clippy::unusual_byte_groupings)]
-    #[test]
-    fn test_bucket() {
-        use vector_utils::bucket;
-
-        assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 0), 0b00001);
-        assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 1), 0b00010);
-        assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 2), 0b00011);
-        assert_eq!(bucket(5, 0b_00100_00011_00010_00001, 3), 0b00100);
+    fn test_estimate_height() {
+        assert_eq!(dummy_vector_with_length(0).estimate_height(), 0);
+        assert_eq!(dummy_vector_with_length(5).estimate_height(), 0);
+        assert_eq!(dummy_vector_with_length(16).estimate_height(), 0);
+        assert_eq!(dummy_vector_with_length(17).estimate_height(), 1);
+        assert_eq!(dummy_vector_with_length(64).estimate_height(), 1);
+        assert_eq!(dummy_vector_with_length(128).estimate_height(), 1);
+        assert_eq!(dummy_vector_with_length(192).estimate_height(), 1);
+        assert_eq!(dummy_vector_with_length(256).estimate_height(), 1);
+        assert_eq!(dummy_vector_with_length(257).estimate_height(), 2);
+        assert_eq!(dummy_vector_with_length(4_096).estimate_height(), 2);
+        assert_eq!(dummy_vector_with_length(4_097).estimate_height(), 3);
+        assert_eq!(dummy_vector_with_length(65_536).estimate_height(), 3);
+        assert_eq!(dummy_vector_with_length(65_537).estimate_height(), 4);
     }
 
     #[test]
     fn test_compress_root() {
         let empty_leaf: Node<u32> = Node::new_empty_leaf();
-        let empty_branch: Node<u32> = Node::new_empty_branch();
+        let empty_branch: Node<u32> = Node::Branch(Vec::new());
         let singleton_leaf: Node<u32> = vector![0].root.as_ref().clone();
         let compressed_branch: Node<u32> =
             Vector::new_with_bits(1).push_back(0).push_back(1).push_back(3).root.as_ref().clone();
@@ -335,7 +819,7 @@ mod internal {
 
             let a_branch = {
                 let mut a = Vec::with_capacity(2);
-                a.push(SharedPointer::new(leaf.clone()));
+                a.push((SharedPointer::new(leaf.clone()), 2));
                 a
             };
 
@@ -350,30 +834,6 @@ mod internal {
             Vector::compress_root(&mut uncompressed_branch.clone()),
             Some(SharedPointer::new(uncompressed_branch_leaf)),
         );
-    }
-
-    #[test]
-    fn test_root_max_capacity() {
-        assert_eq!(dummy_vector_with_length(0).root_max_capacity(), 32);
-        assert_eq!(dummy_vector_with_length(5).root_max_capacity(), 32);
-        assert_eq!(dummy_vector_with_length(32).root_max_capacity(), 32);
-        assert_eq!(dummy_vector_with_length(33).root_max_capacity(), 1024);
-        assert_eq!(dummy_vector_with_length(1024).root_max_capacity(), 1024);
-        assert_eq!(dummy_vector_with_length(1025).root_max_capacity(), 32_768);
-        assert_eq!(dummy_vector_with_length(32_768).root_max_capacity(), 32_768);
-        assert_eq!(dummy_vector_with_length(32_769).root_max_capacity(), 1_048_576);
-    }
-
-    #[test]
-    fn test_is_root_full() {
-        assert!(!dummy_vector_with_length(0).is_root_full());
-        assert!(!dummy_vector_with_length(5).is_root_full());
-        assert!(dummy_vector_with_length(32).is_root_full());
-        assert!(!dummy_vector_with_length(33).is_root_full());
-        assert!(dummy_vector_with_length(1024).is_root_full());
-        assert!(!dummy_vector_with_length(1025).is_root_full());
-        assert!(dummy_vector_with_length(32_768).is_root_full());
-        assert!(!dummy_vector_with_length(32_769).is_root_full());
     }
 }
 
@@ -516,6 +976,52 @@ fn test_set_out_of_bounds() {
 
     assert_eq!(empty_vector.set(0, 0), None);
     assert_eq!(singleton_vector.set(1, 0), None);
+}
+
+#[test]
+fn test_insert() {
+    let limit = 4 * 4 * 4;
+    for base_len in 0..limit {
+        let mut vector: Vector<i32> = Vector::new_with_bits(2);
+        for i in 0..base_len {
+            vector.push_back_mut(i);
+        }
+
+        let vec = (0..base_len).collect::<Vec<_>>();
+
+        for i in 0..=base_len {
+            let vector = vector.insert(i as usize, i).unwrap();
+            let mut vec = vec.clone();
+            vec.insert(i as usize, i);
+
+            assert!(vector.iter().copied().eq(vec));
+        }
+
+        assert!(vector.insert(base_len as usize + 1, 0).is_none());
+    }
+}
+
+#[test]
+fn test_remove() {
+    let limit = 4 * 4 * 4;
+    for base_len in 1..=limit {
+        let mut vector: Vector<i32> = Vector::new_with_bits(2);
+        for i in 0..base_len {
+            vector.push_back_mut(i);
+        }
+
+        let vec = (0..base_len).collect::<Vec<_>>();
+
+        for i in 0..base_len {
+            let vector = vector.remove(i as usize).unwrap();
+            let mut vec = vec.clone();
+            vec.remove(i as usize);
+
+            assert!(vector.iter().copied().eq(vec));
+        }
+
+        assert!(vector.remove(base_len as usize).is_none());
+    }
 }
 
 #[test]
