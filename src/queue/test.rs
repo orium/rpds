@@ -105,16 +105,14 @@ mod iter {
         queue.dequeue_mut();
         queue.enqueue_mut(2);
         queue.enqueue_mut(3);
-        let mut expected = 1;
+
         let mut left = 3;
 
-        for n in &queue {
+        for (expected, n) in (1..).zip(&queue) {
             left -= 1;
 
             assert!(left >= 0);
             assert_eq!(*n, expected);
-
-            expected += 1;
         }
 
         assert_eq!(left, 0);
