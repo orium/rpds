@@ -63,10 +63,13 @@ impl<T> SparseArrayUsize<T> {
         match sparse_array_usize_utils::map_index(self.bitmap, index) {
             Some(i) => self.array[i] = value,
             None => {
-                let new_bitmap = self.bitmap | (1 << index);
-                let i = sparse_array_usize_utils::map_index(new_bitmap, index).unwrap();
+                // The bit at `index` is not set, so the insertion position is
+                // just the popcount of all lower bits — no need to recompute
+                // map_index on the updated bitmap.
+                let mask = (1_usize << index) - 1;
+                let i = (self.bitmap & mask).count_ones() as usize;
 
-                self.bitmap = new_bitmap;
+                self.bitmap |= 1 << index;
                 self.array.insert(i, value);
             }
         }
@@ -91,7 +94,14 @@ impl<T> SparseArrayUsize<T> {
 
 impl<T: Clone> Clone for SparseArrayUsize<T> {
     fn clone(&self) -> SparseArrayUsize<T> {
-        SparseArrayUsize { bitmap: self.bitmap, array: Vec::clone(&self.array) }
+        let len = self.array.len();
+        // Over-allocate by 1 because the common case is cloning to insert a
+        // new element. Cap at the bitmap width so we never allocate more than
+        // the maximum possible number of entries.
+        let cap = core::cmp::min(len + 1, 8 * size_of_val(&self.bitmap));
+        let mut array = Vec::with_capacity(cap);
+        array.extend_from_slice(&self.array);
+        SparseArrayUsize { bitmap: self.bitmap, array }
     }
 }
 
