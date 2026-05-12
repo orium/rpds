@@ -10,17 +10,20 @@ pub struct SparseArrayUsize<T> {
     array: Vec<T>,
 }
 
-mod sparse_array_usize_utils {
-    #[inline]
-    pub fn map_index(bitmap: usize, virtual_index: usize) -> Option<usize> {
-        if bitmap & (1_usize << virtual_index) == 0 {
-            None
-        } else {
-            let mask = (1_usize << virtual_index) - 1;
-
-            Some((bitmap & mask).count_ones() as usize)
-        }
+#[inline(always)]
+fn map_index(bitmap: usize, virtual_index: usize) -> Option<usize> {
+    match bitmap & (1_usize << virtual_index) {
+        0 => None,
+        _ => Some(rank(bitmap, virtual_index)),
     }
+}
+
+/// Returns the number of elements set in indexes preceding `virtual_index`.
+#[inline(always)]
+fn rank(bitmap: usize, virtual_index: usize) -> usize {
+    let mask = (1_usize << virtual_index) - 1;
+
+    (bitmap & mask).count_ones() as usize
 }
 
 impl<T> SparseArrayUsize<T> {
@@ -32,14 +35,14 @@ impl<T> SparseArrayUsize<T> {
     pub fn get(&self, index: usize) -> Option<&T> {
         debug_assert!(index < 8 * size_of_val(&self.bitmap));
 
-        sparse_array_usize_utils::map_index(self.bitmap, index).map(|i| &self.array[i])
+        map_index(self.bitmap, index).map(|i| &self.array[i])
     }
 
     #[inline]
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         debug_assert!(index < 8 * size_of_val(&self.bitmap));
 
-        sparse_array_usize_utils::map_index(self.bitmap, index).map(move |i| &mut self.array[i])
+        map_index(self.bitmap, index).map(move |i| &mut self.array[i])
     }
 
     #[inline]
@@ -60,14 +63,10 @@ impl<T> SparseArrayUsize<T> {
     pub fn set(&mut self, index: usize, value: T) {
         debug_assert!(index < 8 * size_of_val(&self.bitmap));
 
-        match sparse_array_usize_utils::map_index(self.bitmap, index) {
+        match map_index(self.bitmap, index) {
             Some(i) => self.array[i] = value,
             None => {
-                // The bit at `index` is not set, so the insertion position is
-                // just the popcount of all lower bits — no need to recompute
-                // map_index on the updated bitmap.
-                let mask = (1_usize << index) - 1;
-                let i = (self.bitmap & mask).count_ones() as usize;
+                let i = rank(self.bitmap, index);
 
                 self.bitmap |= 1 << index;
                 self.array.insert(i, value);
@@ -76,7 +75,7 @@ impl<T> SparseArrayUsize<T> {
     }
 
     pub fn remove(&mut self, index: usize) {
-        if let Some(i) = sparse_array_usize_utils::map_index(self.bitmap, index) {
+        if let Some(i) = map_index(self.bitmap, index) {
             self.bitmap ^= 1 << index;
             self.array.remove(i);
         }

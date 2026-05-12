@@ -103,25 +103,25 @@ fn test_pop() {
 #[test]
 fn test_map_index() {
     for i in 0..(usize::BITS as usize) {
-        assert_eq!(sparse_array_usize_utils::map_index(0, i), None);
+        assert_eq!(map_index(0, i), None);
     }
 
     let bitmap: usize = 0b_1110_0100_0101;
 
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 0), Some(0));
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 1), None);
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 2), Some(1));
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 3), None);
+    assert_eq!(map_index(bitmap, 0), Some(0));
+    assert_eq!(map_index(bitmap, 1), None);
+    assert_eq!(map_index(bitmap, 2), Some(1));
+    assert_eq!(map_index(bitmap, 3), None);
 
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 4), None);
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 5), None);
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 6), Some(2));
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 7), None);
+    assert_eq!(map_index(bitmap, 4), None);
+    assert_eq!(map_index(bitmap, 5), None);
+    assert_eq!(map_index(bitmap, 6), Some(2));
+    assert_eq!(map_index(bitmap, 7), None);
 
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 8), None);
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 9), Some(3));
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 10), Some(4));
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 11), Some(5));
+    assert_eq!(map_index(bitmap, 8), None);
+    assert_eq!(map_index(bitmap, 9), Some(3));
+    assert_eq!(map_index(bitmap, 10), Some(4));
+    assert_eq!(map_index(bitmap, 11), Some(5));
 
-    assert_eq!(sparse_array_usize_utils::map_index(bitmap, 12), None);
+    assert_eq!(map_index(bitmap, 12), None);
 }

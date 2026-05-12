@@ -55,6 +55,7 @@ pedantic = { level = "warn", priority = -2 }
 
 enum-glob-use = "allow"
 if-not-else = "allow"
+inline_always = "allow"
 match-bool = "allow"
 match-same-arms = "allow"
 missing-panics-doc = "allow"
