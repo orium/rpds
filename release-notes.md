@@ -1,5 +1,11 @@
 # Release notes
 
+## 1.2.1
+
+* Improved the performance of the `HashTrie{Map,Set}`.
+* Improved the performance of the `HashTrie{Map,Set}` iterator.
+* Updated dependencies.
+
 ## 1.2.0
 
 * Added parallel iterator support for `HashTrieMapSync`.
