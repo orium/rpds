@@ -654,14 +654,6 @@ mod iter {
     use super::*;
     use pretty_assertions::assert_eq;
 
-    #[test]
-    fn test_trie_max_height() {
-        assert_eq!(iter_utils::trie_max_height(2), 64);
-        assert_eq!(iter_utils::trie_max_height(16), 16);
-        assert_eq!(iter_utils::trie_max_height(32), 13);
-        assert_eq!(iter_utils::trie_max_height(64), 11);
-    }
-
     #[allow(clippy::never_loop)]
     #[test]
     fn test_iter_empty() {

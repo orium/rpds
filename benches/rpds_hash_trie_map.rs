@@ -1,3 +1,5 @@
+#![allow(clippy::cast_possible_wrap)]
+
 use criterion::{Criterion, criterion_group, criterion_main};
 use rpds::HashTrieMap;
 use std::hint::black_box;
@@ -100,6 +102,7 @@ fn rpds_hash_trie_map_get(c: &mut Criterion) {
         });
     });
 }
+
 fn rpds_hash_trie_map_iterate_impl(c: &mut Criterion, limit: usize, bench_name: &str) {
     let mut map = HashTrieMap::new();
 
