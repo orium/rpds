@@ -20,22 +20,14 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - name: Install rust (stable)
+      - name: Install rust
         uses: dtolnay/rust-toolchain@stable
-
-      # cargo-rdme needs nightly.
-      - name: Install rust (nightly)
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: nightly
-
-      - name: Use stable rust for the build
-        run: rustup default stable
 
       - name: Install cargo plugins
         run: |
           cargo install cargo-hack
           cargo install cargo-rdme
+          cargo rdme install-rust-toolchain-for-intralinks
           cargo install cargo-machete
           cargo install taplo-cli
           cargo install cargo-deadlinks
