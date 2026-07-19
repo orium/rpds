@@ -611,9 +611,9 @@ fn test_eq_pointer_kind_consistent() {
     let vector_b = vector!["b"];
     let vector_b_sync = vector_sync!["b"];
 
-    assert!(vector_a == vector_a_sync);
-    assert!(vector_a != vector_b_sync);
-    assert!(vector_b == vector_b_sync);
+    assert_eq!(vector_a, vector_a_sync);
+    assert_ne!(vector_a, vector_b_sync);
+    assert_eq!(vector_b, vector_b_sync);
 }
 
 #[test]

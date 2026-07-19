@@ -362,9 +362,9 @@ fn test_eq_pointer_kind_consistent() {
     let set_b = rbt_set!["b"];
     let set_b_sync = rbt_set_sync!["b"];
 
-    assert!(set_a == set_a_sync);
-    assert!(set_a != set_b_sync);
-    assert!(set_b == set_b_sync);
+    assert_eq!(set_a, set_a_sync);
+    assert_ne!(set_a, set_b_sync);
+    assert_eq!(set_b, set_b_sync);
 }
 
 #[test]

@@ -335,9 +335,9 @@ fn test_eq_pointer_kind_consistent() {
     let queue_b = queue!["b"];
     let queue_b_sync = queue_sync!["b"];
 
-    assert!(queue_a == queue_a_sync);
-    assert!(queue_a != queue_b_sync);
-    assert!(queue_b == queue_b_sync);
+    assert_eq!(queue_a, queue_a_sync);
+    assert_ne!(queue_a, queue_b_sync);
+    assert_eq!(queue_b, queue_b_sync);
 }
 
 #[test]

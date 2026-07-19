@@ -1212,9 +1212,9 @@ fn test_eq_pointer_kind_consistent() {
     let map_b = ht_map!["b" => 1];
     let map_b_sync = ht_map_sync!["b" => 1];
 
-    assert!(map_a == map_a_sync);
-    assert!(map_a != map_b_sync);
-    assert!(map_b == map_b_sync);
+    assert_eq!(map_a, map_a_sync);
+    assert_ne!(map_a, map_b_sync);
+    assert_eq!(map_b, map_b_sync);
 }
 
 #[test]

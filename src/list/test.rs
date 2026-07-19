@@ -242,9 +242,9 @@ fn test_eq_pointer_kind_consistent() {
     let list_b = list!["b"];
     let list_b_sync = list_sync!["b"];
 
-    assert!(list_a == list_a_sync);
-    assert!(list_a != list_b_sync);
-    assert!(list_b == list_b_sync);
+    assert_eq!(list_a, list_a_sync);
+    assert_ne!(list_a, list_b_sync);
+    assert_eq!(list_b, list_b_sync);
 }
 
 #[test]

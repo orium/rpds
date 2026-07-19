@@ -172,9 +172,9 @@ fn test_eq_pointer_kind_consistent() {
     let stack_b = stack!["b"];
     let stack_b_sync = stack_sync!["b"];
 
-    assert!(stack_a == stack_a_sync);
-    assert!(stack_a != stack_b_sync);
-    assert!(stack_b == stack_b_sync);
+    assert_eq!(stack_a, stack_a_sync);
+    assert_ne!(stack_a, stack_b_sync);
+    assert_eq!(stack_b, stack_b_sync);
 }
 
 #[test]
