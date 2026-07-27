@@ -388,6 +388,12 @@ fn test_macro_vector() {
 }
 
 #[test]
+#[should_panic(expected = "less than the pointer width")]
+fn test_new_with_bits_rejects_pointer_width() {
+    let _ = Vector::<i32>::new_with_bits(usize::BITS as u8);
+}
+
+#[test]
 fn test_push_back_adds_element() {
     let limit = 32 * 32 * 32 + 1;
     let mut vector: Vector<i32> = Vector::new();

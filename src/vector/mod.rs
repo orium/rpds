@@ -294,6 +294,10 @@ where
     #[must_use]
     pub fn new_with_bits(bits: u8) -> Vector<T, P> {
         assert!(bits > 0, "number of bits for the vector must be positive");
+        assert!(
+            u32::from(bits) < usize::BITS,
+            "number of bits for the vector must be less than the pointer width"
+        );
 
         Vector { root: SharedPointer::new(Node::new_empty_leaf()), bits, length: 0 }
     }
