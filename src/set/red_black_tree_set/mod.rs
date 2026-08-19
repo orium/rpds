@@ -186,6 +186,50 @@ where
     }
 
     #[must_use]
+    pub fn pop_first(&self) -> Option<(RedBlackTreeSet<T, P>, T)>
+    where
+        T: Clone,
+    {
+        let first = self.first()?.clone();
+        let new_set = self.remove(&first);
+
+        Some((new_set, first))
+    }
+
+    pub fn pop_first_mut(&mut self) -> Option<T>
+    where
+        T: Clone,
+    {
+        let first = self.first()?.clone();
+
+        self.remove_mut(&first);
+
+        Some(first)
+    }
+
+    #[must_use]
+    pub fn pop_last(&self) -> Option<(RedBlackTreeSet<T, P>, T)>
+    where
+        T: Clone,
+    {
+        let last = self.last()?.clone();
+        let new_set = self.remove(&last);
+
+        Some((new_set, last))
+    }
+
+    pub fn pop_last_mut(&mut self) -> Option<T>
+    where
+        T: Clone,
+    {
+        let last = self.last()?.clone();
+
+        self.remove_mut(&last);
+
+        Some(last)
+    }
+
+    #[must_use]
     pub fn is_disjoint<PO>(&self, other: &RedBlackTreeSet<T, PO>) -> bool
     where
         PO: SharedPointerKind,

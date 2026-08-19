@@ -188,6 +188,98 @@ fn test_last() {
 }
 
 #[test]
+fn test_pop_first() {
+    let empty_set: RedBlackTreeSet<i32> = RedBlackTreeSet::new();
+
+    assert_eq!(empty_set.pop_first(), None);
+
+    let set = rbt_set![3, 1, 2];
+
+    let (rest, first) = set.pop_first().unwrap();
+
+    assert_eq!(first, 1);
+    assert_eq!(rest, rbt_set![2, 3]);
+    // The original set is untouched.
+    assert_eq!(set, rbt_set![1, 2, 3]);
+
+    let (rest, first) = rest.pop_first().unwrap();
+    assert_eq!(first, 2);
+    assert_eq!(rest, rbt_set![3]);
+
+    let (rest, first) = rest.pop_first().unwrap();
+    assert_eq!(first, 3);
+    assert!(rest.is_empty());
+
+    assert_eq!(rest.pop_first(), None);
+}
+
+#[test]
+fn test_pop_first_mut() {
+    let mut empty_set: RedBlackTreeSet<i32> = RedBlackTreeSet::new();
+
+    assert_eq!(empty_set.pop_first_mut(), None);
+
+    let mut set = rbt_set![3, 1, 2];
+
+    assert_eq!(set.pop_first_mut(), Some(1));
+    assert_eq!(set, rbt_set![2, 3]);
+
+    assert_eq!(set.pop_first_mut(), Some(2));
+    assert_eq!(set, rbt_set![3]);
+
+    assert_eq!(set.pop_first_mut(), Some(3));
+    assert!(set.is_empty());
+
+    assert_eq!(set.pop_first_mut(), None);
+}
+
+#[test]
+fn test_pop_last() {
+    let empty_set: RedBlackTreeSet<i32> = RedBlackTreeSet::new();
+
+    assert_eq!(empty_set.pop_last(), None);
+
+    let set = rbt_set![3, 1, 2];
+
+    let (rest, last) = set.pop_last().unwrap();
+
+    assert_eq!(last, 3);
+    assert_eq!(rest, rbt_set![1, 2]);
+    // The original set is untouched.
+    assert_eq!(set, rbt_set![1, 2, 3]);
+
+    let (rest, last) = rest.pop_last().unwrap();
+    assert_eq!(last, 2);
+    assert_eq!(rest, rbt_set![1]);
+
+    let (rest, last) = rest.pop_last().unwrap();
+    assert_eq!(last, 1);
+    assert!(rest.is_empty());
+
+    assert_eq!(rest.pop_last(), None);
+}
+
+#[test]
+fn test_pop_last_mut() {
+    let mut empty_set: RedBlackTreeSet<i32> = RedBlackTreeSet::new();
+
+    assert_eq!(empty_set.pop_last_mut(), None);
+
+    let mut set = rbt_set![3, 1, 2];
+
+    assert_eq!(set.pop_last_mut(), Some(3));
+    assert_eq!(set, rbt_set![1, 2]);
+
+    assert_eq!(set.pop_last_mut(), Some(2));
+    assert_eq!(set, rbt_set![1]);
+
+    assert_eq!(set.pop_last_mut(), Some(1));
+    assert!(set.is_empty());
+
+    assert_eq!(set.pop_last_mut(), None);
+}
+
+#[test]
 fn test_remove() {
     let mut set = rbt_set!["foo", "bar", "mumble", "baz"];
     let empty_set: RedBlackTreeSet<i32> = RedBlackTreeSet::new();
