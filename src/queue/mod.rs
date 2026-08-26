@@ -6,6 +6,7 @@ use core::cmp::Ordering;
 use core::fmt::Display;
 use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
+use core::iter::FusedIterator;
 
 // TODO Use impl trait instead of this when available.
 type IterPtr<'a, T, P> =
@@ -362,6 +363,8 @@ where
 }
 
 impl<T, P> ExactSizeIterator for LazilyReversedListIter<'_, T, P> where P: SharedPointerKind {}
+
+impl<T, P> FusedIterator for LazilyReversedListIter<'_, T, P> where P: SharedPointerKind {}
 
 #[cfg(feature = "serde")]
 pub mod serde {

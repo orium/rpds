@@ -5,6 +5,10 @@ use pretty_assertions::assert_eq;
 use static_assertions::assert_impl_all;
 
 assert_impl_all!(RedBlackTreeSetSync<i32>: Send, Sync);
+assert_impl_all!(Iter<'static, i32, archery::RcK>: core::iter::FusedIterator);
+assert_impl_all!(
+    RangeIter<'static, i32, core::ops::RangeFull, i32, archery::RcK>: core::iter::FusedIterator
+);
 
 #[allow(dead_code)]
 fn compile_time_macro_red_black_tree_set_sync_is_send_and_sync() -> impl Send + Sync {
@@ -44,6 +48,18 @@ mod iter {
         }
 
         assert!(touched.iter().all(|b| *b));
+    }
+
+    #[test]
+    fn test_iter_is_fused() {
+        let set = rbt_set![0, 1];
+        let mut iterator = set.iter();
+
+        assert_eq!(iterator.next(), Some(&0));
+        assert_eq!(iterator.next(), Some(&1));
+        assert_eq!(iterator.next(), None);
+        assert_eq!(iterator.next(), None);
+        assert_eq!(iterator.next(), None);
     }
 
     #[test]

@@ -5,6 +5,7 @@ use archery::*;
 use core::cmp::Ordering;
 use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
+use core::iter::FusedIterator;
 use core::ops::Index;
 use core::ops::IndexMut;
 
@@ -848,6 +849,8 @@ where
 }
 
 impl<T, P> ExactSizeIterator for IterPtr<'_, T, P> where P: SharedPointerKind {}
+
+impl<T, P> FusedIterator for IterPtr<'_, T, P> where P: SharedPointerKind {}
 
 #[cfg(feature = "serde")]
 pub mod serde {

@@ -5,6 +5,7 @@ use core::cmp::Ordering;
 use core::fmt::Display;
 use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
+use core::iter::FusedIterator;
 
 // TODO Use impl trait instead of this when available.
 pub type Iter<'a, T, P> = core::iter::Map<IterPtr<'a, T, P>, fn(&SharedPointer<T, P>) -> &T>;
@@ -461,6 +462,8 @@ where
 }
 
 impl<T, P> ExactSizeIterator for IterPtr<'_, T, P> where P: SharedPointerKind {}
+
+impl<T, P> FusedIterator for IterPtr<'_, T, P> where P: SharedPointerKind {}
 
 #[cfg(feature = "serde")]
 pub mod serde {

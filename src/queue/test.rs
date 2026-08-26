@@ -3,6 +3,7 @@ use pretty_assertions::assert_eq;
 use static_assertions::assert_impl_all;
 
 assert_impl_all!(QueueSync<i32>: Send, Sync);
+assert_impl_all!(Iter<'static, i32, archery::RcK>: core::iter::FusedIterator);
 
 #[allow(dead_code)]
 fn compile_time_macro_queue_sync_is_send_and_sync() -> impl Send + Sync {
@@ -69,6 +70,20 @@ mod iter {
         assert_eq!(iterator.next(), Some(&1));
         assert_eq!(iterator.next(), Some(&2));
         assert_eq!(iterator.next(), Some(&3));
+        assert_eq!(iterator.next(), None);
+    }
+
+    #[test]
+    fn test_iter_is_fused() {
+        let mut queue = Queue::new();
+        queue.enqueue_mut(0);
+        queue.enqueue_mut(1);
+        let mut iterator = queue.iter();
+
+        assert_eq!(iterator.next(), Some(&0));
+        assert_eq!(iterator.next(), Some(&1));
+        assert_eq!(iterator.next(), None);
+        assert_eq!(iterator.next(), None);
         assert_eq!(iterator.next(), None);
     }
 

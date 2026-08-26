@@ -14,6 +14,7 @@ use core::hash::BuildHasher;
 use core::hash::Hash;
 use core::iter;
 use core::iter::FromIterator;
+use core::iter::FusedIterator;
 use core::ops::Index;
 use core::slice;
 use smallvec::SmallVec;
@@ -1140,6 +1141,8 @@ where
 }
 
 impl<K: Eq + Hash, V, P> ExactSizeIterator for IterPtr<'_, K, V, P> where P: SharedPointerKind {}
+
+impl<K: Eq + Hash, V, P> FusedIterator for IterPtr<'_, K, V, P> where P: SharedPointerKind {}
 
 #[cfg(feature = "serde")]
 pub mod serde {
