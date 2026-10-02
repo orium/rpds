@@ -18,7 +18,7 @@ pub type RangeIter<'a, K, V, RB, Q, P> = core::iter::Map<
     fn(&'a SharedPointer<Entry<K, V>, P>) -> (&'a K, &'a V),
 >;
 
-/// Creates a [`RedBlackTreeMap`](crate::RedBlackTreeMap) containing the given arguments:
+/// Creates a [`RedBlackTreeMap`] containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -44,8 +44,7 @@ macro_rules! rbt_map {
     };
 }
 
-/// Creates a [`RedBlackTreeMap`](crate::RedBlackTreeMap) that implements `Sync`, containing the
-/// given arguments:
+/// Creates a [`RedBlackTreeMap`] that implements `Sync`, containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;

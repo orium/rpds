@@ -8,7 +8,7 @@ use core::iter::FromIterator;
 // TODO Use impl trait for return value when available
 pub type Iter<'a, T, P> = crate::list::Iter<'a, T, P>;
 
-/// Creates a [`Stack`](crate::Stack) containing the given arguments:
+/// Creates a [`Stack`] containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -34,7 +34,7 @@ macro_rules! stack {
     };
 }
 
-/// Creates a [`Stack`](crate::Stack) that implements `Sync`, containing the given arguments:
+/// Creates a [`Stack`] that implements `Sync`, containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -86,7 +86,7 @@ macro_rules! stack_sync {
 ///
 /// # Implementation details
 ///
-/// This is a thin wrapper around a [`List`](crate::List).
+/// This is a thin wrapper around a [`List`].
 #[derive(Debug)]
 pub struct Stack<T, P = RcK>
 where

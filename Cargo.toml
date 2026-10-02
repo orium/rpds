@@ -71,11 +71,6 @@ unnested_or_patterns = "allow"
 use_self = "allow"
 wildcard_imports = "allow"
 
-[lints.rustdoc]
-# TODO This is only needed because `cargo-rdme` requires a path like `crate::⋯`. Once that limitation is lifted we
-#      can remove this.
-redundant_explicit_links = "allow"
-
 [package.metadata.docs.rs]
 features = ["serde"]
 

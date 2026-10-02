@@ -26,7 +26,7 @@
 //!   8. [`RedBlackTreeSet`](#redblacktreeset)
 //!
 //! ## `List`
-//! [![List documentation](https://img.shields.io/badge/doc-List-303070.svg)](crate::list::List)
+//! [![List documentation](https://img.shields.io/badge/doc-List-303070.svg)](List)
 //!
 //! Your classic functional list.
 //!
@@ -49,7 +49,7 @@
 //! ```
 //!
 //! ## `Vector`
-//! [![`Vector` documentation](https://img.shields.io/badge/doc-Vector-303070.svg)](crate::vector::Vector)
+//! [![`Vector` documentation](https://img.shields.io/badge/doc-Vector-303070.svg)](Vector)
 //!
 //! A sequence that can be indexed. The implementation is described in
 //! [Understanding Persistent Vector Part 1](http://hypirion.com/musings/understanding-persistent-vector-pt-1)
@@ -75,7 +75,7 @@
 //! ```
 //!
 //! ## `Stack`
-//! [![`Stack` documentation](https://img.shields.io/badge/doc-Stack-303070.svg)](crate::stack::Stack)
+//! [![`Stack` documentation](https://img.shields.io/badge/doc-Stack-303070.svg)](Stack)
 //!
 //! A LIFO (last in, first out) data structure. This is just a [`List`](#list) in disguise.
 //!
@@ -98,7 +98,7 @@
 //! ```
 //!
 //! ## `Queue`
-//! [![`Queue` documentation](https://img.shields.io/badge/doc-Queue-303070.svg)](crate::queue::Queue)
+//! [![`Queue` documentation](https://img.shields.io/badge/doc-Queue-303070.svg)](Queue)
 //!
 //! A FIFO (first in, first out) data structure.
 //!
@@ -120,7 +120,7 @@
 //! ```
 //!
 //! ## `HashTrieMap`
-//! [![`HashTrieMap` documentation](https://img.shields.io/badge/doc-HashTrieMap-303070.svg)](crate::map::hash_trie_map::HashTrieMap)
+//! [![`HashTrieMap` documentation](https://img.shields.io/badge/doc-HashTrieMap-303070.svg)](HashTrieMap)
 //!
 //! A map implemented with a [hash array mapped trie](https://en.wikipedia.org/wiki/Hash_array_mapped_trie).
 //! See [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf) for
@@ -149,7 +149,7 @@
 //! ```
 //!
 //! ## `HashTrieSet`
-//! [![`HashTrieSet` documentation](https://img.shields.io/badge/doc-HashTrieSet-303070.svg)](crate::set::hash_trie_set::HashTrieSet)
+//! [![`HashTrieSet` documentation](https://img.shields.io/badge/doc-HashTrieSet-303070.svg)](HashTrieSet)
 //!
 //! A set implemented with a [`HashTrieMap`](#hashtriemap).
 //!
@@ -174,7 +174,7 @@
 //! ```
 //!
 //! ## `RedBlackTreeMap`
-//! [![`RedBlackTreeMap` documentation](https://img.shields.io/badge/doc-RedBlackTreeMap-303070.svg)](crate::map::red_black_tree_map::RedBlackTreeMap)
+//! [![`RedBlackTreeMap` documentation](https://img.shields.io/badge/doc-RedBlackTreeMap-303070.svg)](RedBlackTreeMap)
 //!
 //! A map implemented with a [red-black tree](https://en.wikipedia.org/wiki/Red-Black_tree).
 //!
@@ -203,7 +203,7 @@
 //! ```
 //!
 //! ## `RedBlackTreeSet`
-//! [![`RedBlackTreeSet` documentation](https://img.shields.io/badge/doc-RedBlackTreeSet-303070.svg)](crate::set::red_black_tree_set::RedBlackTreeSet)
+//! [![`RedBlackTreeSet` documentation](https://img.shields.io/badge/doc-RedBlackTreeSet-303070.svg)](RedBlackTreeSet)
 //!
 //! A set implemented with a [`RedBlackTreeMap`](#redblacktreemap).
 //!
@@ -329,8 +329,8 @@
 //!
 //! ## Parallel iterator support
 //!
-//! [`HashTrieMap`](crate::map::hash_trie_map::HashTrieMap) supports parallel iterator with
-//! [rayon](https://crates.io/crates/rayon). To use them you need to enable the `rayon` feature.
+//! [`HashTrieMap`] supports parallel iterator with [rayon](https://crates.io/crates/rayon). To use
+//! them you need to enable the `rayon` feature.
 //!
 //! ## Serialization
 //!

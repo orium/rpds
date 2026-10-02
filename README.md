@@ -334,8 +334,8 @@ rpds = { version = "<version>", default-features = false }
 
 ### Parallel iterator support
 
-[`HashTrieMap`](https://docs.rs/rpds/latest/rpds/map/hash_trie_map/struct.HashTrieMap.html) supports parallel iterator with
-[rayon](https://crates.io/crates/rayon). To use them you need to enable the `rayon` feature.
+[`HashTrieMap`](https://docs.rs/rpds/latest/rpds/map/hash_trie_map/struct.HashTrieMap.html) supports parallel iterator with [rayon](https://crates.io/crates/rayon). To use
+them you need to enable the `rayon` feature.
 
 ### Serialization
 

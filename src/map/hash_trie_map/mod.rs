@@ -30,7 +30,7 @@ pub type IterValues<'a, K, V, P> = iter::Map<Iter<'a, K, V, P>, fn((&K, &'a V)) 
 #[allow(clippy::cast_possible_truncation)]
 const DEFAULT_DEGREE: u8 = usize::BITS as u8;
 
-/// Creates a [`HashTrieMap`](crate::HashTrieMap) containing the given arguments:
+/// Creates a [`HashTrieMap`] containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -56,8 +56,7 @@ macro_rules! ht_map {
     };
 }
 
-/// Creates a [`HashTrieMap`](crate::HashTrieMap) that implements `Sync`, containing the given
-/// arguments:
+/// Creates a [`HashTrieMap`] that implements `Sync`, containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;

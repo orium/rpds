@@ -13,7 +13,7 @@ pub type Iter<'a, T, P> = red_black_tree_map::IterKeys<'a, T, (), P>;
 pub type RangeIter<'a, T, RB, Q, P> =
     core::iter::Map<red_black_tree_map::RangeIter<'a, T, (), RB, Q, P>, fn((&'a T, &())) -> &'a T>;
 
-/// Creates a [`RedBlackTreeSet`](crate::RedBlackTreeSet) containing the given arguments:
+/// Creates a [`RedBlackTreeSet`] containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -39,7 +39,7 @@ macro_rules! rbt_set {
     };
 }
 
-/// Creates a [`RedBlackTreeSet`](crate::RedBlackTreeSet) containing the given arguments:
+/// Creates a [`RedBlackTreeSet`] containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -89,7 +89,7 @@ macro_rules! rbt_set_sync {
 ///
 /// # Implementation details
 ///
-/// This is a thin wrapper around a [`RedBlackTreeMap`](crate::RedBlackTreeMap).
+/// This is a thin wrapper around a [`RedBlackTreeMap`].
 #[derive(Debug)]
 pub struct RedBlackTreeSet<T, P = RcK>
 where

@@ -36,7 +36,7 @@ macro_rules! list_reverse {
     };
 }
 
-/// Creates a [`List`](crate::List) containing the given arguments:
+/// Creates a [`List`] containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -55,7 +55,7 @@ macro_rules! list {
     };
 }
 
-/// Creates a [`List`](crate::List) that implements `Sync`, containing the given arguments:
+/// Creates a [`List`] that implements `Sync`, containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;

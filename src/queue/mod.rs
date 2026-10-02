@@ -12,7 +12,7 @@ type IterPtr<'a, T, P> =
     core::iter::Chain<crate::list::IterPtr<'a, T, P>, LazilyReversedListIter<'a, T, P>>;
 pub type Iter<'a, T, P> = core::iter::Map<IterPtr<'a, T, P>, fn(&SharedPointer<T, P>) -> &T>;
 
-/// Creates a [`Queue`](crate::Queue) containing the given arguments:
+/// Creates a [`Queue`] containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -38,7 +38,7 @@ macro_rules! queue {
     };
 }
 
-/// Creates a [`Queue`](crate::Queue) that implements `Sync`, containing the given arguments:
+/// Creates a [`Queue`] that implements `Sync`, containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;

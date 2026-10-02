@@ -13,7 +13,7 @@ pub type Iter<'a, T, P> = core::iter::Map<IterPtr<'a, T, P>, fn(&SharedPointer<T
 
 const DEFAULT_BITS: u8 = 5;
 
-/// Creates a [`Vector`](crate::Vector) containing the given arguments:
+/// Creates a [`Vector`] containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
@@ -39,7 +39,7 @@ macro_rules! vector {
     };
 }
 
-/// Creates a [`Vector`](crate::Vector) that implements `Sync`, containing the given arguments:
+/// Creates a [`Vector`] that implements `Sync`, containing the given arguments:
 ///
 /// ```
 /// # use rpds::*;
