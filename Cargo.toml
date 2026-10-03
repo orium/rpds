@@ -7,7 +7,6 @@ authors = ["Diogo Sousa <diogogsousa@gmail.com>"]
 edition = "2024"
 rust-version = "1.85.0"
 
-homepage = "https://github.com/orium/rpds"
 repository = "https://github.com/orium/rpds"
 documentation = "https://docs.rs/rpds"
 readme = "README.md"
