@@ -8,6 +8,10 @@ use pretty_assertions::assert_eq;
 use static_assertions::assert_impl_all;
 
 assert_impl_all!(RedBlackTreeMapSync<i32, i32>: Send, Sync);
+assert_impl_all!(Iter<'static, i32, i32, archery::RcK>: core::iter::FusedIterator);
+assert_impl_all!(
+    RangeIter<'static, i32, i32, core::ops::RangeFull, i32, archery::RcK>: core::iter::FusedIterator
+);
 
 #[allow(dead_code)]
 fn compile_time_macro_red_black_tree_map_sync_is_send_and_sync() -> impl Send + Sync {
@@ -1231,6 +1235,18 @@ mod iter {
     }
 
     #[test]
+    fn test_iter_is_fused() {
+        let map = rbt_map![0 => 10, 1 => 11];
+        let mut iterator = map.iter();
+
+        assert_eq!(iterator.next(), Some((&0, &10)));
+        assert_eq!(iterator.next(), Some((&1, &11)));
+        assert_eq!(iterator.next(), None);
+        assert_eq!(iterator.next(), None);
+        assert_eq!(iterator.next(), None);
+    }
+
+    #[test]
     fn test_iter_size_hint() {
         let map = rbt_map![
             0 => 10,
@@ -1355,6 +1371,23 @@ mod iter {
         cmp(&map, ..3, &[(0, 0), (1, 2), (2, 4)]);
 
         cmp(&map, (Excluded(1), Included(3)), &[(2, 4), (3, 6)]);
+    }
+
+    #[test]
+    fn test_range_is_fused() {
+        let map = rbt_map![
+            0 => 0,
+            1 => 2,
+            2 => 4,
+            3 => 6
+        ];
+        let mut iterator = map.range(1..3);
+
+        assert_eq!(iterator.next(), Some((&1, &2)));
+        assert_eq!(iterator.next(), Some((&2, &4)));
+        assert_eq!(iterator.next(), None);
+        assert_eq!(iterator.next(), None);
+        assert_eq!(iterator.next(), None);
     }
 
     #[test]

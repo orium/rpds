@@ -7,6 +7,7 @@ use pretty_assertions::assert_eq;
 use static_assertions::assert_impl_all;
 
 assert_impl_all!(HashTrieMapSync<i32, i32>: Send, Sync);
+assert_impl_all!(Iter<'static, i32, i32, archery::RcK>: core::iter::FusedIterator);
 
 #[allow(dead_code)]
 fn compile_time_macro_hash_trie_map_sync_is_send_and_sync() -> impl Send + Sync {
@@ -708,6 +709,18 @@ mod iter {
             let hasher = hasher_mocks::LimitedHashSpaceHashBuilder::new(1000);
             iterator_test(HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(hasher, degree));
         }
+    }
+
+    #[test]
+    fn test_iter_is_fused() {
+        let map = ht_map![0 => 10, 1 => 11];
+        let mut iterator = map.iter();
+
+        assert!(iterator.next().is_some());
+        assert!(iterator.next().is_some());
+        assert_eq!(iterator.next(), None);
+        assert_eq!(iterator.next(), None);
+        assert_eq!(iterator.next(), None);
     }
 
     #[test]

@@ -5,6 +5,7 @@ use core::cmp::Ordering;
 use core::fmt::Display;
 use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
+use core::iter::FusedIterator;
 use core::marker::PhantomData;
 use core::ops::{Index, RangeBounds, RangeFull};
 
@@ -1362,6 +1363,8 @@ where
 
 impl<K: Ord, V, P> ExactSizeIterator for IterPtr<'_, K, V, P> where P: SharedPointerKind {}
 
+impl<K: Ord, V, P> FusedIterator for IterPtr<'_, K, V, P> where P: SharedPointerKind {}
+
 #[derive(Debug)]
 pub struct RangeIterPtr<'a, K, V, RB, Q: ?Sized, P>
 where
@@ -1480,6 +1483,15 @@ where
 
         current
     }
+}
+
+impl<K, V, RB, Q, P> FusedIterator for RangeIterPtr<'_, K, V, RB, Q, P>
+where
+    K: Ord + Borrow<Q>,
+    Q: Ord + ?Sized,
+    RB: RangeBounds<Q>,
+    P: SharedPointerKind,
+{
 }
 
 #[cfg(feature = "serde")]
