@@ -749,6 +749,9 @@ where
         degree: u8,
     ) -> HashTrieMap<K, V, P, H> {
         assert!(degree.is_power_of_two(), "degree must be a power of two");
+        // With a degree of one no bits of the hash are consumed per level, so colliding entries
+        // could never be separated.
+        assert!(degree >= 2, "degree must be at least 2");
         assert!(degree <= DEFAULT_DEGREE, "degree is too big");
 
         HashTrieMap {
