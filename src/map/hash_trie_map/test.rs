@@ -1236,3 +1236,11 @@ fn test_serde() {
 
     assert_eq!(map, decoded);
 }
+
+#[test]
+#[should_panic(expected = "degree must be at least 2")]
+fn test_new_with_degree_one_panics() {
+    // A degree of one would make every level of the trie use zero bits of the hash, so two
+    // entries would never be separated and inserting would recurse forever.
+    let _: HashTrieMap<i32, i32> = HashTrieMap::new_with_degree(1);
+}
