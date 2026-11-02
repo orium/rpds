@@ -9,7 +9,7 @@ use crate::utils::DefaultBuildHasher;
 use alloc::vec::Vec;
 use archery::{ArcTK, RcK, SharedPointer, SharedPointerKind};
 use core::borrow::Borrow;
-use core::fmt::Display;
+use core::fmt::{Debug, Display};
 use core::hash::BuildHasher;
 use core::hash::Hash;
 use core::iter;
@@ -112,7 +112,6 @@ macro_rules! ht_map_sync {
 /// [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf).
 ///
 /// See the `Node` documentation for details.
-#[derive(Debug)]
 pub struct HashTrieMap<K, V, P = RcK, H: BuildHasher = DefaultBuildHasher>
 where
     P: SharedPointerKind,
@@ -124,6 +123,17 @@ where
 }
 
 pub type HashTrieMapSync<K, V, H = DefaultBuildHasher> = HashTrieMap<K, V, ArcTK, H>;
+
+impl<K, V, P, H: BuildHasher> Debug for HashTrieMap<K, V, P, H>
+where
+    K: Debug,
+    V: Debug,
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_map().entries(IterPtr::new(self).map(|entry| (&entry.key, &entry.value))).finish()
+    }
+}
 
 /// This map works like a trie that breaks the hash of the key in segments, and the segments are
 /// used as the index in the trie branches.
@@ -1037,7 +1047,6 @@ const ITER_STACK_N_INLINE: usize = 4;
 
 type IterPtrStack<'a, K, V, P> = SmallVec<[IterStackElement<'a, K, V, P>; ITER_STACK_N_INLINE]>;
 
-#[derive(Debug)]
 pub struct IterPtr<'a, K, V, P>
 where
     P: SharedPointerKind,
@@ -1046,7 +1055,6 @@ where
     size: usize,
 }
 
-#[derive(Debug)]
 enum IterStackElement<'a, K, V, P>
 where
     P: SharedPointerKind,
@@ -1056,9 +1064,30 @@ where
     LeafSingle(iter::Once<&'a SharedPointer<Entry<K, V>, P>>),
 }
 
+impl<K, V, P> Clone for IterPtr<'_, K, V, P>
+where
+    P: SharedPointerKind,
+{
+    fn clone(&self) -> Self {
+        IterPtr { stack: self.stack.clone(), size: self.size }
+    }
+}
+
+impl<K, V, P> Clone for IterStackElement<'_, K, V, P>
+where
+    P: SharedPointerKind,
+{
+    fn clone(&self) -> Self {
+        match self {
+            IterStackElement::Branch(iter) => IterStackElement::Branch(iter.clone()),
+            IterStackElement::LeafCollision(iter) => IterStackElement::LeafCollision(iter.clone()),
+            IterStackElement::LeafSingle(iter) => IterStackElement::LeafSingle(iter.clone()),
+        }
+    }
+}
+
 impl<'a, K, V, P> IterStackElement<'a, K, V, P>
 where
-    K: Eq + Hash,
     P: SharedPointerKind,
 {
     #[inline]
@@ -1093,23 +1122,32 @@ where
 
 impl<K, V, P> IterPtr<'_, K, V, P>
 where
-    K: Eq + Hash,
     P: SharedPointerKind,
 {
-    fn new<H: BuildHasher + Clone>(map: &HashTrieMap<K, V, P, H>) -> IterPtr<'_, K, V, P> {
+    fn new<H: BuildHasher>(map: &HashTrieMap<K, V, P, H>) -> IterPtr<'_, K, V, P> {
         let mut stack = IterPtrStack::new();
 
-        if map.size() > 0 {
+        if map.size > 0 {
             stack.push(IterStackElement::new(map.root.borrow()));
         }
 
-        IterPtr { stack, size: map.size() }
+        IterPtr { stack, size: map.size }
+    }
+}
+
+impl<K, V, P> Debug for IterPtr<'_, K, V, P>
+where
+    K: Debug,
+    V: Debug,
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_map().entries(self.clone().map(|entry| (&entry.key, &entry.value))).finish()
     }
 }
 
 impl<'a, K, V, P> Iterator for IterPtr<'a, K, V, P>
 where
-    K: Eq + Hash,
     P: SharedPointerKind,
 {
     type Item = &'a SharedPointer<Entry<K, V>, P>;
@@ -1138,7 +1176,7 @@ where
     }
 }
 
-impl<K: Eq + Hash, V, P> ExactSizeIterator for IterPtr<'_, K, V, P> where P: SharedPointerKind {}
+impl<K, V, P> ExactSizeIterator for IterPtr<'_, K, V, P> where P: SharedPointerKind {}
 
 #[cfg(feature = "serde")]
 pub mod serde {

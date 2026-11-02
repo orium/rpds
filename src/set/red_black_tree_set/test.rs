@@ -340,6 +340,23 @@ fn test_display() {
 }
 
 #[test]
+fn test_debug() {
+    let empty_set: RedBlackTreeSet<i32> = RedBlackTreeSet::new();
+    let singleton_set = rbt_set!["hi"];
+    let set = rbt_set![5, 12];
+
+    assert_eq!(format!("{empty_set:?}"), "{}");
+    assert_eq!(format!("{singleton_set:?}"), "{\"hi\"}");
+    assert_eq!(format!("{set:?}"), "{5, 12}");
+
+    let iter_debug = format!("{:?}", set.iter());
+    assert!(iter_debug.contains('5'), "unexpected iterator debug: {iter_debug}");
+    assert!(iter_debug.contains("12"), "unexpected iterator debug: {iter_debug}");
+    assert!(!iter_debug.contains("RedBlackTreeMap"), "iterator leaked internal map: {iter_debug}");
+    assert!(!iter_debug.contains("Node"), "iterator leaked internal node: {iter_debug}");
+}
+
+#[test]
 fn test_eq() {
     let set_1 = rbt_set!["a", "b"];
     let set_1_prime = rbt_set!["a", "b"];

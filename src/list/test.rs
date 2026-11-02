@@ -224,6 +224,22 @@ fn test_display() {
 }
 
 #[test]
+fn test_debug() {
+    let empty_list: List<i32> = List::new();
+    let singleton_list = list!["hello"];
+    let list = list![0, 1, 2, 3];
+
+    assert_eq!(format!("{empty_list:?}"), "[]");
+    assert_eq!(format!("{singleton_list:?}"), "[\"hello\"]");
+    assert_eq!(format!("{list:?}"), "[0, 1, 2, 3]");
+    assert_eq!(format!("{:?}", list.iter()), "Map { iter: [0, 1, 2, 3] }");
+
+    let mut iter = list.iter_ptr();
+    iter.next();
+    assert_eq!(format!("{iter:?}"), "[1, 2, 3]");
+}
+
+#[test]
 fn test_eq() {
     let list_1 = list!["a", "a"];
     let list_1_prime = list!["a", "a"];

@@ -154,6 +154,22 @@ fn test_display() {
 }
 
 #[test]
+fn test_debug() {
+    let empty_stack: Stack<i32> = Stack::new();
+    let singleton_stack = stack!["hello"];
+    let stack = stack![3, 2, 1, 0];
+
+    assert_eq!(format!("{empty_stack:?}"), "Stack([])");
+    assert_eq!(format!("{singleton_stack:?}"), "Stack([\"hello\"])");
+    assert_eq!(format!("{stack:?}"), "Stack([0, 1, 2, 3])");
+    assert_eq!(format!("{:?}", stack.iter()), "Map { iter: [0, 1, 2, 3] }");
+
+    let mut iter = stack.iter();
+    iter.next();
+    assert_eq!(format!("{iter:?}"), "Map { iter: [1, 2, 3] }");
+}
+
+#[test]
 fn test_eq() {
     let stack_1 = stack!["a", "a"];
     let stack_1_prime = stack!["a", "a"];

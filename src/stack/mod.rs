@@ -1,7 +1,7 @@
 use crate::List;
 use archery::*;
 use core::cmp::Ordering;
-use core::fmt::Display;
+use core::fmt::{Debug, Display};
 use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
 
@@ -87,7 +87,6 @@ macro_rules! stack_sync {
 /// # Implementation details
 ///
 /// This is a thin wrapper around a [`List`].
-#[derive(Debug)]
 pub struct Stack<T, P = RcK>
 where
     P: SharedPointerKind,
@@ -96,6 +95,26 @@ where
 }
 
 pub type StackSync<T> = Stack<T, ArcTK>;
+
+impl<T: Debug, P> Debug for Stack<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_tuple("Stack").field(&DebugList(self.iter())).finish()
+    }
+}
+
+struct DebugList<I>(I);
+
+impl<T: Debug, I> Debug for DebugList<I>
+where
+    I: Iterator<Item = T> + Clone,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_list().entries(self.0.clone()).finish()
+    }
+}
 
 impl<T> StackSync<T> {
     #[must_use]

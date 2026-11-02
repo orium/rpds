@@ -3,7 +3,7 @@ use crate::map::red_black_tree_map;
 use archery::{ArcTK, RcK, SharedPointerKind};
 use core::borrow::Borrow;
 use core::cmp::Ordering;
-use core::fmt::Display;
+use core::fmt::{Debug, Display};
 use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
 use core::ops::RangeBounds;
@@ -90,7 +90,6 @@ macro_rules! rbt_set_sync {
 /// # Implementation details
 ///
 /// This is a thin wrapper around a [`RedBlackTreeMap`].
-#[derive(Debug)]
 pub struct RedBlackTreeSet<T, P = RcK>
 where
     T: Ord,
@@ -100,6 +99,16 @@ where
 }
 
 pub type RedBlackTreeSetSync<T> = RedBlackTreeSet<T, ArcTK>;
+
+impl<T, P> Debug for RedBlackTreeSet<T, P>
+where
+    T: Ord + Debug,
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_set().entries(self.iter()).finish()
+    }
+}
 
 impl<T> RedBlackTreeSetSync<T>
 where

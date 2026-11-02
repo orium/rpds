@@ -3,7 +3,7 @@ use crate::map::hash_trie_map;
 use crate::utils::DefaultBuildHasher;
 use archery::{ArcTK, RcK, SharedPointerKind};
 use core::borrow::Borrow;
-use core::fmt::Display;
+use core::fmt::{Debug, Display};
 use core::hash::BuildHasher;
 use core::hash::Hash;
 use core::iter::FromIterator;
@@ -88,7 +88,6 @@ macro_rules! ht_set_sync {
 /// # Implementation details
 ///
 /// This is a thin wrapper around a [`HashTrieMap`].
-#[derive(Debug)]
 pub struct HashTrieSet<T, P = RcK, H: BuildHasher = DefaultBuildHasher>
 where
     T: Eq + Hash,
@@ -99,6 +98,17 @@ where
 }
 
 pub type HashTrieSetSync<T, H = DefaultBuildHasher> = HashTrieSet<T, ArcTK, H>;
+
+impl<T, P, H: BuildHasher> Debug for HashTrieSet<T, P, H>
+where
+    T: Eq + Hash + Debug,
+    H: Clone,
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_set().entries(self.iter()).finish()
+    }
+}
 
 impl<T> HashTrieSet<T, RcK, DefaultBuildHasher>
 where

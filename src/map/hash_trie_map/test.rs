@@ -1188,6 +1188,58 @@ fn test_display() {
 }
 
 #[test]
+fn test_debug() {
+    let empty_map: HashTrieMap<i32, i32> = HashTrieMap::new();
+    let singleton_map = ht_map!["hi" => "hello"];
+
+    assert_eq!(format!("{empty_map:?}"), "{}");
+    assert_eq!(format!("{singleton_map:?}"), "{\"hi\": \"hello\"}");
+    assert_eq!(format!("{:?}", singleton_map.iter()), "Map { iter: {\"hi\": \"hello\"} }");
+
+    let mut iter = singleton_map.iter_ptr();
+    iter.next();
+    assert_eq!(format!("{iter:?}"), "{}");
+}
+
+#[derive(Debug)]
+struct NoEqHashDebug;
+
+#[derive(Debug)]
+struct NoCloneDebug;
+
+#[derive(Debug)]
+struct NonCloneHasher;
+
+impl core::hash::Hasher for NonCloneHasher {
+    fn finish(&self) -> u64 {
+        0
+    }
+
+    fn write(&mut self, _: &[u8]) {}
+}
+
+#[derive(Debug)]
+struct NonCloneBuildHasher;
+
+impl BuildHasher for NonCloneBuildHasher {
+    type Hasher = NonCloneHasher;
+
+    fn build_hasher(&self) -> Self::Hasher {
+        NonCloneHasher
+    }
+}
+
+#[test]
+fn test_debug_bounds() {
+    fn assert_debug<T: core::fmt::Debug>() {}
+
+    assert_debug::<HashTrieMap<NoEqHashDebug, NoCloneDebug, RcK, NonCloneBuildHasher>>();
+
+    let map = ht_map![1 => NoCloneDebug];
+    assert_eq!(format!("{map:?}"), "{1: NoCloneDebug}");
+}
+
+#[test]
 fn test_eq() {
     let map_1 = ht_map!["a" => 0xa, "b" => 0xb];
     let map_1_prime = ht_map!["a" => 0xa, "b" => 0xb];

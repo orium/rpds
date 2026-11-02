@@ -317,6 +317,24 @@ fn test_display() {
 }
 
 #[test]
+fn test_debug() {
+    let empty_queue: Queue<i32> = Queue::new();
+    let singleton_queue = queue!["hello"];
+    let queue = queue![0, 1, 2, 3];
+
+    assert_eq!(format!("{empty_queue:?}"), "Queue([])");
+    assert_eq!(format!("{singleton_queue:?}"), "Queue([\"hello\"])");
+    assert_eq!(format!("{queue:?}"), "Queue([0, 1, 2, 3])");
+
+    let mut iter = queue.iter();
+    iter.next();
+    let iter_debug = format!("{iter:?}");
+    assert!(iter_debug.contains("[1, 2, 3]"), "unexpected iterator debug: {iter_debug}");
+    assert!(!iter_debug.contains("List"), "iterator leaked internal list: {iter_debug}");
+    assert!(!iter_debug.contains("Node"), "iterator leaked internal node: {iter_debug}");
+}
+
+#[test]
 fn test_eq() {
     let queue_1 = queue!["a", "a"];
     let queue_1_prime = queue!["a", "a"];

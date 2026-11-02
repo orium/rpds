@@ -1,5 +1,5 @@
 use alloc::borrow::Borrow;
-use alloc::fmt::Display;
+use alloc::fmt::{Debug, Display};
 use alloc::vec::Vec;
 use archery::*;
 use core::cmp::Ordering;
@@ -91,7 +91,6 @@ macro_rules! vector_sync {
 /// This implementation uses a bitmapped vector trie as described in
 /// [Understanding Persistent Vector Part 1](http://hypirion.com/musings/understanding-persistent-vector-pt-1)
 /// and [Understanding Persistent Vector Part 2](http://hypirion.com/musings/understanding-persistent-vector-pt-2).
-#[derive(Debug)]
 pub struct Vector<T, P = RcK>
 where
     P: SharedPointerKind,
@@ -102,6 +101,15 @@ where
 }
 
 pub type VectorSync<T> = Vector<T, ArcTK>;
+
+impl<T: Debug, P> Debug for Vector<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_list().entries(self.iter()).finish()
+    }
+}
 
 #[derive(Debug)]
 enum Node<T, P = RcK>
@@ -667,6 +675,30 @@ where
     index: isize,
 }
 
+impl<T, P> Clone for IterPtr<'_, T, P>
+where
+    P: SharedPointerKind,
+{
+    fn clone(&self) -> Self {
+        IterPtr {
+            vector: self.vector,
+            stack_forward: self.stack_forward.clone(),
+            stack_backward: self.stack_backward.clone(),
+            left_index: self.left_index,
+            right_index: self.right_index,
+        }
+    }
+}
+
+impl<T, P> Clone for IterStackElement<'_, T, P>
+where
+    P: SharedPointerKind,
+{
+    fn clone(&self) -> Self {
+        IterStackElement { node: self.node, index: self.index }
+    }
+}
+
 impl<'a, T, P> IterStackElement<'a, T, P>
 where
     P: SharedPointerKind,
@@ -806,6 +838,15 @@ where
         } else {
             None
         }
+    }
+}
+
+impl<T: Debug, P> Debug for IterPtr<'_, T, P>
+where
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_list().entries(self.clone()).finish()
     }
 }
 
