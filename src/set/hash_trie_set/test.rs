@@ -294,6 +294,20 @@ fn test_display() {
 }
 
 #[test]
+fn test_debug() {
+    let empty_set: HashTrieSet<i32> = HashTrieSet::new();
+    let singleton_set = ht_set!["hi"];
+
+    assert_eq!(format!("{empty_set:?}"), "{}");
+    assert_eq!(format!("{singleton_set:?}"), "{\"hi\"}");
+
+    let iter_debug = format!("{:?}", singleton_set.iter());
+    assert!(iter_debug.contains("\"hi\""), "unexpected iterator debug: {iter_debug}");
+    assert!(!iter_debug.contains("HashTrieMap"), "iterator leaked internal map: {iter_debug}");
+    assert!(!iter_debug.contains("Node"), "iterator leaked internal node: {iter_debug}");
+}
+
+#[test]
 fn test_eq() {
     let set_1 = ht_set!["a", "b"];
     let set_1_prime = ht_set!["a", "b"];

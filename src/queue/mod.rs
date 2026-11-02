@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use archery::*;
 use core::borrow::Borrow;
 use core::cmp::Ordering;
-use core::fmt::Display;
+use core::fmt::{Debug, Display};
 use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
 
@@ -93,7 +93,6 @@ macro_rules! queue_sync {
 ///
 /// This queue is implemented as described in
 /// [Immutability in C# Part Four: An Immutable Queue](https://goo.gl/hWyMuS).
-#[derive(Debug)]
 pub struct Queue<T, P = RcK>
 where
     P: SharedPointerKind,
@@ -103,6 +102,26 @@ where
 }
 
 pub type QueueSync<T> = Queue<T, ArcTK>;
+
+impl<T: Debug, P> Debug for Queue<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_tuple("Queue").field(&DebugList(self.iter())).finish()
+    }
+}
+
+struct DebugList<I>(I);
+
+impl<T: Debug, I> Debug for DebugList<I>
+where
+    I: Iterator<Item = T> + Clone,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_list().entries(self.0.clone()).finish()
+    }
+}
 
 impl<T> QueueSync<T> {
     #[must_use]
@@ -309,6 +328,31 @@ where
 {
     fn new(list: &List<T, P>) -> LazilyReversedListIter<'_, T, P> {
         LazilyReversedListIter::Uninitialized { list }
+    }
+}
+
+impl<T, P> Clone for LazilyReversedListIter<'_, T, P>
+where
+    P: SharedPointerKind,
+{
+    fn clone(&self) -> Self {
+        match self {
+            LazilyReversedListIter::Uninitialized { list } => {
+                LazilyReversedListIter::Uninitialized { list }
+            }
+            LazilyReversedListIter::Initialized { vec, current } => {
+                LazilyReversedListIter::Initialized { vec: vec.clone(), current: *current }
+            }
+        }
+    }
+}
+
+impl<T: Debug, P> Debug for LazilyReversedListIter<'_, T, P>
+where
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_list().entries(self.clone()).finish()
     }
 }
 

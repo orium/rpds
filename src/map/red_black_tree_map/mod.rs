@@ -2,7 +2,7 @@ use super::entry::Entry;
 use archery::{ArcTK, RcK, SharedPointer, SharedPointerKind};
 use core::borrow::Borrow;
 use core::cmp::Ordering;
-use core::fmt::Display;
+use core::fmt::{Debug, Display};
 use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
 use core::marker::PhantomData;
@@ -98,7 +98,6 @@ macro_rules! rbt_map_sync {
 /// described in "Purely Functional Data Structures" by Chris Okasaki, page 27.  Deletion is
 /// implemented according to the paper "Red-Black Trees with Types" by Stefan Kahrs
 /// ([reference implementation](https://www.cs.kent.ac.uk/people/staff/smk/redblack/Untyped.hs))
-#[derive(Debug)]
 pub struct RedBlackTreeMap<K, V, P = RcK>
 where
     P: SharedPointerKind,
@@ -108,6 +107,34 @@ where
 }
 
 pub type RedBlackTreeMapSync<K, V> = RedBlackTreeMap<K, V, ArcTK>;
+
+impl<K, V, P> Debug for RedBlackTreeMap<K, V, P>
+where
+    K: Debug,
+    V: Debug,
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fn fmt_node<K, V, P>(
+            node: Option<&SharedPointer<Node<K, V, P>, P>>,
+            map: &mut core::fmt::DebugMap<'_, '_>,
+        ) where
+            K: Debug,
+            V: Debug,
+            P: SharedPointerKind,
+        {
+            if let Some(node) = node {
+                fmt_node(node.left.as_ref(), map);
+                map.entry(&node.entry.key, &node.entry.value);
+                fmt_node(node.right.as_ref(), map);
+            }
+        }
+
+        let mut map = fmt.debug_map();
+        fmt_node(self.root.as_ref(), &mut map);
+        map.finish()
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Color {
@@ -1154,6 +1181,25 @@ mod iter_utils {
         backwards: bool,
     }
 
+    impl<K, V, P> Clone for IterStack<'_, K, V, P>
+    where
+        P: SharedPointerKind,
+    {
+        fn clone(&self) -> Self {
+            IterStack { stack: self.stack.clone(), backwards: self.backwards }
+        }
+    }
+
+    impl<'a, K, V, P> IterStack<'a, K, V, P>
+    where
+        P: SharedPointerKind,
+    {
+        #[inline]
+        pub fn current(&self) -> Option<&'a SharedPointer<Entry<K, V>, P>> {
+            self.stack.last().map(|node| &node.entry)
+        }
+    }
+
     impl<'a, K, V, P> IterStack<'a, K, V, P>
     where
         K: Ord,
@@ -1208,11 +1254,6 @@ mod iter_utils {
                     self.stack.clear();
                 }
             }
-        }
-
-        #[inline]
-        pub fn current(&self) -> Option<&'a SharedPointer<Entry<K, V>, P>> {
-            self.stack.last().map(|node| &node.entry)
         }
 
         fn dig<Q>(&mut self)
@@ -1303,7 +1344,6 @@ mod iter_utils {
     }
 }
 
-#[derive(Debug)]
 pub struct IterPtr<'a, K, V, P>
 where
     P: SharedPointerKind,
@@ -1321,6 +1361,73 @@ where
 {
     fn new(map: &RedBlackTreeMap<K, V, P>) -> IterPtr<'_, K, V, P> {
         IterPtr { range_iter: RangeIterPtr::new(map, ..), size: map.size }
+    }
+}
+
+impl<K, V, P> Clone for IterPtr<'_, K, V, P>
+where
+    P: SharedPointerKind,
+{
+    fn clone(&self) -> Self {
+        IterPtr { range_iter: self.range_iter.clone(), size: self.size }
+    }
+}
+
+impl<K, V, P> Debug for IterPtr<'_, K, V, P>
+where
+    K: Debug,
+    V: Debug,
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fn fmt_node<K, V, P>(
+            node: Option<&SharedPointer<Node<K, V, P>, P>>,
+            start: Option<&SharedPointer<Entry<K, V>, P>>,
+            map: &mut core::fmt::DebugMap<'_, '_>,
+            inside: &mut bool,
+            remaining: &mut usize,
+        ) where
+            K: Debug,
+            V: Debug,
+            P: SharedPointerKind,
+        {
+            if *remaining == 0 {
+                return;
+            }
+
+            if let Some(node) = node {
+                fmt_node(node.left.as_ref(), start, map, inside, remaining);
+
+                if *remaining == 0 {
+                    return;
+                }
+
+                if !*inside && start.is_some_and(|start| SharedPointer::ptr_eq(start, &node.entry))
+                {
+                    *inside = true;
+                }
+
+                if *inside {
+                    map.entry(&node.entry.key, &node.entry.value);
+                    *remaining -= 1;
+
+                    if *remaining == 0 {
+                        return;
+                    }
+                }
+
+                fmt_node(node.right.as_ref(), start, map, inside, remaining);
+            }
+        }
+
+        let start = self.range_iter.stack_forward.as_ref().and_then(iter_utils::IterStack::current);
+        let mut inside = start.is_none();
+        let mut remaining = self.size;
+        let mut map = fmt.debug_map();
+
+        fmt_node(self.range_iter.map.root.as_ref(), start, &mut map, &mut inside, &mut remaining);
+
+        map.finish()
     }
 }
 
@@ -1374,6 +1481,22 @@ where
 
     range: RB,
     _q: PhantomData<Q>,
+}
+
+impl<K, V, RB, Q: ?Sized, P> Clone for RangeIterPtr<'_, K, V, RB, Q, P>
+where
+    RB: Clone,
+    P: SharedPointerKind,
+{
+    fn clone(&self) -> Self {
+        RangeIterPtr {
+            map: self.map,
+            stack_forward: self.stack_forward.clone(),
+            stack_backward: self.stack_backward.clone(),
+            range: self.range.clone(),
+            _q: PhantomData,
+        }
+    }
 }
 
 impl<'a, K, V, Q, RB, P> RangeIterPtr<'a, K, V, RB, Q, P>

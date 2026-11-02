@@ -1717,6 +1717,92 @@ fn test_display() {
     assert_eq!(format!("{}", map), "{5: hello, 12: there}");
 }
 
+fn assert_iter_debug_matches_remaining(iter: &Iter<'_, i32, i32, RcK>) {
+    let expected = format!("{:?}", iter.clone().collect::<alloc::collections::BTreeMap<_, _>>());
+
+    assert_eq!(format!("{iter:?}"), format!("Map {{ iter: {expected} }}"));
+}
+
+fn assert_all_consumption_sequences(iter: Iter<'_, i32, i32, RcK>, depth: usize) {
+    assert_iter_debug_matches_remaining(&iter);
+
+    if depth == 0 {
+        return;
+    }
+
+    let mut forward = iter.clone();
+    forward.next();
+    assert_all_consumption_sequences(forward, depth - 1);
+
+    let mut backward = iter;
+    backward.next_back();
+    assert_all_consumption_sequences(backward, depth - 1);
+}
+
+#[test]
+fn test_debug() {
+    let empty_map: RedBlackTreeMap<i32, i32> = RedBlackTreeMap::new();
+    let singleton_map = rbt_map!["hi" => "hello"];
+    let map = rbt_map![5 => "hello", 12 => "there"];
+
+    assert_eq!(format!("{empty_map:?}"), "{}");
+    assert_eq!(format!("{singleton_map:?}"), "{\"hi\": \"hello\"}");
+    assert_eq!(format!("{map:?}"), "{5: \"hello\", 12: \"there\"}");
+    assert_eq!(format!("{:?}", map.iter()), "Map { iter: {5: \"hello\", 12: \"there\"} }");
+
+    let mut iter = map.iter_ptr();
+    iter.next();
+    assert_eq!(format!("{iter:?}"), "{12: \"there\"}");
+
+    let matrix_map = rbt_map![1 => 10, 2 => 20, 3 => 30, 4 => 40, 5 => 50];
+
+    for left in 0..=7 {
+        for right in 0..=7 {
+            let mut iter = matrix_map.iter();
+
+            for _ in 0..left {
+                iter.next();
+            }
+
+            for _ in 0..right {
+                iter.next_back();
+            }
+
+            assert_iter_debug_matches_remaining(&iter);
+        }
+    }
+
+    assert_all_consumption_sequences(matrix_map.iter(), 2 * matrix_map.size());
+}
+
+#[derive(Debug)]
+struct NonOrdDebug;
+
+#[derive(Debug)]
+struct NoCloneDebug;
+
+#[derive(Debug)]
+struct NonCloneRange;
+
+impl RangeBounds<i32> for NonCloneRange {
+    fn start_bound(&self) -> core::ops::Bound<&i32> {
+        core::ops::Bound::Unbounded
+    }
+
+    fn end_bound(&self) -> core::ops::Bound<&i32> {
+        core::ops::Bound::Unbounded
+    }
+}
+
+#[test]
+fn test_debug_bounds() {
+    fn assert_debug<T: core::fmt::Debug>() {}
+
+    assert_debug::<RedBlackTreeMap<NonOrdDebug, NoCloneDebug, RcK>>();
+    assert_debug::<RangeIterPtr<'static, NonOrdDebug, NoCloneDebug, NonCloneRange, NonOrdDebug, RcK>>(
+    );
+}
+
 #[test]
 fn test_eq() {
     let map_1 = rbt_map!["a" => 0xa, "b" => 0xb];

@@ -587,6 +587,22 @@ fn test_display() {
 }
 
 #[test]
+fn test_debug() {
+    let empty_vector: Vector<i32> = Vector::new();
+    let singleton_vector = vector!["hello"];
+    let vector = vector![0, 1, 2, 3];
+
+    assert_eq!(format!("{empty_vector:?}"), "[]");
+    assert_eq!(format!("{singleton_vector:?}"), "[\"hello\"]");
+    assert_eq!(format!("{vector:?}"), "[0, 1, 2, 3]");
+    assert_eq!(format!("{:?}", vector.iter()), "Map { iter: [0, 1, 2, 3] }");
+
+    let mut iter = vector.iter_ptr();
+    iter.next();
+    assert_eq!(format!("{iter:?}"), "[1, 2, 3]");
+}
+
+#[test]
 fn test_eq() {
     let vector_1 = vector!["a", "a"];
     let vector_1_prime = vector!["a", "a"];

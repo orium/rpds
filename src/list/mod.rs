@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 use archery::*;
 use core::borrow::Borrow;
 use core::cmp::Ordering;
-use core::fmt::Display;
+use core::fmt::{Debug, Display};
 use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
 
@@ -104,7 +104,6 @@ macro_rules! list_sync {
 ///
 /// This is your classic functional list with "cons" and "nil" nodes, with a little extra sauce to
 /// make some operations more efficient.
-#[derive(Debug)]
 pub struct List<T, P = RcK>
 where
     P: SharedPointerKind,
@@ -133,6 +132,15 @@ where
 }
 
 pub type ListSync<T> = List<T, ArcTK>;
+
+impl<T: Debug, P> Debug for List<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_list().entries(self.iter()).finish()
+    }
+}
 
 impl<T> ListSync<T> {
     #[must_use]
@@ -420,7 +428,6 @@ where
     }
 }
 
-#[derive(Debug)]
 pub struct IterPtr<'a, T, P>
 where
     P: SharedPointerKind,
@@ -435,6 +442,24 @@ where
 {
     fn new(list: &List<T, P>) -> IterPtr<'_, T, P> {
         IterPtr { next: list.head.as_ref().map(AsRef::as_ref), length: list.len() }
+    }
+}
+
+impl<T, P> Clone for IterPtr<'_, T, P>
+where
+    P: SharedPointerKind,
+{
+    fn clone(&self) -> Self {
+        IterPtr { next: self.next, length: self.length }
+    }
+}
+
+impl<T: Debug, P> Debug for IterPtr<'_, T, P>
+where
+    P: SharedPointerKind,
+{
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fmt.debug_list().entries(self.clone()).finish()
     }
 }
 
