@@ -1699,6 +1699,52 @@ fn test_from_iterator() {
 }
 
 #[test]
+fn test_extend() {
+    let mut map = rbt_map![2 => "two", 5 => "five"];
+    let snapshot = map.clone();
+
+    map.extend([(5, "five prime"), (7, "seven")]);
+
+    assert_eq!(map.size(), 3);
+    assert_eq!(map.get(&2), Some(&"two"));
+    assert_eq!(map.get(&5), Some(&"five prime"));
+    assert_eq!(map.get(&7), Some(&"seven"));
+    assert_eq!(snapshot, rbt_map![2 => "two", 5 => "five"]);
+
+    map.extend(core::iter::empty());
+
+    assert_eq!(map, rbt_map![2 => "two", 5 => "five prime", 7 => "seven"]);
+}
+
+#[test]
+fn test_extend_non_clone() {
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+    struct NonCloneKey(u32);
+
+    #[derive(Debug, PartialEq)]
+    struct NonCloneValue(&'static str);
+
+    let mut map = RedBlackTreeMap::new();
+
+    map.extend([(NonCloneKey(1), NonCloneValue("one")), (NonCloneKey(2), NonCloneValue("two"))]);
+
+    assert_eq!(map.size(), 2);
+    assert_eq!(map.get(&NonCloneKey(1)).map(|value| value.0), Some("one"));
+    assert_eq!(map.get(&NonCloneKey(2)).map(|value| value.0), Some("two"));
+}
+
+#[test]
+fn test_extend_sync() {
+    let mut map = RedBlackTreeMapSync::new_sync();
+
+    map.extend([(1, "one"), (2, "two"), (2, "two prime")]);
+
+    assert_eq!(map.size(), 2);
+    assert_eq!(map.get(&1), Some(&"one"));
+    assert_eq!(map.get(&2), Some(&"two prime"));
+}
+
+#[test]
 fn test_default() {
     let map: RedBlackTreeMap<u32, char> = RedBlackTreeMap::default();
 

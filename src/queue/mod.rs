@@ -295,6 +295,17 @@ where
     }
 }
 
+impl<T, P> Extend<T> for Queue<T, P>
+where
+    P: SharedPointerKind,
+{
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        for elem in iter {
+            self.enqueue_mut(elem);
+        }
+    }
+}
+
 pub enum LazilyReversedListIter<'a, T: 'a, P>
 where
     P: SharedPointerKind,

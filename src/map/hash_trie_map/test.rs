@@ -1167,6 +1167,74 @@ fn test_from_iterator() {
 }
 
 #[test]
+fn test_extend() {
+    let mut map = ht_map![2 => "two", 5 => "five"];
+    let snapshot = map.clone();
+
+    map.extend([(5, "five prime"), (7, "seven")]);
+
+    assert_eq!(map.size(), 3);
+    assert_eq!(map.get(&2), Some(&"two"));
+    assert_eq!(map.get(&5), Some(&"five prime"));
+    assert_eq!(map.get(&7), Some(&"seven"));
+    assert_eq!(snapshot, ht_map![2 => "two", 5 => "five"]);
+
+    map.extend(core::iter::empty());
+
+    assert_eq!(map, ht_map![2 => "two", 5 => "five prime", 7 => "seven"]);
+}
+
+#[test]
+fn test_extend_with_custom_hasher_and_degree() {
+    let hasher = hasher_mocks::LimitedHashSpaceHashBuilder::new(1000);
+    let mut map: HashTrieMap<i32, &str, RcK, _> =
+        HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(hasher, 16);
+
+    map.extend([(1, "one"), (2, "two"), (3, "three"), (2, "two prime")]);
+
+    assert_eq!(map.size(), 3);
+    assert_eq!(map.get(&1), Some(&"one"));
+    assert_eq!(map.get(&2), Some(&"two prime"));
+    assert_eq!(map.get(&3), Some(&"three"));
+}
+
+#[test]
+fn test_extend_non_clone_with_custom_hasher() {
+    #[derive(Debug, PartialEq, Eq, Hash)]
+    struct NonCloneKey(u32);
+
+    #[derive(Debug, PartialEq)]
+    struct NonCloneValue(&'static str);
+
+    let hasher = hasher_mocks::LimitedHashSpaceHashBuilder::new(1000);
+    let mut map: HashTrieMap<NonCloneKey, NonCloneValue, RcK, _> =
+        HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(hasher, 16);
+
+    map.extend([
+        (NonCloneKey(1), NonCloneValue("one")),
+        (NonCloneKey(2), NonCloneValue("two")),
+        (NonCloneKey(2), NonCloneValue("two prime")),
+    ]);
+
+    assert_eq!(map.size(), 2);
+    assert_eq!(map.get(&NonCloneKey(1)).map(|value| value.0), Some("one"));
+    assert_eq!(map.get(&NonCloneKey(2)).map(|value| value.0), Some("two prime"));
+}
+
+#[test]
+fn test_extend_sync_with_custom_hasher() {
+    let hasher = hasher_mocks::LimitedHashSpaceHashBuilder::new(1000);
+    let mut map: HashTrieMapSync<i32, &str, _> =
+        HashTrieMap::new_with_hasher_and_degree_and_ptr_kind(hasher, 16);
+
+    map.extend([(1, "one"), (2, "two"), (2, "two prime")]);
+
+    assert_eq!(map.size(), 2);
+    assert_eq!(map.get(&1), Some(&"one"));
+    assert_eq!(map.get(&2), Some(&"two prime"));
+}
+
+#[test]
 fn test_default() {
     let map: HashTrieMap<u32, char> = HashTrieMap::default();
 
