@@ -1130,6 +1130,18 @@ where
     }
 }
 
+impl<K, V, P> Extend<(K, V)> for RedBlackTreeMap<K, V, P>
+where
+    K: Ord,
+    P: SharedPointerKind,
+{
+    fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) {
+        for (key, value) in iter {
+            self.insert_mut(key, value);
+        }
+    }
+}
+
 mod iter_utils {
     use super::{Entry, Node, RedBlackTreeMap};
     use alloc::vec::Vec;

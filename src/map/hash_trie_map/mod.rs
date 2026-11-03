@@ -1033,6 +1033,19 @@ where
     }
 }
 
+impl<K, V, P, H> Extend<(K, V)> for HashTrieMap<K, V, P, H>
+where
+    K: Eq + Hash,
+    H: BuildHasher + Clone,
+    P: SharedPointerKind,
+{
+    fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) {
+        for (key, value) in iter {
+            self.insert_mut(key, value);
+        }
+    }
+}
+
 const ITER_STACK_N_INLINE: usize = 4;
 
 type IterPtrStack<'a, K, V, P> = SmallVec<[IterStackElement<'a, K, V, P>; ITER_STACK_N_INLINE]>;

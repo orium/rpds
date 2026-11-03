@@ -298,6 +298,43 @@ fn test_from_iterator() {
 }
 
 #[test]
+fn test_extend() {
+    let mut queue = queue![10, 11];
+    let snapshot = queue.clone();
+
+    queue.extend([12, 13]);
+
+    assert_eq!(queue, queue![10, 11, 12, 13]);
+    assert_eq!(snapshot, queue![10, 11]);
+
+    queue.extend(core::iter::empty());
+
+    assert_eq!(queue, queue![10, 11, 12, 13]);
+}
+
+#[test]
+fn test_extend_non_clone() {
+    #[derive(Debug, PartialEq)]
+    struct NonClone(u32);
+
+    let mut queue = Queue::new();
+
+    queue.extend([NonClone(10), NonClone(11), NonClone(12)]);
+
+    assert_eq!(queue.len(), 3);
+    assert!(queue.iter().eq([NonClone(10), NonClone(11), NonClone(12)].iter()));
+}
+
+#[test]
+fn test_extend_sync() {
+    let mut queue = QueueSync::new_sync();
+
+    queue.extend([10, 11, 12]);
+
+    assert_eq!(queue, queue_sync![10, 11, 12]);
+}
+
+#[test]
 fn test_default() {
     let queue: Queue<i32> = Queue::default();
 
